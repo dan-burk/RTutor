@@ -5,14 +5,6 @@
 # No warranty and not for commercial use.
 ###################################################
 
-#
-
-
-
-
-
-
-
 
 #' The application User-Interface
 #'
@@ -55,16 +47,22 @@ app_ui <- function(request) {
             bottom: 0;
           }
         "),
-        # Sidebar with a slider input for number of bins
+        
+  ##########################################################
+  ####### Sidebar
+  ##########################################################
         sidebarLayout(
           sidebarPanel(
             #uiOutput("timer_ui"),
 
+            # Show selected dataset
             fluidRow(
               column(
                 width = 6,
                 textOutput("selected_dataset")
               ),
+
+              # Reset Button
               column(
                 width = 6,
                 actionButton("reset_button", strong("Reset")),
@@ -79,6 +77,7 @@ app_ui <- function(request) {
                 )
               )
             ),
+
             conditionalPanel(
               condition = "0",
               fluidRow(
@@ -103,6 +102,7 @@ app_ui <- function(request) {
             ),
 
             fluidRow(
+              # Submit Button
               column(
                 width = 4,
                 actionButton("submit_button", strong("Submit")),
@@ -115,6 +115,7 @@ app_ui <- function(request) {
                   theme = "light-border"
                 )
               ),
+              # API keys and Python options
               conditionalPanel(
                 condition = "0",
                 column(
@@ -127,6 +128,26 @@ app_ui <- function(request) {
                 )
               )
             ),
+
+            # User FYI
+            h5(style = "font-weight: bold;", "Reset after each question!"),
+            h5("Unsure what to ask?  Submit  'Find data on ____ (i.e. schools)'  first. Look at the 'Data' tab before asking another question."),
+            br(),
+
+            # Show available datasets
+            tags$div(
+              style = "border: 1px solid #ccc; padding: 0px 10px 4px 10px;",
+              tags$h5(style = "font-weight: bold;", "Available Datasets"),
+              tags$textarea(
+                paste(available_datasets, collapse = "\n"),
+                style = "width: 100%; resize: none;",
+                rows = 12,
+                readonly = TRUE
+              )
+            ),
+            br(),
+
+            # User FYI
             conditionalPanel( #hide
               condition = "0",
               br(),
@@ -148,6 +169,8 @@ app_ui <- function(request) {
               shinyjs::hidden(actionButton("ask_button", strong("Ask RTutor")))
             ),
             br(),
+
+            # Data options
             fluidRow(
               column(
                 width = 4,
@@ -163,6 +186,8 @@ app_ui <- function(request) {
                 downloadButton("download_data", "Data")
               ),
             ),
+
+            # User FYI and feedback options
             conditionalPanel(
               condition = "0",
               textOutput("usage"),
@@ -199,9 +224,6 @@ app_ui <- function(request) {
               ),
               actionButton("save_feedbck", "Save Feedback")
             ),
-            br(),
-            h5("Reset after each question!"),
-            h5("Unsure what to ask? Say 'Find data on xxx( i.e. schools)' first. Look at it on the Data tab before asking."),
           ),
 
       ###############################################################################
@@ -235,105 +257,6 @@ app_ui <- function(request) {
               ),
               h4("Based on 100+ datasets shared by the City of Sioux Falls on ", 
                   a("Data.Gov", href = "https://catalog.data.gov/dataset/?organization=city-of-sioux-falls", target = "_blank")),
-              tags$ul(
-
-                tags$li("Address"),
-                tags$li("Airport"),
-                tags$li("Alcohol and Video Lottery Licensing"),
-                tags$li("Alleys"),
-                tags$li("Annexations"),
-                tags$li("Annexations"),
-                tags$li("Artworks"),
-                tags$li("Billboard Opportunity"),
-                tags$li("Bridges"),
-                tags$li("Building Footprints"),
-                tags$li("Building Permits"),
-                tags$li("Bus Routes"),
-                tags$li("Bus Snow Routes"),
-                tags$li("Bus Stops"),
-                tags$li("Capital Improvements Program (CIP) (Lines)"),
-                tags$li("Capital Improvements Program (CIP) (Points)"),
-                tags$li("City Council Districts, Precincts, and Addresses"),
-                tags$li("City Limits"),
-                tags$li("Civil Air Patrol Photos Spring 2019"),
-                tags$li("Commercial Projects"),
-                tags$li("Community Safety Zone"),
-                tags$li("Community Safety Zone Parcels"),
-                tags$li("Crime Free Mobile Homes"),
-                tags$li("Crime Free Multi Housing"),
-                tags$li("Curb Ramps"),
-                tags$li("Development Areas"),
-                tags$li("Easements"),
-                tags$li("Elementary School Bus Zones"),
-                tags$li("Elementary School Districts"),
-                tags$li("Emergency Shelters"),
-                tags$li("Entertainment Tax Growth"),
-                tags$li("Essential Responders"),
-                tags$li("Fire Dispatch Quadrants"),
-                tags$li("Fire Incidents"),
-                tags$li("Fire Station Territory"),
-                tags$li("Fire Stations"),
-                tags$li("Fire Travel Time"),
-                tags$li("Flood Restrictions in the City (FRIC)"),
-                tags$li("Historic Districts"),
-                tags$li("Historic Properties"),
-                tags$li("Hospitals"),
-                tags$li("Impervious"),
-                tags$li("Lakes"),
-                tags$li("Lincoln County Case Data"),
-                tags$li("Manufactured Housing Parks"),
-                tags$li("Middle School Bus Zones"),
-                tags$li("Middle School Districts"),
-                tags$li("Minnehaha Case Data"),
-                tags$li("Murals"),
-                tags$li("Neighborhood Associations"),
-                tags$li("Neighborhood Revitalization Program"),
-                tags$li("Neighborhood Watch Areas"),
-                tags$li("Nonprofit Organizations"),
-                tags$li("Off Premise Signs"),
-                tags$li("Off Premise Signs Buffers"),
-                tags$li("Parcels"),
-                tags$li("Park Amenities"),
-                tags$li("Park Fences"),
-                tags$li("Parks"),
-                tags$li("Pedestrian Signals"),
-                tags$li("PLSS Sections"),
-                tags$li("Police Calls for Service by Year"),
-                tags$li("Preliminary Parcels"),
-                tags$li("Rivers"),
-                tags$li("Salaried Workers"),
-                tags$li("Sales Tax Growth"),
-                tags$li("Sanitary Availability"),
-                tags$li("Schools"),
-                tags$li("Sidewalks"),
-                tags$li("Single Family Housing"),
-                tags$li("Sioux Falls Case Data"),
-                tags$li("Snow Districts"),
-                tags$li("Snow Routes"),
-                tags$li("South Dakota Case Data"),
-                tags$li("Street Names"),
-                tags$li("Street Query"),
-                tags$li("Streets"),
-                tags$li("Streets Pavement Condition"),
-                tags$li("Subdivisions"),
-                tags$li("Surface Water Quality Monitoring Data"),
-                tags$li("Sweeping Districts"),
-                tags$li("Total Permits"),
-                tags$li("Total Population"),
-                tags$li("Traffic Counts"),
-                tags$li("Traffic Counts (Model)"),
-                tags$li("Trees"),
-                tags$li("Unemployment Rate"),
-                tags$li("Vacated Streets"),
-                tags$li("Veterans Parkway Corridor"),
-                tags$li("Veterans Parkway Striping"),
-                tags$li("Violent Crimes by Year"),
-                tags$li("Voting Precincts"),
-                tags$li("Zoning"),
-                tags$li("Zoning - Conditional Rezoning")
-
-              )
-            
             ),
             conditionalPanel(
               condition = "input.submit_button != 0",
