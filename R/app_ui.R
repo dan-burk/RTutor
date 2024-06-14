@@ -645,6 +645,7 @@ app_ui <- function(request) {
         # Session Info Section
         fluidRow(
           column(
+            width = 12,
             uiOutput("session_info")
           )
         ),
