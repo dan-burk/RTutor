@@ -59,7 +59,7 @@ app_ui <- function(request) {
             fluidRow(
               column(
                 width = 6,
-                textOutput("selected_dataset")
+                uiOutput("selected_dataset")
               ),
 
               # Reset Button
@@ -72,7 +72,7 @@ app_ui <- function(request) {
                 align = "right",
                 tippy::tippy_this(
                   "reset_button",
-                  "Reset before uploading a new file. Clears data objects, chat history, and code chunks.",
+                  "Reset before asking a new question. Clears data objects, chat history, & code chunks.",
                   theme = "light-border"
                 )
               )
@@ -131,7 +131,7 @@ app_ui <- function(request) {
 
             # User FYI
             h5(style = "font-weight: bold;", "Reset after each question!"),
-            h5("Unsure what to ask?  Submit  'Find data on ____ (i.e. schools)'  first. Look at the 'Data' tab before asking another question."),
+            h5("Unsure what to ask?  Submit  'Find data on ____ (i.e. sales)'  first. Look at the 'Data' tab before asking another question."),
             br(),
 
             # Show available datasets
@@ -238,11 +238,8 @@ app_ui <- function(request) {
               fluidRow(
                 column(
                   width = 9,
-                  h3(
-                    "Sioux Falls Public Data Portal (demo)"
-                  ),
-
-
+                  h3(style = "font-weight: bold;", "Hero MotoCorp Data Portal (demo)"),
+                  h4("Based on available datasets shared by HMCL"),
                   align = "left"
                 ),
                 column(
@@ -255,8 +252,6 @@ app_ui <- function(request) {
                   align = 'left'
                 )
               ),
-              h4("Based on 100+ datasets shared by the City of Sioux Falls on ", 
-                  a("Data.Gov", href = "https://catalog.data.gov/dataset/?organization=city-of-sioux-falls", target = "_blank")),
             ),
             conditionalPanel(
               condition = "input.submit_button != 0",
@@ -334,13 +329,18 @@ app_ui <- function(request) {
         ) #sideBarpanel
       ), #tabPanel
       tabPanel(
-        title = "Data",
+        title = div(id = "data_tab", "Data"),
         value = "Data",
+        tippy::tippy_this(
+          "data_tab",
+          "Dataset Preview",
+          theme = "light-border"
+        ),
         shinyjs::hidden(
           div(
             id = "first_file",
             hr(),
-            h4("Default dataset:  df"),
+            h4("Dataset:  df"),
             textOutput("data_size"),
             DT::dataTableOutput("data_table_DT")
           )
@@ -358,8 +358,13 @@ app_ui <- function(request) {
         #,tableOutput("data_table"),
       ),
       tabPanel(
-        title = "EDA",
+        title = div(id = "eda_tab", "EDA"),
         value = "EDA",
+        tippy::tippy_this(
+          "eda_tab",
+          "Exploratory Data Analysis",
+          theme = "light-border"
+        ),
         tabsetPanel(
           tabPanel(
             title = "Basic",
