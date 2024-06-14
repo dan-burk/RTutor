@@ -28,32 +28,32 @@ app_server <- function(input, output, session) {
   pdf(NULL) #otherwise, base R plots sometimes do not show.
 
   # load demo data when clicked
-  observeEvent(input$demo_prompt, {
-    req(input$select_data)
-    if (input$demo_prompt != demo$requests[1]) {
-      updateTextInput(
-        session,
-        "input_text",
-        value = input$demo_prompt
-      )
-    } else { # if not mpg data, reset
-      updateTextInput(
-        session,
-        "input_text",
-        value = "",
-        placeholder =
-" Hi! I am a virtual data scientist. Ask me anything related to public data for the city of Sioux Falls."
-      )
-    }
-  })
+#   observeEvent(input$demo_prompt, {
+#     req(input$select_data)
+#     if (input$demo_prompt != demo$requests[1]) {
+#       updateTextInput(
+#         session,
+#         "input_text",
+#         value = input$demo_prompt
+#       )
+#     } else { # if not mpg data, reset
+#       updateTextInput(
+#         session,
+#         "input_text",
+#         value = "",
+#         placeholder =
+# " Hi! I am a virtual data scientist. Ask me anything related to public data for the city of Sioux Falls."
+#       )
+#     }
+#   })
 
-  observeEvent(input$user_file, {
-    updateSelectInput(
-      session,
-      "select_data",
-      selected = uploaded_data
-    )
-  }, ignoreInit = TRUE, once = TRUE)
+  # observeEvent(input$user_file, {
+  #   updateSelectInput(
+  #     session,
+  #     "select_data",
+  #     selected = uploaded_data
+  #   )
+  # }, ignoreInit = TRUE, once = TRUE)
 
 
   observe({
@@ -63,10 +63,11 @@ app_server <- function(input, output, session) {
   # after file is uploaded, hide some UI elements. 
   # https://stackoverflow.com/questions/19686581/make-conditionalpanel-depend-on-files-uploaded-with-fileinput
   # On the UI, changed to output.file_uploaded == 0
-  output$file_uploaded <- reactive({
-    return(!is.null(input$user_file))
-  })
-  outputOptions(output, 'file_uploaded', suspendWhenHidden = FALSE)
+
+  # output$file_uploaded <- reactive({
+  #   return(!is.null(input$user_file))
+  # })
+  # outputOptions(output, 'file_uploaded', suspendWhenHidden = FALSE)
 
   observeEvent(input$reset_button, {
     # reset session
@@ -80,93 +81,93 @@ app_server <- function(input, output, session) {
 
   # had to use this. Otherwise, the checkbox returns to false
   # when the popup is closed and openned again.
-  use_voice <- reactive({
-      use_voice <- FALSE #default
-      tem <- is.null(input$use_voice_button)
-      if(!is.null(input$use_voice)) {
-        use_voice <- input$use_voice
-      }
-      return(use_voice)
-  })
+  # use_voice <- reactive({
+  #     use_voice <- FALSE #default
+  #     tem <- is.null(input$use_voice_button)
+  #     if(!is.null(input$use_voice)) {
+  #       use_voice <- input$use_voice
+  #     }
+  #     return(use_voice)
+  # })
 
   # Use voice input?
-  output$use_heyshiny <- renderUI({
-    req(use_voice())
-      tagList(
-        heyshiny::useHeyshiny(language = "en-US"), # configure the heyshiny
-        heyshiny::speechInput(
-          inputId = "hey_cmd",
-          command = paste(wake_word, "*msg")  # hey cox is more sensitive than 'hi tutor'
-        ), # set the input
-      )
-  })
+  # output$use_heyshiny <- renderUI({
+  #   req(use_voice())
+  #     tagList(
+  #       heyshiny::useHeyshiny(language = "en-US"), # configure the heyshiny
+  #       heyshiny::speechInput(
+  #         inputId = "hey_cmd",
+  #         command = paste(wake_word, "*msg")  # hey cox is more sensitive than 'hi tutor'
+  #       ), # set the input
+  #     )
+  # })
 
    # read the speech input
-  observeEvent(input$hey_cmd, {
-    speech <- input$hey_cmd
-    # message(speech)
-    #showNotification(speech)
+  # observeEvent(input$hey_cmd, {
+  #   speech <- input$hey_cmd
+  #   # message(speech)
+  #   #showNotification(speech)
 
-    if (input$tabs == "Home")    {
-      if (grepl("^continue", speech)) {
-        speech <- paste0(
-          input$input_text, # current prompt
-          ". ",  # add . and space.
-          gsub("^continue", "", speech) # remove the continue
-        )
-      }
-      # submit the request when user said  action verb
-      if (tolower(speech) %in% action_verbs) {
-        shinyjs::click("submit_button")
-      } else {
-        updateTextInput(
-          session,
-          "input_text",
-          value = speech
-        )
-      }
+  #   if (input$tabs == "Home")    {
+  #     if (grepl("^continue", speech)) {
+  #       speech <- paste0(
+  #         input$input_text, # current prompt
+  #         ". ",  # add . and space.
+  #         gsub("^continue", "", speech) # remove the continue
+  #       )
+  #     }
+  #     # submit the request when user said  action verb
+  #     if (tolower(speech) %in% action_verbs) {
+  #       shinyjs::click("submit_button")
+  #     } else {
+  #       updateTextInput(
+  #         session,
+  #         "input_text",
+  #         value = speech
+  #       )
+  #     }
 
-    } else if (input$tabs == "Ask") {
-      # submit the request when user said  action verb
-      if (tolower(speech) %in% action_verbs) {
-        shinyjs::click("ask_button")
-      } else {
-        updateTextInput(
-          session,
-          "ask_question",
-          value = speech
-        )
-      }
-    }
+  #   } else if (input$tabs == "Ask") {
+  #     # submit the request when user said  action verb
+  #     if (tolower(speech) %in% action_verbs) {
+  #       shinyjs::click("ask_button")
+  #     } else {
+  #       updateTextInput(
+  #         session,
+  #         "ask_question",
+  #         value = speech
+  #       )
+  #     }
+  #   }
 
-  })
+  # })
 
   # copy error message
-  observeEvent(code_error(), {
-    # not Davinci
-    req(selected_model() != "text-davinci-003")
-    req(code_error())
-    output$send_error_message <- renderUI({
-      tagList(
-        actionButton(
-          inputId = "send_error",
-          label = strong("Copy error message")
-        ),
-        tags$head(tags$style(
-          "#send_error{font-size: 16px;color: purple}"
-        ))
-      )
-    })
-  })
+  # observeEvent(code_error(), {
+  #   # not Davinci
+  #   req(selected_model() != "text-davinci-003")
+  #   req(code_error())
+  #   output$send_error_message <- renderUI({
+  #     tagList(
+  #       actionButton(
+  #         inputId = "send_error",
+  #         label = strong("Copy error message")
+  #       ),
+  #       tags$head(tags$style(
+  #         "#send_error{font-size: 16px;color: purple}"
+  #       ))
+  #     )
+  #   })
+  # })
 
-  observeEvent(input$send_error, {
+  # observeEvent(input$send_error, {
 
-    updateTextInput(
-      session,
-      "input_text",
-      value = paste0("Fix this error from running the last chunk. Error: ", run_result()$error_message)
-    )
-  })
+  #   updateTextInput(
+  #     session,
+  #     "input_text",
+  #     value = paste0("Fix this error from running the last chunk. Error: ", run_result()$error_message)
+  #   )
+  # })
 
 # Show notification when error
   observeEvent(code_error(), {
@@ -187,54 +188,54 @@ app_server <- function(input, output, session) {
   #____________________________________________________________________________
 
   # uploaded data
-  user_data <- reactive({
-    req(input$user_file)
-    in_file <- input$user_file
-    in_file <- in_file$datapath
-    req(!is.null(in_file))
+  # user_data <- reactive({
+  #   req(input$user_file)
+  #   in_file <- input$user_file
+  #   in_file <- in_file$datapath
+  #   req(!is.null(in_file))
 
-    isolate({
-      df <- data.frame()
-      file_type <- "read_excel"
-      # Excel file ---------------
-      if (grepl("xls$|xlsx$", in_file, ignore.case = TRUE)) {
-        try(
-          df <- readxl::read_excel(in_file)
-        )
-        df <- as.data.frame(df)
-      } else {
-        #CSV --------------------
-        try(
-          df <- read.csv(in_file)
-        )
-        file_type <- "read.csv"
-        # Tab-delimented file ----------
-        if (ncol(df) <= 1) { # unable to parse with comma
-          try(
-            df <- read.table(
-              in_file,
-              sep = "\t",
-              header = TRUE
-            )
-          )
-          file_type <- "read.table"
-        }
-      }
+  #   isolate({
+  #     df <- data.frame()
+  #     file_type <- "read_excel"
+  #     # Excel file ---------------
+  #     if (grepl("xls$|xlsx$", in_file, ignore.case = TRUE)) {
+  #       try(
+  #         df <- readxl::read_excel(in_file)
+  #       )
+  #       df <- as.data.frame(df)
+  #     } else {
+  #       #CSV --------------------
+  #       try(
+  #         df <- read.csv(in_file)
+  #       )
+  #       file_type <- "read.csv"
+  #       # Tab-delimented file ----------
+  #       if (ncol(df) <= 1) { # unable to parse with comma
+  #         try(
+  #           df <- read.table(
+  #             in_file,
+  #             sep = "\t",
+  #             header = TRUE
+  #           )
+  #         )
+  #         file_type <- "read.table"
+  #       }
+  #     }
 
-      if (ncol(df) == 0) { # no data read in. Empty
-        return(NULL)
-      } else {
-        # clean column names
-        df <- df %>% janitor::clean_names()
-        return(
-          list(
-            df = df,
-            file_type = file_type
-          )
-        )
-      }
-    })
-  })
+  #     if (ncol(df) == 0) { # no data read in. Empty
+  #       return(NULL)
+  #     } else {
+  #       # clean column names
+  #       df <- df %>% janitor::clean_names()
+  #       return(
+  #         list(
+  #           df = df,
+  #           file_type = file_type
+  #         )
+  #       )
+  #     }
+  #   })
+  # })
 
   selected_data_file <- reactiveVal("mpg")
 
@@ -1221,7 +1222,7 @@ app_server <- function(input, output, session) {
   # Error when run the generated code?
   code_error <- reactive({
     error_status <- FALSE
-    req(input$submit_button != 0)
+    req(input$submit_button != 0) #Require the submit button to be pushed
     if(!input$use_python) { # R
       return(!is.null(run_result()$error_message) && run_result()$error_message != "")
     } else { # Python

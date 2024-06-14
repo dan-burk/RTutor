@@ -59,7 +59,7 @@ app_ui <- function(request) {
               ),
               column(
                 width = 6,
-                actionButton("reset_button", strong("Reset")),
+                actionButton(inputId = "reset_button", label = strong("Reset")),
                 tags$head(tags$style(
                   "#reset_button{font-size: 16px;color: blue}"
                 )),
