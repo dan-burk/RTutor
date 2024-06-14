@@ -250,7 +250,7 @@ app_server <- function(input, output, session) {
         txt <- "Dataset: uploaded."
       }
     } else {
-      txt <- htmltools::HTML(aste0("<span style='font-weight: bold;'>Dataset: </span>", selected_data_file()))
+      txt <- htmltools::HTML(paste0("<span style='font-weight: bold;'>Dataset: </span>", selected_data_file()))
     }
 
     return(txt)
