@@ -42,7 +42,7 @@ app_server <- function(input, output, session) {
         "input_text",
         value = "",
         placeholder =
-" Hi! I am a virtual data scientist. Ask me anything related to public data for the city of Sioux Falls."
+"Hi! I am a virtual data scientist. Ask me anything related to data from Hero MotoCorp Limited."
       )
     }
   })
@@ -239,21 +239,21 @@ app_server <- function(input, output, session) {
   selected_data_file <- reactiveVal("mpg")
 
   # showing the current dataset. Warning if no is uploaded.
-  output$selected_dataset <- renderText({
-      req(input$submit_button)
-      # when submit is clicked, but no data is uploaded.
+  output$selected_dataset <- renderUI({
+    req(input$submit_button)
+    # when submit is clicked, but no data is uploaded.
 
-      if(input$select_data == uploaded_data) {
-        if(is.null(input$user_file)) {
-          txt <- "No file uploaded! Please Reset and upload your data first."
-        } else {
-          txt <- "Dataset: uploaded."
-        }
+    if (input$select_data == uploaded_data) {
+      if (is.null(input$user_file)) {
+        txt <- "No file uploaded! Please Reset and upload your data first."
       } else {
-        txt <- paste0("", selected_data_file())
+        txt <- "Dataset: uploaded."
       }
+    } else {
+      txt <- htmltools::HTML(paste0("<span style='font-weight: bold;'>Dataset: </span>", selected_data_file()))
+    }
 
-      return(txt)
+    return(txt)
   })
 
   output$data_upload_ui <- renderUI({
@@ -778,7 +778,7 @@ app_server <- function(input, output, session) {
                 role = "user", 
                 content = paste(
                   "Identify a single file by file name, without explanation, that contain information related to this question or analytical goal.  Use the latest data.
-                   Respon with \"Not found\" if no file is found. ",
+                   Respond with \"Not found\" if no file is found. ",
                   input$input_text,
                   #"Plot the distribution of residential electricity rates in South Dakota. ",
                   #"Proportion of engergy use in the automotive industry in the US. ", # fail
@@ -3010,6 +3010,28 @@ app_server <- function(input, output, session) {
 
   })
 
+  # 'About' tab FAQ's and answers
+  output$faq_list <- renderUI({
+    faq_items <- lapply(seq_len(nrow(faqs)), function(i) {
+      tags$div(
+        class = "faq-item",
+        tags$h5(
+          class = "faq-question",
+          faqs$question[i]
+        ),
+        tags$p(
+          class = "faq-answer",
+          faqs$answer[i]
+        )
+      )
+    })
+    tagList(faq_items)
+  })
+
+  # 'About' tab Site Updates table
+  output$site_updates_table <- renderTable({
+    site_updates_df
+  }, striped = TRUE)
 
 #
 #  Python
