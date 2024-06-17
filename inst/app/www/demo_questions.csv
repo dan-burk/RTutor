@@ -1,7 +1,7 @@
 ﻿data,R,Python,name,requests,memo
-mpg,1,1, Examples: , Example requests,
-mpg,1,1,Population,Show me Sioux falls population over time.,
-mpg,1,1,Population forecast,Predict Sioux Falls population in 2030.  Visualize it.,
+mpg,1,1,Example Prompts: ,Example requests,
+mpg,1,1,Population,Show me Sioux Falls' population over time.,
+mpg,1,1,Population forecast,Predict Sioux Falls' population in 2030.  Visualize it.,
 mpg,1,1,Crime,Show me the trend of violent crimes.,
 mpg,1,1,High school,Show me information on high schools.,
 mpg,1,1,Parks,Find the top 5 largest parks.,

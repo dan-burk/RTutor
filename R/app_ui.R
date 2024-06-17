@@ -47,16 +47,22 @@ app_ui <- function(request) {
             bottom: 0;
           }
         "),
-        # Sidebar with a slider input for number of bins
+        
+  ##########################################################
+  ####### Sidebar
+  ##########################################################
         sidebarLayout(
           sidebarPanel(
             #uiOutput("timer_ui"),
 
+            # Show selected dataset
             fluidRow(
               column(
                 width = 6,
-                textOutput("selected_dataset")
+                uiOutput("selected_dataset")
               ),
+
+              # Reset Button
               column(
                 width = 6,
                 actionButton(inputId = "reset_button", label = strong("Reset")),
@@ -66,11 +72,12 @@ app_ui <- function(request) {
                 align = "right",
                 tippy::tippy_this(
                   "reset_button",
-                  "Reset before uploading a new file. Clears data objects, chat history, and code chunks.",
+                  "Reset before asking a new question. Clears data objects, chat history, & code chunks.",
                   theme = "light-border"
                 )
               )
             ),
+
             conditionalPanel(
               condition = "0",
               fluidRow(
@@ -95,6 +102,7 @@ app_ui <- function(request) {
             ),
 
             fluidRow(
+              # Submit Button
               column(
                 width = 4,
                 actionButton("submit_button", strong("Submit")),
@@ -107,6 +115,7 @@ app_ui <- function(request) {
                   theme = "light-border"
                 )
               ),
+              # API keys and Python options
               conditionalPanel(
                 condition = "0",
                 column(
@@ -119,6 +128,26 @@ app_ui <- function(request) {
                 )
               )
             ),
+
+            # User FYI
+            h5(style = "font-weight: bold;", "Reset after each question!"),
+            h5("Unsure what to ask?  Submit  'Find data on ____ (i.e. sales)'  first. Look at the 'Data' tab before asking another question."),
+            br(),
+
+            # Show available datasets
+            tags$div(
+              style = "border: 1px solid #ccc; padding: 0px 10px 4px 10px;",
+              tags$h5(style = "font-weight: bold;", "Available Datasets"),
+              tags$textarea(
+                paste(available_datasets, collapse = "\n"),
+                style = "width: 100%; resize: none;",
+                rows = 12,
+                readonly = TRUE
+              )
+            ),
+            br(),
+
+            # User FYI
             conditionalPanel( #hide
               condition = "0",
               br(),
@@ -140,6 +169,8 @@ app_ui <- function(request) {
               shinyjs::hidden(actionButton("ask_button", strong("Ask RTutor")))
             ),
             br(),
+
+            # Data options
             fluidRow(
               column(
                 width = 4,
@@ -155,6 +186,8 @@ app_ui <- function(request) {
                 downloadButton("download_data", "Data")
               ),
             ),
+
+            # User FYI and feedback options
             conditionalPanel(
               condition = "0",
               textOutput("usage"),
@@ -191,9 +224,6 @@ app_ui <- function(request) {
               ),
               actionButton("save_feedbck", "Save Feedback")
             ),
-            br(),
-            h5("Reset after each question!"),
-            h5("Unsure what to ask? Say 'Find data on xxx( i.e. schools)' first. Look at it on the Data tab before asking."),
           ),
 
       ###############################################################################
@@ -208,11 +238,8 @@ app_ui <- function(request) {
               fluidRow(
                 column(
                   width = 9,
-                  h3(
-                    "Sioux Falls Public Data Portal (demo)"
-                  ),
-
-
+                  h3(style = "font-weight: bold;", "Hero MotoCorp Data Portal (demo)"),
+                  h4("Based on available datasets shared by HMCL"),
                   align = "left"
                 ),
                 column(
@@ -225,107 +252,6 @@ app_ui <- function(request) {
                   align = 'left'
                 )
               ),
-              h4("Based on 100+ datasets shared by the City of Sioux Falls on ", 
-                  a("Data.Gov", href = "https://catalog.data.gov/dataset/?organization=city-of-sioux-falls", target = "_blank")),
-              tags$ul(
-
-                tags$li("Address"),
-                tags$li("Airport"),
-                tags$li("Alcohol and Video Lottery Licensing"),
-                tags$li("Alleys"),
-                tags$li("Annexations"),
-                tags$li("Annexations"),
-                tags$li("Artworks"),
-                tags$li("Billboard Opportunity"),
-                tags$li("Bridges"),
-                tags$li("Building Footprints"),
-                tags$li("Building Permits"),
-                tags$li("Bus Routes"),
-                tags$li("Bus Snow Routes"),
-                tags$li("Bus Stops"),
-                tags$li("Capital Improvements Program (CIP) (Lines)"),
-                tags$li("Capital Improvements Program (CIP) (Points)"),
-                tags$li("City Council Districts, Precincts, and Addresses"),
-                tags$li("City Limits"),
-                tags$li("Civil Air Patrol Photos Spring 2019"),
-                tags$li("Commercial Projects"),
-                tags$li("Community Safety Zone"),
-                tags$li("Community Safety Zone Parcels"),
-                tags$li("Crime Free Mobile Homes"),
-                tags$li("Crime Free Multi Housing"),
-                tags$li("Curb Ramps"),
-                tags$li("Development Areas"),
-                tags$li("Easements"),
-                tags$li("Elementary School Bus Zones"),
-                tags$li("Elementary School Districts"),
-                tags$li("Emergency Shelters"),
-                tags$li("Entertainment Tax Growth"),
-                tags$li("Essential Responders"),
-                tags$li("Fire Dispatch Quadrants"),
-                tags$li("Fire Incidents"),
-                tags$li("Fire Station Territory"),
-                tags$li("Fire Stations"),
-                tags$li("Fire Travel Time"),
-                tags$li("Flood Restrictions in the City (FRIC)"),
-                tags$li("Historic Districts"),
-                tags$li("Historic Properties"),
-                tags$li("Hospitals"),
-                tags$li("Impervious"),
-                tags$li("Lakes"),
-                tags$li("Lincoln County Case Data"),
-                tags$li("Manufactured Housing Parks"),
-                tags$li("Middle School Bus Zones"),
-                tags$li("Middle School Districts"),
-                tags$li("Minnehaha Case Data"),
-                tags$li("Murals"),
-                tags$li("Neighborhood Associations"),
-                tags$li("Neighborhood Revitalization Program"),
-                tags$li("Neighborhood Watch Areas"),
-                tags$li("Nonprofit Organizations"),
-                tags$li("Off Premise Signs"),
-                tags$li("Off Premise Signs Buffers"),
-                tags$li("Parcels"),
-                tags$li("Park Amenities"),
-                tags$li("Park Fences"),
-                tags$li("Parks"),
-                tags$li("Pedestrian Signals"),
-                tags$li("PLSS Sections"),
-                tags$li("Police Calls for Service by Year"),
-                tags$li("Preliminary Parcels"),
-                tags$li("Rivers"),
-                tags$li("Salaried Workers"),
-                tags$li("Sales Tax Growth"),
-                tags$li("Sanitary Availability"),
-                tags$li("Schools"),
-                tags$li("Sidewalks"),
-                tags$li("Single Family Housing"),
-                tags$li("Sioux Falls Case Data"),
-                tags$li("Snow Districts"),
-                tags$li("Snow Routes"),
-                tags$li("South Dakota Case Data"),
-                tags$li("Street Names"),
-                tags$li("Street Query"),
-                tags$li("Streets"),
-                tags$li("Streets Pavement Condition"),
-                tags$li("Subdivisions"),
-                tags$li("Surface Water Quality Monitoring Data"),
-                tags$li("Sweeping Districts"),
-                tags$li("Total Permits"),
-                tags$li("Total Population"),
-                tags$li("Traffic Counts"),
-                tags$li("Traffic Counts (Model)"),
-                tags$li("Trees"),
-                tags$li("Unemployment Rate"),
-                tags$li("Vacated Streets"),
-                tags$li("Veterans Parkway Corridor"),
-                tags$li("Veterans Parkway Striping"),
-                tags$li("Violent Crimes by Year"),
-                tags$li("Voting Precincts"),
-                tags$li("Zoning"),
-                tags$li("Zoning - Conditional Rezoning")
-
-              )
-            
             ),
             conditionalPanel(
               condition = "input.submit_button != 0",
@@ -402,14 +328,22 @@ app_ui <- function(request) {
           ) #mainPanel
         ) #sideBarpanel
       ), #tabPanel
+
+      #############################
+      # 'Data' Tab Panel
       tabPanel(
-        title = "Data",
+        title = div(id = "data_tab", "Data"),
         value = "Data",
+        tippy::tippy_this(
+          "data_tab",
+          "Dataset Preview",
+          theme = "light-border"
+        ),
         shinyjs::hidden(
           div(
             id = "first_file",
             hr(),
-            h4("Default dataset:  df"),
+            h4("Dataset:  df"),
             textOutput("data_size"),
             DT::dataTableOutput("data_table_DT")
           )
@@ -426,9 +360,17 @@ app_ui <- function(request) {
         )
         #,tableOutput("data_table"),
       ),
+
+      #############################
+      # 'EDA' Tab Panel
       tabPanel(
-        title = "EDA",
+        title = div(id = "eda_tab", "EDA"),
         value = "EDA",
+        tippy::tippy_this(
+          "eda_tab",
+          "Exploratory Data Analysis",
+          theme = "light-border"
+        ),
         tabsetPanel(
           tabPanel(
             title = "Basic",
@@ -543,6 +485,8 @@ app_ui <- function(request) {
         )
       ),
 
+      #############################
+      # 'Report' Tab Panel
       tabPanel(
         title = "Report",
         value = "Report",
@@ -576,8 +520,8 @@ app_ui <- function(request) {
         verbatimTextOutput("rmd_chunk_output")
       ),
 
-
-
+      #############################
+      # 'About' Tab Panel
       tabPanel(
         title = "About",
         value = "About",
@@ -657,201 +601,54 @@ app_ui <- function(request) {
 
         hr(),
 
-        h3("Frequently asked questions:"),
+        # FAQ drop down component
+        fluidRow(
+          column(
+            width = 6,
 
-        h5("1.	What is RTutor?"),
-        p("It is an artificial intelligence (AI)-based app that enables 
-        users to interact with your data via natural language.
-        After uploading a 
-        dataset, users ask questions about or request analyses in 
-        English. The app generates and runs R code to answer that question 
-        with plots and numeric results."),
+            h4(style = "font-weight: bold;", "Frequently Asked Questions"),
+            uiOutput("faq_list"),
+            tags$style(htmltools::HTML("
+              .faq-answer {
+                display: none;
+                padding-left: 10px;
+              }
+              .faq-question {
+                cursor: pointer;
+                padding: 5px;
+                border: 1px solid #ccc;
+                background-color: #f1f1f1;
+              }
+            ")),
+            tags$script(htmltools::HTML('
+              $(document).on("click", ".faq-question", function() {
+                var answer = $(this).next(".faq-answer");
+                if (answer.is(":visible")) {
+                  answer.hide();
+                } else {
+                  answer.show();
+                }
+              });
+            '))
+          ),
 
-        h5("2.	How does RTutor work?"),
-        p("The requests are structured and sent to OpenAI’s AI
-        system, which returns R code. The R code is cleaned up and 
-        executed in a Shiny 
-        environment, showing results or error messages. Multiple 
-        requests are logged to produce an R Markdown file, which can be
-          knitted into an HTML report. This enables record keeping 
-          and reproducibility."),
-
-        h5("3. Is my data uploaded to OpenAI?"),
-        p("No. The column names of your data, not the data itself, is sent to OpenAI as a prompt to generate R code. Your data is not stored in our server after the session."),
-
-        h5("4.	Who is it for?"),
-        p("The primary goal is to help people with some R experience to learn
-        R or be more productive. RTutor can be used to quickly speed up the 
-        coding process using R. It gives you a draft code to test and 
-        refine. Be wary of bugs and errors. "),
-
-        h5("5.	How do you make sure the results are correct? "),
-        p("Try to word your question differently. And try 
-        the same request several time. A higher temperature parameter will give 
-        diverse choices. Then users can double-check to see 
-        if you get the same results from different runs."),
-
-        h5("6.	Can you use RTutor to do R coding homework?"),
-        p("No. That will defy the purpose. You need to learn
-        R coding properly to be able to tell if the generated 
-        R coding is correct.  "),
-
-        h5("7.	Can private companies use RTutor? "),
-        p("No. It can be tried as a demo. RTutor website 
-        dnd source code are freely available for non-profit organizations
-        only and distributed using the CC NC 3.0 license."),
-
-        h5("8.	Can you run RTutor locally?"),
-        p("Yes. Download the R package and install it locally. 
-        Then you need to obtain an API key from OpenAI."),
-
-        h5("9.	Why do I get different results with the same request? "),
-        p("OpenAI’s language model has a certain degree of randomness 
-        that could be adjusted by parameters called \"temperature\". 
-        Set this in  Settings"),
-
-        h5("10.	Can people without R coding experience use RTutor for statistical analysis? "),
-        p("Not entirely. This is because the generated code can be wrong.
-        However, it could be used to quickly conduct data 
-        visualization, and exploratory data analysis (EDA). 
-        Just be mindful of this experimental technology. "),
-
-        h5("11.	Can this replace statisticians or data scientists?"),
-        p("No. But RTutor can make them more efficient."),
-
-        h5("12.	How do I  write my request effectively?"),
-        p("Imagine you have a summer intern, 
-        a collge student 
-        who took one semester of statistics and R. You send the 
-        intern emails with instructions and he/she sends 
-        back code and results. The intern is not experienced, 
-        thus error-prone, but is hard working. Thanks to AI, this
-        intern is lightning fast and nearly free."),
-
-        h5("13. Can I install R package in the AI generated code?"),
-        p("No. But we are working to pre-install all the R
-          packages on the server! Right now we finished the top 5000 most 
-          frequently used R packages. Chances are that your favorite package
-          is already installed."),
-
-        h5("14. Can I upload big files to the site?"),
-        p("Not if it is more than 10MB. Try to get a small portion of your data. 
-        Upload it to the site to get the code, which can be run locally on your 
-        laptop. Alternatively, download RTutor R package, and use it from your
-        own computer."),
-
-
-        h5("15. Voice input does not work!"),
-        p("One of the main reason
-        is that your browser block the website site from accessing the microphone. 
-        Make sure you access the site using",
-        a(
-          "https://RTutor.ai.",
-          href = "https://RTutor.ai"
-        ),
-        "With http, mic access is automatically blocked in Chrome.
-        Speak closer to the mic. Make sure there 
-        is only one browser tab using the mic. "),
-
-        h5("16. Is that your photo? "),
-        p("No. I am an old guy. The photo was synthesized by AI. 
-        Using prompts \'statistics tutor\', the image was generated by ",
-        a(
-          "Stable Diffusion 2.0.",
-          href = "https://stability.ai/"
-        ),
-        "If you look carefully, you can see that her fingers are messed up."),
-
-
-        hr(),
-        h4("Update log:"),
-        tags$ul(
-           tags$li(
-            "v0.98.3  11/1/2023. Fix issue with EDA report when the target variable is categorical or not specified."
-          ),  
-           tags$li(
-            "v0.98.2  11/1/2023. Comprehensive EDA report!"
-          ),           
-          tags$li(
-            "v 0.98  10/28/2023. Ask questions about code, error. Second data file upload."
-          ),          
-          tags$li(
-            "v 0.97  10/23/2023. GPT-4 becomes the default. Make ggplot2 a preferred method for plotting.
-             Use R environment to enable successive data manipulation."
-          ),
-          tags$li(
-            "v 0.96  9/26/2023. Include column names in all requests. GPT-4 is available."
-          ),
-          tags$li(
-            "v 0.95  6/11/2023. ChatGPT(gpt-3.5-turbo) becomes default model."
-          ),
-          tags$li(
-            "v 0.94  4/21/2023. Interactive plots using CanvasXpress."
-          ),
-          tags$li(
-            "v 0.93  3/26/2023. Change data types. Add data description. Improve voice input."
-          ),
-          tags$li(
-            "v 0.92  3/8/2023. Includes description of data structure in prompt."
-          ),
-          tags$li(
-            "v 0.91  2/6/2023. Voice input is improved. 
-            Just enable micphone and say Tutor..."
-          ),
-          tags$li(
-            "v 0.90  1/15/2023. Generates and runs Pyton code in addition to R!"
-          ),
-          tags$li(
-            "v 0.8.6  1/8/2023. Add description of the levels in factors."
-          ),
-          tags$li(
-            "v 0.8.5  1/6/2023. Demo in many foreign languages."
-          ),
-          tags$li(
-            "v 0.8.4  1/5/2023. Collect  user feedback."
-          ),
-          tags$li(
-            "v 0.8.3  1/5/2023. Collect some user data for improvement."
-          ),
-          tags$li(
-            "v 0.8.2  1/4/2023. Auto convert first column as row names."
-          ),
-          tags$li(
-            "v 0.8.1  1/3/2023. Option to convert some numeric columns with few unique levels to factors."
-          ),
-          tags$li(
-            "v 0.8.0  1/3/2023. Add description of columns (numeric vs. categorical)."
-          ),
-          tags$li(
-            "v 0.7.6 12/31/2022. Add RNA-seq data and example requests."
-          ),
-          tags$li(
-            "v 0.7.5 12/31/2022. Redesigned UI."
-          ),
-          tags$li(
-            "v 0.7 12/27/2022. Add EDA tab."
-          ),
-          tags$li(
-            "v 0.6 12/27/2022. Keeps record of all code chunks for resue and report."
-          ),
-          tags$li(
-            "v 0.5 12/24/2022. Keep current code and continue."
-          ),
-          tags$li(
-            "v 0.4 12/23/2022. Interactive plot. Voice input optional."
-          ),
-          tags$li(
-            "v0.3 12/20/2022. Add voice recognition."
-          ),
-          tags$li(
-            "V0.2 12/16/2022. Add temperature control. Server reboot reminder."
-          ),
-          tags$li(
-            "V0.1 12/11/2022. Initial launch"
+          # Site Update Log component
+          column(
+            width = 6,
+            h4(style = "font-weight: bold;", "Site Updates Log"),
+            tableOutput("site_updates_table")
           )
         ),
+
         hr(),
-        uiOutput("session_info")
+
+        # Session Info Section
+        fluidRow(
+          column(
+            width = 12,
+            uiOutput("session_info")
+          )
+        ),
       ),
 
 #      tabPanel(
