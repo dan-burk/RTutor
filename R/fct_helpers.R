@@ -86,7 +86,8 @@ on_server <- "on_server.txt"
 
 
 # folder with RDS files
-data_path <- "../../data/datasets/"
+# data_path <- "../../data/datasets/"
+data_path <- "C:/Users/Daniel Burkhalter/OneDrive/RTutor/Data Vault/sioux_falls_datasets/"
 
 # load meta data, from JSON file
 meta_data <- function() {
