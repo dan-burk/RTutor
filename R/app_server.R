@@ -27,7 +27,7 @@ app_server <- function(input, output, session) {
 
   pdf(NULL) #otherwise, base R plots sometimes do not show.
 
-  # load demo data when clicked
+  # load demo data when clicked. I feel like this should be lower in the server code.
   observeEvent(input$demo_prompt, {
     req(input$select_data)
     if (input$demo_prompt != demo$requests[1]) {
@@ -47,13 +47,13 @@ app_server <- function(input, output, session) {
     }
   })
 
-  observeEvent(input$user_file, {
-    updateSelectInput(
-      session,
-      "select_data",
-      selected = uploaded_data
-    )
-  }, ignoreInit = TRUE, once = TRUE)
+  # observeEvent(input$user_file, {
+  #   updateSelectInput(
+  #     session,
+  #     "select_data",
+  #     selected = uploaded_data
+  #   )
+  # }, ignoreInit = TRUE, once = TRUE)
 
 
   observe({
@@ -63,10 +63,11 @@ app_server <- function(input, output, session) {
   # after file is uploaded, hide some UI elements. 
   # https://stackoverflow.com/questions/19686581/make-conditionalpanel-depend-on-files-uploaded-with-fileinput
   # On the UI, changed to output.file_uploaded == 0
-  output$file_uploaded <- reactive({
-    return(!is.null(input$user_file))
-  })
-  outputOptions(output, 'file_uploaded', suspendWhenHidden = FALSE)
+
+  # output$file_uploaded <- reactive({
+  #   return(!is.null(input$user_file))
+  # })
+  # outputOptions(output, 'file_uploaded', suspendWhenHidden = FALSE)
 
   observeEvent(input$reset_button, {
     # reset session
@@ -80,93 +81,93 @@ app_server <- function(input, output, session) {
 
   # had to use this. Otherwise, the checkbox returns to false
   # when the popup is closed and openned again.
-  use_voice <- reactive({
-      use_voice <- FALSE #default
-      tem <- is.null(input$use_voice_button)
-      if(!is.null(input$use_voice)) {
-        use_voice <- input$use_voice
-      }
-      return(use_voice)
-  })
+  # use_voice <- reactive({
+  #     use_voice <- FALSE #default
+  #     tem <- is.null(input$use_voice_button)
+  #     if(!is.null(input$use_voice)) {
+  #       use_voice <- input$use_voice
+  #     }
+  #     return(use_voice)
+  # })
 
   # Use voice input?
-  output$use_heyshiny <- renderUI({
-    req(use_voice())
-      tagList(
-        heyshiny::useHeyshiny(language = "en-US"), # configure the heyshiny
-        heyshiny::speechInput(
-          inputId = "hey_cmd",
-          command = paste(wake_word, "*msg")  # hey cox is more sensitive than 'hi tutor'
-        ), # set the input
-      )
-  })
+  # output$use_heyshiny <- renderUI({
+  #   req(use_voice())
+  #     tagList(
+  #       heyshiny::useHeyshiny(language = "en-US"), # configure the heyshiny
+  #       heyshiny::speechInput(
+  #         inputId = "hey_cmd",
+  #         command = paste(wake_word, "*msg")  # hey cox is more sensitive than 'hi tutor'
+  #       ), # set the input
+  #     )
+  # })
 
    # read the speech input
-  observeEvent(input$hey_cmd, {
-    speech <- input$hey_cmd
-    # message(speech)
-    #showNotification(speech)
+  # observeEvent(input$hey_cmd, {
+  #   speech <- input$hey_cmd
+  #   # message(speech)
+  #   #showNotification(speech)
 
-    if (input$tabs == "Home")    {
-      if (grepl("^continue", speech)) {
-        speech <- paste0(
-          input$input_text, # current prompt
-          ". ",  # add . and space.
-          gsub("^continue", "", speech) # remove the continue
-        )
-      }
-      # submit the request when user said  action verb
-      if (tolower(speech) %in% action_verbs) {
-        shinyjs::click("submit_button")
-      } else {
-        updateTextInput(
-          session,
-          "input_text",
-          value = speech
-        )
-      }
+  #   if (input$tabs == "Home")    {
+  #     if (grepl("^continue", speech)) {
+  #       speech <- paste0(
+  #         input$input_text, # current prompt
+  #         ". ",  # add . and space.
+  #         gsub("^continue", "", speech) # remove the continue
+  #       )
+  #     }
+  #     # submit the request when user said  action verb
+  #     if (tolower(speech) %in% action_verbs) {
+  #       shinyjs::click("submit_button")
+  #     } else {
+  #       updateTextInput(
+  #         session,
+  #         "input_text",
+  #         value = speech
+  #       )
+  #     }
 
-    } else if (input$tabs == "Ask") {
-      # submit the request when user said  action verb
-      if (tolower(speech) %in% action_verbs) {
-        shinyjs::click("ask_button")
-      } else {
-        updateTextInput(
-          session,
-          "ask_question",
-          value = speech
-        )
-      }
-    }
+  #   } else if (input$tabs == "Ask") {
+  #     # submit the request when user said  action verb
+  #     if (tolower(speech) %in% action_verbs) {
+  #       shinyjs::click("ask_button")
+  #     } else {
+  #       updateTextInput(
+  #         session,
+  #         "ask_question",
+  #         value = speech
+  #       )
+  #     }
+  #   }
 
-  })
+  # })
 
   # copy error message
-  observeEvent(code_error(), {
-    # not Davinci
-    req(selected_model() != "text-davinci-003")
-    req(code_error())
-    output$send_error_message <- renderUI({
-      tagList(
-        actionButton(
-          inputId = "send_error",
-          label = strong("Copy error message")
-        ),
-        tags$head(tags$style(
-          "#send_error{font-size: 16px;color: purple}"
-        ))
-      )
-    })
-  })
+  # observeEvent(code_error(), {
+  #   # not Davinci
+  #   req(selected_model() != "text-davinci-003")
+  #   req(code_error())
+  #   output$send_error_message <- renderUI({
+  #     tagList(
+  #       actionButton(
+  #         inputId = "send_error",
+  #         label = strong("Copy error message")
+  #       ),
+  #       tags$head(tags$style(
+  #         "#send_error{font-size: 16px;color: purple}"
+  #       ))
+  #     )
+  #   })
+  # })
 
-  observeEvent(input$send_error, {
+  # observeEvent(input$send_error, {
 
-    updateTextInput(
-      session,
-      "input_text",
-      value = paste0("Fix this error from running the last chunk. Error: ", run_result()$error_message)
-    )
-  })
+  #   updateTextInput(
+  #     session,
+  #     "input_text",
+  #     value = paste0("Fix this error from running the last chunk. Error: ", run_result()$error_message)
+  #   )
+  # })
 
 # Show notification when error
   observeEvent(code_error(), {
@@ -187,97 +188,104 @@ app_server <- function(input, output, session) {
   #____________________________________________________________________________
 
   # uploaded data
-  user_data <- reactive({
-    req(input$user_file)
-    in_file <- input$user_file
-    in_file <- in_file$datapath
-    req(!is.null(in_file))
+  # user_data <- reactive({
+  #   req(input$user_file)
+  #   in_file <- input$user_file
+  #   in_file <- in_file$datapath
+  #   req(!is.null(in_file))
 
-    isolate({
-      df <- data.frame()
-      file_type <- "read_excel"
-      # Excel file ---------------
-      if (grepl("xls$|xlsx$", in_file, ignore.case = TRUE)) {
-        try(
-          df <- readxl::read_excel(in_file)
-        )
-        df <- as.data.frame(df)
-      } else {
-        #CSV --------------------
-        try(
-          df <- read.csv(in_file)
-        )
-        file_type <- "read.csv"
-        # Tab-delimented file ----------
-        if (ncol(df) <= 1) { # unable to parse with comma
-          try(
-            df <- read.table(
-              in_file,
-              sep = "\t",
-              header = TRUE
-            )
-          )
-          file_type <- "read.table"
-        }
-      }
+  #   isolate({
+  #     df <- data.frame()
+  #     file_type <- "read_excel"
+  #     # Excel file ---------------
+  #     if (grepl("xls$|xlsx$", in_file, ignore.case = TRUE)) {
+  #       try(
+  #         df <- readxl::read_excel(in_file)
+  #       )
+  #       df <- as.data.frame(df)
+  #     } else {
+  #       #CSV --------------------
+  #       try(
+  #         df <- read.csv(in_file)
+  #       )
+  #       file_type <- "read.csv"
+  #       # Tab-delimented file ----------
+  #       if (ncol(df) <= 1) { # unable to parse with comma
+  #         try(
+  #           df <- read.table(
+  #             in_file,
+  #             sep = "\t",
+  #             header = TRUE
+  #           )
+  #         )
+  #         file_type <- "read.table"
+  #       }
+  #     }
 
-      if (ncol(df) == 0) { # no data read in. Empty
-        return(NULL)
-      } else {
-        # clean column names
-        df <- df %>% janitor::clean_names()
-        return(
-          list(
-            df = df,
-            file_type = file_type
-          )
-        )
-      }
-    })
-  })
+  #     if (ncol(df) == 0) { # no data read in. Empty
+  #       return(NULL)
+  #     } else {
+  #       # clean column names
+  #       df <- df %>% janitor::clean_names()
+  #       return(
+  #         list(
+  #           df = df,
+  #           file_type = file_type
+  #         )
+  #       )
+  #     }
+  #   })
+  # })
 
   selected_data_file <- reactiveVal("mpg")
 
   # showing the current dataset. Warning if no is uploaded.
-  output$selected_dataset <- renderUI({
-    req(input$submit_button)
-    # when submit is clicked, but no data is uploaded.
+  
+  output$selected_dataset <- renderText({
+      req(input$submit_button)
+      # when submit is clicked, but no data is uploaded -- Not Applicable in HMCL
+      # When submit is clicked, and data is uploaded -- Not Applicable in HMCL
+      # When submit is clicked, and user selects preloaded data
+      txt <- paste0("", selected_data_file())
+      return(txt)
 
-    if (input$select_data == uploaded_data) {
-      if (is.null(input$user_file)) {
-        txt <- "No file uploaded! Please Reset and upload your data first."
-      } else {
-        txt <- "Dataset: uploaded."
-      }
-    } else {
-      txt <- htmltools::HTML(paste0("<span style='font-weight: bold;'>Dataset: </span>", selected_data_file()))
-    }
+      # if(input$select_data == uploaded_data) {
+      #   if(is.null(input$user_file)) {
+      #     txt <- "No file uploaded! Please Reset and upload your data first."
+      #   } else {
+      #     txt <- "Dataset: uploaded."
+      #   }
+      # } else {
+      #   txt <- paste0("", selected_data_file())
+      # }
 
-    return(txt)
+      # return(txt)
+
   })
 
-  output$data_upload_ui <- renderUI({
+  # output$data_upload_ui <- renderUI({
 
-    # Hide this input box after the first run.
-    req(input$submit_button == 0)
-    req(is.null(input$user_file))
-    fileInput(
-      inputId = "user_file",
-      label = "File Upload",
-      accept = c(
-        "text/csv",
-        "text/comma-separated-values",
-        "text/tab-separated-values",
-        "text/plain",
-        ".csv",
-        ".tsv",
-        ".txt",
-        ".xls",
-        ".xlsx"
-      )
-    )
-  })
+  #   # Hide this input box after the first run.
+  #   req(input$submit_button == 0) #Hasn't hit submit yet
+  #   req(is.null(input$user_file)) #User file
+  #   fileInput(
+  #     inputId = "user_file",
+  #     label = "File Upload",
+  #     accept = c(
+  #       "text/csv",
+  #       "text/comma-separated-values",
+  #       "text/tab-separated-values",
+  #       "text/plain",
+  #       ".csv",
+  #       ".tsv",
+  #       ".txt",
+  #       ".xls",
+  #       ".xlsx"
+  #     )
+  #   )
+  # })
 
+  #1st Drop down selection box, not shown in UI but running on Server!!
   output$demo_data_ui <- renderUI({
 
     # Hide this input box after the first run.
@@ -287,17 +295,18 @@ app_server <- function(input, output, session) {
       inputId = "select_data",
       label = "Data",
       choices = datasets,
-      selected = "mpg",
+      selected = "mpg", #Change this to an HMCL dataset
       multiple = FALSE,
       selectize = FALSE
     )
 
   })
-
+  
+  #
   output$prompt_ui <- renderUI({
     req(input$select_data)
     # hide after data is uploaded
-    req(is.null(input$user_file))
+    # req(is.null(input$user_file)) #Not a necessary condition when removing this option
 
     # subset based on dataset
     demo_related <- subset(
@@ -321,7 +330,7 @@ app_server <- function(input, output, session) {
     choices <- demo_related$requests
     names(choices) <- demo_related$name
 
-    if (input$select_data %in% c("mpg", no_data, "diamonds", rna_seq)) {
+    if (input$select_data %in% c("mpg", no_data, "diamonds", rna_seq)) { #Default is select_data == "mpg"
       return(
         selectInput(
           inputId = "demo_prompt",
@@ -337,207 +346,207 @@ app_server <- function(input, output, session) {
   # API key management
   #____________________________________________________________________________
   # pop up modal for Settings
-  observeEvent(input$api_button, {
-    shiny::showModal(
-      shiny::modalDialog(
-        size = "l",
-        footer = modalButton("Confirm"),
-                # Custom CSS to make the chat area scrollable
-        tags$head(
-            tags$style(HTML("
-                #settings_window {
-                    height: 400px;  /* Adjust the height as needed */
-                    overflow-y: auto;  /* Enables vertical scrolling */
-                    padding: 10px;
-                    border-radius: 5px;
-                }
-            "))
-        ),
-        div( id = "settings_window", 
+  # observeEvent(input$api_button, { #Not a feature of HMCL app
+  #   shiny::showModal(
+  #     shiny::modalDialog(
+  #       size = "l",
+  #       footer = modalButton("Confirm"),
+  #               # Custom CSS to make the chat area scrollable
+  #       tags$head(
+  #           tags$style(HTML("
+  #               #settings_window {
+  #                   height: 400px;  /* Adjust the height as needed */
+  #                   overflow-y: auto;  /* Enables vertical scrolling */
+  #                   padding: 10px;
+  #                   border-radius: 5px;
+  #               }
+  #           "))
+  #       ),
+  #       div( id = "settings_window", 
 
-          tagList(
-            fluidRow(
-              column(
-                width = 2,
-                "Model:",
-                align = "center"
-              ),
-              column(
-                width = 10,
-                align = "left",
-                selectInput(
-                  inputId = "language_model",
-                  choices = language_models,
-                  label = NULL,
-                  selected = selected_model()
-                )
-              ),
-              column(
-                width = 4,
-                sliderInput(
-                  inputId = "temperature",
-                  label = "Sampling temperature",
-                  min = 0,
-                  max = 1,
-                  value = sample_temp(),
-                  step = .1,
-                  round = FALSE,
-                  width = "100%"
-                )
-              ),
-              column(
-                width = 8,
-                p("This important parameter controls the AI's behavior in choosing 
-                among possible answers. A higher sampling temperature tells the AI 
-                to take more risks, producing more diverse and creative 
-                solutions when the same request is repeated. A lower  temperature
-                (such as 0) results in more
-                conservative and well-defined solutions, 
-                but less variety when repeated.
-                "),
-              )
-            ),
-            hr(),
-            h4("Use your own API key"),
-            h5("We pay a small fee to use the AI for every request.
-              If you use this regularily, 
-              please take a few minutes to create your own API key: "),
+  #         tagList(
+  #           fluidRow(
+  #             column(
+  #               width = 2,
+  #               "Model:",
+  #               align = "center"
+  #             ),
+  #             column(
+  #               width = 10,
+  #               align = "left",
+  #               selectInput(
+  #                 inputId = "language_model",
+  #                 choices = language_models,
+  #                 label = NULL,
+  #                 selected = selected_model()
+  #               )
+  #             ),
+  #             column(
+  #               width = 4,
+  #               sliderInput(
+  #                 inputId = "temperature",
+  #                 label = "Sampling temperature",
+  #                 min = 0,
+  #                 max = 1,
+  #                 value = sample_temp(),
+  #                 step = .1,
+  #                 round = FALSE,
+  #                 width = "100%"
+  #               )
+  #             ),
+  #             column(
+  #               width = 8,
+  #               p("This important parameter controls the AI's behavior in choosing 
+  #               among possible answers. A higher sampling temperature tells the AI 
+  #               to take more risks, producing more diverse and creative 
+  #               solutions when the same request is repeated. A lower  temperature
+  #               (such as 0) results in more
+  #               conservative and well-defined solutions, 
+  #               but less variety when repeated.
+  #               "),
+  #             )
+  #           ),
+  #           hr(),
+  #           h4("Use your own API key"),
+  #           h5("We pay a small fee to use the AI for every request.
+  #             If you use this regularily, 
+  #             please take a few minutes to create your own API key: "),
 
-            tags$ul(
-                tags$li(
-                  "Create a personal account at",
-                  a(
-                    "OpenAI.",
-                    href = "https://openai.com/api/",
-                    target = "_blank"
-                  )
-                ),
-                tags$li("After logging in, click \"Personal\" from top right."),
-                tags$li(
-                  "Click \"Manage Account\" and then \"Billing\",
-                  where you can add \"Payment methods\" and set \"Usage 
-                  limits\". $5 per month is more than enough."
-                ),
-                tags$li(
-                  "Click \"API keys\" to create a new key, 
-                  which can be copied and pasted it below."
-                ),
-            ),
-            textInput(
-              inputId = "api_key",
-              label = h5("Paste your API key from OpenAI:"),
-              value = NULL,
-              placeholder = "sk-..... (51 characters)"
-            ),
-            uiOutput("valid_key"),
-            uiOutput("save_api_ui"),
-            verbatimTextOutput("session_api_source"),
-          ),
+  #           tags$ul(
+  #               tags$li(
+  #                 "Create a personal account at",
+  #                 a(
+  #                   "OpenAI.",
+  #                   href = "https://openai.com/api/",
+  #                   target = "_blank"
+  #                 )
+  #               ),
+  #               tags$li("After logging in, click \"Personal\" from top right."),
+  #               tags$li(
+  #                 "Click \"Manage Account\" and then \"Billing\",
+  #                 where you can add \"Payment methods\" and set \"Usage 
+  #                 limits\". $5 per month is more than enough."
+  #               ),
+  #               tags$li(
+  #                 "Click \"API keys\" to create a new key, 
+  #                 which can be copied and pasted it below."
+  #               ),
+  #           ),
+  #           textInput(
+  #             inputId = "api_key",
+  #             label = h5("Paste your API key from OpenAI:"),
+  #             value = NULL,
+  #             placeholder = "sk-..... (51 characters)"
+  #           ),
+  #           uiOutput("valid_key"),
+  #           uiOutput("save_api_ui"),
+  #           verbatimTextOutput("session_api_source"),
+  #         ),
 
-          hr(),
-          fluidRow(
-            column(
-              width = 4,
-              checkboxInput(
-                inputId = "numeric_as_factor",
-                label = strong("Treat as factors"),
-                value = convert_to_factor()
-              ),
-              tippy::tippy_this(
-                elementId = "numeric_as_factor",
-                tooltip = "Treat the columns that looks like a category 
-                as a category. This applies to columns that contain numbers
-                but have very few unique values. ",
-                theme = "light-border"
-              )
-            ),
-            column(
-              width = 4,
-              numericInput(
-                inputId = "max_levels_factor",
-                label = "Max levels",
-                value = max_levels_factor(),
-                min = 3,
-                max = 50,
-                step = 1
-              ),
-              tippy::tippy_this(
-                elementId = "max_levels_factor",
-                tooltip = "To convert a numeric column as category, 
-                the column must have no more than this number of unique values.",
-                theme = "light-border"
-              )
-            ),
-            column(
-              width = 4,
-              numericInput(
-                inputId = "max_proptortion_factor",
-                label = "Max proportion",
-                value = max_proptortion_factor(),
-                min = 0.05,
-                max = 0.5,
-                step = 0.1
-              ),
-              tippy::tippy_this(
-                elementId = "max_proptortion_factor",
-                tooltip = "To convert a numeric column as category, 
-                the number of unique values in a column must not exceed 
-                more this proportion of the total number of rows.",
-                theme = "light-border"
-              )
-            )
-          ),
-          h5("Some columns contains numbers but should be treated 
-          as categorical values or factors. For example, we sometimes 
-          use 1 to label success and 0 for failure.
-          If this is selected, using the default setting, a column 
-          is treated as categories when the number of unique values 
-          is less than or equal to 12, and less than 10% of the total rows."
-          ),
-          hr(),
-          fluidRow(
-            column(
-              width = 4,
-              checkboxInput(
-                inputId = "contribute_data",
-                label = "Help us make RTutor better",
-                value = contribute_data()
-              )
-            ),
-            column(
-              width = 8,
-              h5("Save your requests and the structure of your data 
-              such as column names and data types, not the data itself. 
-              We can learn from users about creative ways to use AI. 
-              And we can try to improve unsuccessful attempts. ")
-            )
-          )
-        ), #div
-        easyClose = TRUE
-      )
-    )
-  })
+  #         hr(),
+  #         fluidRow(
+  #           column(
+  #             width = 4,
+  #             checkboxInput(
+  #               inputId = "numeric_as_factor",
+  #               label = strong("Treat as factors"),
+  #               value = convert_to_factor()
+  #             ),
+  #             tippy::tippy_this(
+  #               elementId = "numeric_as_factor",
+  #               tooltip = "Treat the columns that looks like a category 
+  #               as a category. This applies to columns that contain numbers
+  #               but have very few unique values. ",
+  #               theme = "light-border"
+  #             )
+  #           ),
+  #           column(
+  #             width = 4,
+  #             numericInput(
+  #               inputId = "max_levels_factor",
+  #               label = "Max levels",
+  #               value = max_levels_factor(),
+  #               min = 3,
+  #               max = 50,
+  #               step = 1
+  #             ),
+  #             tippy::tippy_this(
+  #               elementId = "max_levels_factor",
+  #               tooltip = "To convert a numeric column as category, 
+  #               the column must have no more than this number of unique values.",
+  #               theme = "light-border"
+  #             )
+  #           ),
+  #           column(
+  #             width = 4,
+  #             numericInput(
+  #               inputId = "max_proptortion_factor",
+  #               label = "Max proportion",
+  #               value = max_proptortion_factor(),
+  #               min = 0.05,
+  #               max = 0.5,
+  #               step = 0.1
+  #             ),
+  #             tippy::tippy_this(
+  #               elementId = "max_proptortion_factor",
+  #               tooltip = "To convert a numeric column as category, 
+  #               the number of unique values in a column must not exceed 
+  #               more this proportion of the total number of rows.",
+  #               theme = "light-border"
+  #             )
+  #           )
+  #         ),
+  #         h5("Some columns contains numbers but should be treated 
+  #         as categorical values or factors. For example, we sometimes 
+  #         use 1 to label success and 0 for failure.
+  #         If this is selected, using the default setting, a column 
+  #         is treated as categories when the number of unique values 
+  #         is less than or equal to 12, and less than 10% of the total rows."
+  #         ),
+  #         hr(),
+  #         fluidRow(
+  #           column(
+  #             width = 4,
+  #             checkboxInput(
+  #               inputId = "contribute_data",
+  #               label = "Help us make RTutor better",
+  #               value = contribute_data()
+  #             )
+  #           ),
+  #           column(
+  #             width = 8,
+  #             h5("Save your requests and the structure of your data 
+  #             such as column names and data types, not the data itself. 
+  #             We can learn from users about creative ways to use AI. 
+  #             And we can try to improve unsuccessful attempts. ")
+  #           )
+  #         )
+  #       ), #div
+  #       easyClose = TRUE
+  #     )
+  #   )
+  # })
   # api key for the session
   api_key_session <- reactive({
 
     api_key <- api_key_global
     session_key_source <- key_source
 
-    if(!is.null(input$api_key)) {
-      key1 <- input$api_key
-      key1 <- clean_api_key(key1)
+    # if(!is.null(input$api_key)) { #Not a feature of HMCL app
+    #   key1 <- input$api_key
+    #   key1 <- clean_api_key(key1)
 
-      if (validate_api_key(key1)) {
-        api_key <- key1
-        session_key_source <- "pasted!"
-      }
-    }
-    return(
-      list(
-        api_key = api_key,
-        key_source = session_key_source
-      )
-    )
+    #   if (validate_api_key(key1)) {
+    #     api_key <- key1
+    #     session_key_source <- "pasted!"
+    #   }
+    # }
+    # return(
+    #   list(
+    #     api_key = api_key,
+    #     key_source = session_key_source
+    #   )
+    # )
   })
 
   output$session_api_source <- renderText({
@@ -557,49 +566,49 @@ app_server <- function(input, output, session) {
     )
   })
 
-  output$save_api_ui <- renderUI({
-    req(input$api_key)
+  # output$save_api_ui <- renderUI({
+  #   req(input$api_key)
 
-    # only show this when running locally.
-    req(!file.exists(on_server))
-    req(validate_api_key(input$api_key))
+  #   # only show this when running locally.
+  #   req(!file.exists(on_server))
+  #   req(validate_api_key(input$api_key))
 
-    tagList(
-      actionButton(
-        inputId = "save_api_button",
-        label = "Save key file for next time."
-      ),
-      tippy::tippy_this(
-        elementId = "save_api_button",
-        tooltip = "Save to a local file, 
-        so that you do not have to copy and paste next time.",
-        theme = "light-border"
-      )
-    )
-  })
+  #   tagList(
+  #     actionButton(
+  #       inputId = "save_api_button",
+  #       label = "Save key file for next time."
+  #     ),
+  #     tippy::tippy_this(
+  #       elementId = "save_api_button",
+  #       tooltip = "Save to a local file, 
+  #       so that you do not have to copy and paste next time.",
+  #       theme = "light-border"
+  #     )
+  #   )
+  # })
 
-  output$valid_key <- renderUI({
-    req(input$api_key)
+  # output$valid_key <- renderUI({
+  #   req(input$api_key)
 
-    if(validate_api_key(input$api_key)) {
-      h4(
-        "Key looks good. Just close this window.",
-        style = "color:blue"
-      )
-    } else {
-      h4(
-        "That does not look like a valid key!",
-        style = "color:red"
-      )
-    }
-  })
+  #   if(validate_api_key(input$api_key)) {
+  #     h4(
+  #       "Key looks good. Just close this window.",
+  #       style = "color:blue"
+  #     )
+  #   } else {
+  #     h4(
+  #       "That does not look like a valid key!",
+  #       style = "color:red"
+  #     )
+  #   }
+  # })
 
   # only save key, if app is running locally.
-  observeEvent(input$save_api_button, {
-    req(input$save_api_button)
-    req(input$api_key)
-    writeLines(input$api_key, "api_key.txt")
-  })
+  # observeEvent(input$save_api_button, {
+  #   req(input$save_api_button)
+  #   req(input$api_key)
+  #   writeLines(input$api_key, "api_key.txt")
+  # })
 
   # only save key, if app is running locally.
   observeEvent(input$submit_button, {
@@ -635,7 +644,7 @@ app_server <- function(input, output, session) {
 
   sample_temp <- reactive({
       temperature <- default_temperature #default
-      if (!is.null(input$temperature)) {
+      if (!is.null(input$temperature)) { #user supplied temperature
          temperature <- input$temperature
       }
       return(temperature)
@@ -643,7 +652,7 @@ app_server <- function(input, output, session) {
 
   selected_model <- reactive({
       model <- language_models[default_model] #gpt-4
-      if (!is.null(input$language_model)) {
+      if (!is.null(input$language_model)) { #user supplied model
          model <- input$language_model
       }
       # get the name of the model for display
@@ -1221,7 +1230,7 @@ app_server <- function(input, output, session) {
   # Error when run the generated code?
   code_error <- reactive({
     error_status <- FALSE
-    req(input$submit_button != 0)
+    req(input$submit_button != 0) #Require the submit button to be pushed
     if(!input$use_python) { # R
       return(!is.null(run_result()$error_message) && run_result()$error_message != "")
     } else { # Python

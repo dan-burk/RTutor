@@ -65,7 +65,7 @@ app_ui <- function(request) {
               # Reset Button
               column(
                 width = 6,
-                actionButton("reset_button", strong("Reset")),
+                actionButton(inputId = "reset_button", label = strong("Reset")),
                 tags$head(tags$style(
                   "#reset_button{font-size: 16px;color: blue}"
                 )),
@@ -82,7 +82,7 @@ app_ui <- function(request) {
               condition = "0",
               fluidRow(
                 column(
-                  width = 6,
+                  width = 12,
                   uiOutput("demo_data_ui")
                 ),
                 column(
