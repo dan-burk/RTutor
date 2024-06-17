@@ -255,29 +255,30 @@ app_server <- function(input, output, session) {
       }
 
       return(txt)
+
   })
 
-  output$data_upload_ui <- renderUI({
+  # output$data_upload_ui <- renderUI({
 
-    # Hide this input box after the first run.
-    req(input$submit_button == 0)
-    req(is.null(input$user_file))
-    fileInput(
-      inputId = "user_file",
-      label = "File Upload",
-      accept = c(
-        "text/csv",
-        "text/comma-separated-values",
-        "text/tab-separated-values",
-        "text/plain",
-        ".csv",
-        ".tsv",
-        ".txt",
-        ".xls",
-        ".xlsx"
-      )
-    )
-  })
+  #   # Hide this input box after the first run.
+  #   req(input$submit_button == 0) #Hasn't hit submit yet
+  #   req(is.null(input$user_file)) #User file
+  #   fileInput(
+  #     inputId = "user_file",
+  #     label = "File Upload",
+  #     accept = c(
+  #       "text/csv",
+  #       "text/comma-separated-values",
+  #       "text/tab-separated-values",
+  #       "text/plain",
+  #       ".csv",
+  #       ".tsv",
+  #       ".txt",
+  #       ".xls",
+  #       ".xlsx"
+  #     )
+  #   )
+  # })
 
   output$demo_data_ui <- renderUI({
 
@@ -294,7 +295,7 @@ app_server <- function(input, output, session) {
     )
 
   })
-
+  
   output$prompt_ui <- renderUI({
     req(input$select_data)
     # hide after data is uploaded
