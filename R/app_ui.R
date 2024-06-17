@@ -75,7 +75,7 @@ app_ui <- function(request) {
               condition = "0",
               fluidRow(
                 column(
-                  width = 6,
+                  width = 12,
                   uiOutput("demo_data_ui")
                 ),
                 column(
