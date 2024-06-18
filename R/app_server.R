@@ -240,8 +240,9 @@ app_server <- function(input, output, session) {
   selected_data_file <- reactiveVal("mpg")
 
   # showing the current dataset. Warning if no is uploaded.
-  
-  output$selected_dataset <- renderText({
+
+    
+  output$selected_dataset <- renderUI({
       req(input$submit_button)
       # when submit is clicked, but no data is uploaded -- Not Applicable in HMCL
       # When submit is clicked, and data is uploaded -- Not Applicable in HMCL
