@@ -242,7 +242,7 @@ app_server <- function(input, output, session) {
   # showing the current dataset. Warning if no is uploaded.
 
     
-  output$selected_dataset <- renderUI({
+  output$selected_dataset <- renderText({ #renderUI
       req(input$submit_button)
       # when submit is clicked, but no data is uploaded -- Not Applicable in HMCL
       # When submit is clicked, and data is uploaded -- Not Applicable in HMCL
@@ -811,7 +811,7 @@ app_server <- function(input, output, session) {
             )
 
             selected_file <- response$choices$message.content
-
+            
             tem1 <- gsub("\\..*", "", selected_file)
             tem2 <- gsub("_", " ", tem1)
             selected_data_file(tem2)
