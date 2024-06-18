@@ -27,26 +27,6 @@ app_server <- function(input, output, session) {
 
   pdf(NULL) #otherwise, base R plots sometimes do not show.
 
-  # load demo data when clicked. I feel like this should be lower in the server code.
-  observeEvent(input$demo_prompt, {
-    req(input$select_data)
-    if (input$demo_prompt != demo$requests[1]) {
-      updateTextInput(
-        session,
-        "input_text",
-        value = input$demo_prompt
-      )
-    } else { # if not mpg data, reset
-      updateTextInput(
-        session,
-        "input_text",
-        value = "",
-        placeholder =
-"Hi! I am a virtual data scientist. Ask me anything related to data from Hero MotoCorp Limited."
-      )
-    }
-  })
-
   # observeEvent(input$user_file, {
   #   updateSelectInput(
   #     session,
@@ -341,6 +321,26 @@ app_server <- function(input, output, session) {
     }
   })
 
+
+  # load demo data when clicked. I feel like this should be lower in the server code.
+  observeEvent(input$demo_prompt, {
+    req(input$select_data)
+    if (input$demo_prompt != demo$requests[1]) {
+      updateTextInput(
+        session,
+        "input_text",
+        value = input$demo_prompt
+      )
+    } else { # if not mpg data, reset
+      updateTextInput(
+        session,
+        "input_text",
+        value = "",
+        placeholder =
+"Hi! I am a virtual data scientist. Ask me anything related to data from Hero MotoCorp Limited."
+      )
+    }
+  })
   #                             4.
   #____________________________________________________________________________
   # API key management
@@ -644,7 +644,7 @@ app_server <- function(input, output, session) {
 
   sample_temp <- reactive({
       temperature <- default_temperature #default
-      if (!is.null(input$temperature)) { #user supplied temperature
+      if (!is.null(input$temperature)) { #user supplied temperature, possibly a feature of HMCL??
          temperature <- input$temperature
       }
       return(temperature)
@@ -670,7 +670,7 @@ app_server <- function(input, output, session) {
 
   })
  
-  meta_data_res <- reactive({
+  meta_data_res <- reactive({ #Why is this funcion a reactive variable? The meta_data() function never changes.
     meta_data()
   })
 
@@ -683,9 +683,9 @@ app_server <- function(input, output, session) {
       req(prepared_request)
 
       # when submit is clicked, but no data is uploaded.
-      if(input$select_data == uploaded_data) {
-        req(user_data())
-      }
+      # if(input$select_data == uploaded_data) { #Not a feature of HMCL
+      #   req(user_data())
+      # }
 
       shinybusy::show_modal_spinner(
         spin = "orbit",
@@ -697,7 +697,7 @@ app_server <- function(input, output, session) {
       #cat("\n", prepared_request, "\n")
       # Send to openAI
       tryCatch(
-        if(selected_model() == "text-davinci-003") { # completion model: davinci-text-003
+        if(selected_model() == "text-davinci-003") { # Depreciated Model. Eventually remove this if-else statement.
           response <- openai::create_completion(
             engine_id = selected_model(),
             prompt = prepared_request,
@@ -709,8 +709,8 @@ app_server <- function(input, output, session) {
 
           prompt_total <- list()
 
-          # System role: You are an experience programmar, etc
-          if (!is.null(system_role)) {
+          # System role: You are an experienced programmar, etc
+          if (!is.null(system_role)) { #Since system_role is defined in fct_helpers, isn't this unecessary?
             if (nchar(system_role) > 10) {
               prompt_total <- append(
                 prompt_total,
@@ -773,7 +773,7 @@ app_server <- function(input, output, session) {
           } else {  # if first prompt,  identify and load dataset
 
             # construct prompt for selecting a dataset
-            data_prompt <- list()
+            data_prompt <- list() #Initialize list for Data Selection Agent
             data_prompt <- append(
               data_prompt,
               list(list(
@@ -788,19 +788,20 @@ app_server <- function(input, output, session) {
                 content = paste(
                   "Identify a single file by file name, without explanation, that contain information related to this question or analytical goal.  Use the latest data.
                    Respond with \"Not found\" if no file is found. ",
-                  input$input_text,
+                  input$input_text, #User Input from box in UI
+                  # Examples:
                   #"Plot the distribution of residential electricity rates in South Dakota. ",
                   #"Proportion of engergy use in the automotive industry in the US. ", # fail
-                  # "Plot total energy use by sector in the US.",
+                  #"Plot total energy use by sector in the US.",
 
                   " Available datasets: \"\"\"",
-                  meta_data_res(),
+                  meta_data_res(), #Call the reactive variable meta_data_res() to get JSON file.
                   "\"\"\""
                 )
               ))
             )
 
-            # ChatGPT API
+            # ChatGPT API -- Engine of RTutor
             response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
               model = selected_model(),
               openai_api_key = api_key_session()$api_key,
@@ -809,24 +810,24 @@ app_server <- function(input, output, session) {
                 messages = data_prompt
             )
 
-            selected_file <- response$choices$message.content
+            selected_file <- response$choices$message.content #Isolate necessary file name.
 
-            tem1 <- gsub("\\..*", "", selected_file)
+            tem1 <- gsub("\\..*", "", selected_file) #Perform witch doctor stuff
             tem2 <- gsub("_", " ", tem1)
-            selected_data_file(tem2)
-            # show message for 10s with the fine name
+            selected_data_file(tem2) #Change the reactive variable from default mpg to whatever GPT chose
+            # show message for 10s with the file name
             showNotification(
               paste("Selected dataset: ", tem2),
               duration = 60
             )
-            selected_file <- paste0(data_path, selected_file)
+            selected_file <- paste0(data_path, selected_file) #Path and file name... we're cooking
 
             # if file is found, load it and update the current_data() reactive value
             if(selected_file != "Not found" && file.exists(selected_file)) {
 
               df <- readRDS(selected_file)
-              if (convert_to_factor()) {
-                df <- numeric_to_factor(
+              if (convert_to_factor()) { #Default reactive value of TRUE
+                df <- numeric_to_factor( #Converts numeric columns to factor
                   df,
                   max_levels_factor(),
                   max_proptortion_factor()
@@ -872,7 +873,7 @@ app_server <- function(input, output, session) {
           )
 
           # to make the returned code at the same spot, as davinci model.
-          response$choices[1, 1] <- response$choices$message.content
+          response$choices[1, 1] <- response$choices$message.content #Generated code from ChatGPT, overwriting some stuff
         },
         error = function(e) {
           # remove spinner, show message for 5s, & reload
@@ -894,7 +895,7 @@ app_server <- function(input, output, session) {
       #  that slot does not exist, returning false.
       # or be NULL
       error_api <- tryCatch(
-        !is.null(response$error_status),
+        !is.null(response$error_status), #When GPT throws an error in the response. Return TRUE
         error = function(e) {
           return(TRUE)
         }
@@ -1445,10 +1446,10 @@ app_server <- function(input, output, session) {
   # when the popup is closed and openned again.
   convert_to_factor <- reactive({
       convert <- TRUE #default
-      if (!is.null(input$numeric_as_factor)) {
-        convert <- input$numeric_as_factor
-      }
-      return(convert)
+      # if (!is.null(input$numeric_as_factor)) { #Not currently a feature of HMCL
+      #   convert <- input$numeric_as_factor
+      # }
+      # return(convert)
   })
 
   max_proptortion_factor <- reactive({
