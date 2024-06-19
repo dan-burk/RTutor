@@ -4,11 +4,11 @@ data/Vahan_Share_Masked_Rtutor.csv
 
 # History files
 .Rhistory
-.Rapp.history
 
 # Session Data files
 .RData
 .RDataTmp
 
 # RStudio files
-.Rproj.user/
+.Rproj.user
+.Ruserdata
