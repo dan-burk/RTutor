@@ -59,7 +59,7 @@ app_ui <- function(request) {
             fluidRow(
               column(
                 width = 6,
-                uiOutput("selected_dataset") #Jenna had uiOutput
+                textOutput("selected_dataset") #Jenna had uiOutput
               ),
 
               # Reset Button
