@@ -296,7 +296,7 @@ app_server <- function(input, output, session) {
       inputId = "select_data",
       label = "Data",
       choices = datasets,
-      selected = "mpg", #Change this to an HMCL dataset
+      selected = "mpg",
       multiple = FALSE,
       selectize = FALSE
     )

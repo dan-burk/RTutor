@@ -85,14 +85,26 @@ df = r.df
 on_server <- "on_server.txt"
 
 
-# folder with RDS files
-# data_path <- "../../data/datasets/"
-data_path <- "C:/Users/Daniel Burkhalter/OneDrive/RTutor/Data Vault/sioux_falls_datasets/"
+######### Folder/Data Path with RDS files #########
+# Get the user's home directory
+home_dir <- Sys.getenv("USERPROFILE") # For Windows
+if (home_dir == "") {
+  home_dir <- Sys.getenv("HOME") # For other systems
+}
+
+# Construct the full path dynamically
+base_path <- "OneDrive/RTutor/Proj_HeroMotoCorp/Data/"
+data_path <- normalizePath(file.path(home_dir, base_path))
+
+# Replace backslashes with forward slashes
+data_path <- paste0(gsub("\\\\", "/", data_path), '/')
 
 # load meta data, from JSON file
 meta_data <- function() {
   readr::read_file(paste0(data_path, "metadata.json"))
 }
+
+# data_path <- "../../data/datasets/"
 # meta_data <- readr::read_file("C:/work/RTutor/inst/app/www/metadata.json")
 
 # load meta data, from CSV file
@@ -464,7 +476,7 @@ polish_cmd <- function(cmd) {
 # Prepare data
 ###################################################################
 
-# A file, demo requests for different datasets, demo questions,
+# A file, demo requests for different datasets, demo questions
 demo <- read.csv(app_sys("app", "www", "demo_questions.csv"))
 
 ix <- which(demo$data == "questions")
@@ -1105,99 +1117,9 @@ missing_values_plot <- function(df) {
 
 # Create list of available datasets to print on sidebar
 available_datasets <- c(
-  "Address",
-  "Airport",
-  "Alcohol and Video Lottery Licensing",
-  "Alleys",
-  "Annexations",
-  "Artworks",
-  "Billboard Opportunity",
-  "Bridges",
-  "Building Footprints",
-  "Building Permits",
-  "Bus Routes",
-  "Bus Snow Routes",
-  "Bus Stops",
-  "Capital Improvements Program (CIP) (Lines)",
-  "Capital Improvements Program (CIP) (Points)",
-  "City Council Districts, Precincts, and Addresses",
-  "City Limits",
-  "Civil Air Patrol Photos Spring 2019",
-  "Commercial Projects",
-  "Community Safety Zone",
-  "Community Safety Zone Parcels",
-  "Crime Free Mobile Homes",
-  "Crime Free Multi Housing",
-  "Curb Ramps",
-  "Development Areas",
-  "Easements",
-  "Elementary School Bus Zones",
-  "Elementary School Districts",
-  "Emergency Shelters",
-  "Entertainment Tax Growth",
-  "Essential Responders",
-  "Fire Dispatch Quadrants",
-  "Fire Incidents",
-  "Fire Station Territory",
-  "Fire Stations",
-  "Fire Travel Time",
-  "Flood Restrictions in the City (FRIC)",
-  "Historic Districts",
-  "Historic Properties",
-  "Hospitals",
-  "Impervious",
-  "Lakes",
-  "Lincoln County Case Data",
-  "Manufactured Housing Parks",
-  "Middle School Bus Zones",
-  "Middle School Districts",
-  "Minnehaha Case Data",
-  "Murals",
-  "Neighborhood Associations",
-  "Neighborhood Revitalization Program",
-  "Neighborhood Watch Areas",
-  "Nonprofit Organizations",
-  "Off Premise Signs",
-  "Off Premise Signs Buffers",
-  "Parcels",
-  "Park Amenities",
-  "Park Fences",
-  "Parks",
-  "Pedestrian Signals",
-  "PLSS Sections",
-  "Police Calls for Service by Year",
-  "Preliminary Parcels",
-  "Rivers",
-  "Salaried Workers",
-  "Sales Tax Growth",
-  "Sanitary Availability",
-  "Schools",
-  "Sidewalks",
-  "Single Family Housing",
-  "Sioux Falls Case Data",
-  "Snow Districts",
-  "Snow Routes",
-  "South Dakota Case Data",
-  "Street Names",
-  "Street Query",
-  "Streets",
-  "Streets Pavement Condition",
-  "Subdivisions",
-  "Surface Water Quality Monitoring Data",
-  "Sweeping Districts",
-  "Total Permits",
-  "Total Population",
-  "Traffic Counts",
-  "Traffic Counts (Model)",
-  "Trees",
-  "Unemployment Rate",
-  "Vacated Streets",
-  "Veterans Parkway Corridor",
-  "Veterans Parkway Striping",
-  "Violent Crimes by Year",
-  "Voting Precincts",
-  "Zoning",
-  "Zoning - Conditional Rezoning"
+  "Historical Sales Information",
+  "Registered Vehicles",
+  "Historical Dispatch Information"
 )
 
 # Create a data frame with questions and answers for FAQ section
