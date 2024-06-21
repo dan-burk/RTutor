@@ -1116,10 +1116,16 @@ missing_values_plot <- function(df) {
 }
 
 # Create list of available datasets to print on sidebar
-available_datasets <- c(
-  "Historical Sales Information",
-  "Registered Vehicles",
-  "Historical Dispatch Information"
+# available_datasets <- c(
+#   "Historical Sales Information",
+#   "Registered Vehicles",
+#   "Historical Dispatch Information"
+# )
+available_datasets <- list(
+  "Let RTutor Decide" = NULL,
+  "Sales Masked Rtutor" = "Sales_Masked_Rtutor.rds",
+  "Vahan Masked Rtutor" = "Vahan_Masked_Rtutor.rds",
+  "Dispatch Masked Rtutor" = "Dispatch_Masked_Rtutor.rds"
 )
 
 # Create a data frame with questions and answers for FAQ section
