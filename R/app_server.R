@@ -974,7 +974,7 @@ app_server <- function(input, output, session) {
               run_env_start(as.list(run_env()))
 
             } else {
-              
+
               selected_file <- paste0(data_path, available_datasets[[input$user_selected_dataset]])
               df <- readRDS(selected_file)
               if (convert_to_factor()) {
@@ -989,6 +989,11 @@ app_server <- function(input, output, session) {
               # update runtime environment with new data frame
               run_env(rlang::env(run_env(), df = current_data()))
               run_env_start(as.list(run_env()))
+
+              # showNotification(
+              #   "Congrats! Made it through the 1st nested if-else statement!",
+              #   duration = 10
+              #   )
 
             }
 
