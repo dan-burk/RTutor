@@ -1123,9 +1123,9 @@ missing_values_plot <- function(df) {
 # )
 available_datasets <- list(
   "Let RTutor Decide" = NULL,
-  "Historical Sales Information" = "Sales_Masked_Rtutor.rds",
-  "Registered Vehicles" = "Vahan_Masked_Rtutor.rds",
-  "Historical Dispatch Information" = "Dispatch_Masked_Rtutor.rds"
+  "Sales Masked Rtutor" = "Sales_Masked_Rtutor.rds",
+  "Vahan Masked Rtutor" = "Vahan_Masked_Rtutor.rds",
+  "Dispatch Masked Rtutor" = "Dispatch_Masked_Rtutor.rds"
 )
 
 # Create a data frame with questions and answers for FAQ section
