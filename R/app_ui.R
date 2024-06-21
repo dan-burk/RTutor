@@ -134,12 +134,23 @@ app_ui <- function(request) {
             h5("Unsure what to ask?  Submit  'Find data on ____ (i.e. sales)'  first. Look at the 'Data' tab before asking another question."),
             br(),
 
+            fluidRow(
+              column(12,
+                hr(),
+                selectInput(inputId = 'user_selected_dataset',
+                label = 'Select A Dataset for Analysis',
+                choices = names(available_datasets),
+                multiple=FALSE,
+                selectize=FALSE)
+              )
+            ),
+
             # Show available datasets
             tags$div(
               style = "border: 1px solid #ccc; padding: 0px 10px 4px 10px;",
               tags$h5(style = "font-weight: bold;", "Available Datasets"),
               tags$textarea(
-                paste(available_datasets, collapse = "\n"),
+                paste(names(available_datasets)[-1], collapse = "\n"),
                 style = "width: 100%; resize: none;",
                 rows = 12,
                 readonly = TRUE
