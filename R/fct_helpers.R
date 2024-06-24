@@ -42,7 +42,7 @@ sqltable <- "usage"
 # If the goal can be achieved by showing quantitative results, do not produce a plot. When a plot is required, ggplot2 is preferred. 
 # If multiple plots are generated, try to combine them into one."
 system_role <- "Act as a experienced data scientist and statistician. You will write code following instructions. Do not provide explanation. 
-Try to product a plot when possible. ggplot2 is preferred. If multiple plots are generated, try to combine them into one."
+Try to product a plot when possible. ggplot2 is preferred. Make the plot visually appealing. If multiple plots are generated, try to combine them into one."
 system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. 
 You will respond like answering questions by students. If the question is in languages other than English, respond in that language. 
 If the question is not remotely related to your expertise, respond with 'No comment'."
