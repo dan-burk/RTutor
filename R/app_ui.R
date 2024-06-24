@@ -130,9 +130,8 @@ app_ui <- function(request) {
             ),
 
             # User FYI
-            h5(style = "font-weight: bold;", "Reset after each question!"),
-            h5("Unsure what to ask?  Submit  'Find data on ____ (i.e. sales)'  first. Look at the 'Data' tab before asking another question."),
-            br(),
+            h5(style = "font-weight: bold;", "Unsure what to ask?"),
+            h5("Submit 'Find data on ____ (i.e. sales)' first. Look at the 'Data' tab before asking another question."),
 
             fluidRow(
               column(12,
@@ -145,17 +144,17 @@ app_ui <- function(request) {
               )
             ),
 
-            # Show available datasets
-            tags$div(
-              style = "border: 1px solid #ccc; padding: 0px 10px 4px 10px;",
-              tags$h5(style = "font-weight: bold;", "Available Datasets"),
-              tags$textarea(
-                paste(names(available_datasets)[-1], collapse = "\n"),
-                style = "width: 100%; resize: none;",
-                rows = 12,
-                readonly = TRUE
-              )
-            ),
+            # # Show available datasets
+            # tags$div(
+            #   style = "border: 1px solid #ccc; padding: 0px 10px 4px 10px;",
+            #   tags$h5(style = "font-weight: bold;", "Available Datasets"),
+            #   tags$textarea(
+            #     paste(names(available_datasets)[-1], collapse = "\n"),
+            #     style = "width: 100%; resize: none;",
+            #     rows = 12,
+            #     readonly = TRUE
+            #   )
+            # ),
             br(),
 
             # User FYI
