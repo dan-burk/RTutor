@@ -690,6 +690,9 @@ app_server <- function(input, output, session) {
   meta_data_res <- reactive({
     meta_data()
   })
+  meta_data_csv_res <- reactive({
+    meta_data_csv()
+  })
 
   openAI_response <- reactive({
     req(input$submit_button)
@@ -781,9 +784,9 @@ app_server <- function(input, output, session) {
                   messages = data_prompt
               )
 
-              selected_file <- response$choices$message.content
+              df_name <- response$choices$message.content
 
-              tem1 <- gsub("\\..*", "", selected_file)
+              tem1 <- gsub("\\..*", "", df_name)
               tem2 <- gsub("_", " ", tem1)
               selected_data_file(tem2)
               # show message for 10s with the file name
@@ -791,12 +794,12 @@ app_server <- function(input, output, session) {
                 paste("Selected dataset: ", tem2),
                 duration = 60
               )
-              selected_file <- paste0(data_path, selected_file)
+              selected_file_path <- paste0(data_path, df_name)
 
               # if file is found, load it and update the current_data() reactive value
-              if(selected_file != "Not found" && file.exists(selected_file)) {
+              if(selected_file_path != "Not found" && file.exists(selected_file_path)) {
 
-                df <- readRDS(selected_file)
+                df <- readRDS(selected_file_path)
                 if (convert_to_factor()) {
                   df <- numeric_to_factor(
                     df,
@@ -804,8 +807,9 @@ app_server <- function(input, output, session) {
                     max_proptortion_factor()
                   )
                 }
-                # update the current_data() reactive value
+                # update the current_data() reactive value 
                 current_data(df)
+                selected_file(df_name) # update selected_file() reactive value
               } else {
                 # show error message
                 showNotification(
@@ -821,13 +825,14 @@ app_server <- function(input, output, session) {
               }
 
               # update runtime environment with new data frame
-              run_env(rlang::env(run_env(), df = current_data()))
+              run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
               run_env_start(as.list(run_env()))
 
             } else {
-
-              selected_file <- paste0(data_path, available_datasets[[input$user_selected_dataset]])
-              df <- readRDS(selected_file)
+              
+              df_name <- available_datasets[[input$user_selected_dataset]]
+              selected_file_path <- paste0(data_path, df_name)
+              df <- readRDS(selected_file_path)
               if (convert_to_factor()) {
                 df <- numeric_to_factor(
                   df,
@@ -837,8 +842,9 @@ app_server <- function(input, output, session) {
                 }
               # update the current_data() reactive value
               current_data(df)
+              selected_file(df_name) # update selected_file() reactive value
               # update runtime environment with new data frame
-              run_env(rlang::env(run_env(), df = current_data()))
+              run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
               run_env_start(as.list(run_env()))
 
             }
@@ -930,9 +936,9 @@ app_server <- function(input, output, session) {
                   messages = data_prompt
               )
 
-              selected_file <- response$choices$message.content
+              df_name <- response$choices$message.content
 
-              tem1 <- gsub("\\..*", "", selected_file)
+              tem1 <- gsub("\\..*", "", df_name)
               tem2 <- gsub("_", " ", tem1)
               selected_data_file(tem2)
               # show message for 10s with the fine name
@@ -940,12 +946,12 @@ app_server <- function(input, output, session) {
                 paste("Selected dataset: ", tem2),
                 duration = 60
               )
-              selected_file <- paste0(data_path, selected_file)
+              selected_file_path <- paste0(data_path, df_name)
 
               # if file is found, load it and update the current_data() reactive value
-              if(selected_file != "Not found" && file.exists(selected_file)) {
+              if(selected_file_path != "Not found" && file.exists(selected_file_path)) {
 
-                df <- readRDS(selected_file)
+                df <- readRDS(selected_file_path)
                 if (convert_to_factor()) {
                   df <- numeric_to_factor(
                     df,
@@ -955,6 +961,7 @@ app_server <- function(input, output, session) {
                 }
                 # update the current_data() reactive value
                 current_data(df)
+                selected_file(df_name) # update the selected_file() reactive value
               } else {
                 # show error message
                 showNotification(
@@ -970,13 +977,14 @@ app_server <- function(input, output, session) {
               }
 
               # update runtime environment with new data frame
-              run_env(rlang::env(run_env(), df = current_data()))
+              run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
               run_env_start(as.list(run_env()))
 
             } else {
 
-              selected_file <- paste0(data_path, available_datasets[[input$user_selected_dataset]])
-              df <- readRDS(selected_file)
+              df_name <- available_datasets[[input$user_selected_dataset]]
+              selected_file_path <- paste0(data_path, df_name)
+              df <- readRDS(selected_file_path)
               if (convert_to_factor()) {
                 df <- numeric_to_factor(
                   df,
@@ -986,8 +994,9 @@ app_server <- function(input, output, session) {
               }
               # update the current_data() reactive value
               current_data(df)
+              selected_file(df_name) # update the selected_file() reactive value
               # update runtime environment with new data frame
-              run_env(rlang::env(run_env(), df = current_data()))
+              run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
               run_env_start(as.list(run_env()))
 
               # showNotification(
@@ -1002,10 +1011,27 @@ app_server <- function(input, output, session) {
 
           prepared_request = prep_input(input$input_text, input$select_data, current_data(), input$use_python, logs$id, selected_model(), df2 = current_data_2())
 
+          #Subsetting Meta Data csv file to send in with prompt
+          sub_meta_data_csv <- meta_data_csv_res() %>%
+            filter(file_name == df_name) %>% 
+            mutate(file_name = case_when(
+              file_name == df_name ~ "df"
+            ))
+          sub_meta_data_json <- jsonlite::toJSON(sub_meta_data_csv)
+
           # add new user prompt
           prompt_total <- append(
             prompt_total,
-            list(list(role = "user", content = prepared_request))
+            list(list(
+              role = "user",
+              content = paste(
+                prepared_request,
+                # "If user mentions growth, then ensure...",
+                " Available dataset: \"\"\"",
+                sub_meta_data_json,
+                "\"\"\""
+                )
+              )) #Paste "sub" meta_data_res here to send with the user request.
           )
 
           response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
@@ -1626,8 +1652,9 @@ app_server <- function(input, output, session) {
       return(max_levels_1)
   })
 
-  # The current data
+  # The current data & file name
   current_data <- reactiveVal(NULL)
+  selected_file <- reactiveVal(NULL)
 
   observeEvent(input$select_data, {
     req(input$select_data)
