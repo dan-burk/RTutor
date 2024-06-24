@@ -38,9 +38,11 @@ max_levels_factor_conversion <- 5 # Numeric columns will be converted to factor 
 unique_ratio <- 0.05   # number of unique values / total # of rows
 sqlitePath <- "../../data/usage_data.db" # folder to store the user queries, generated R code, and running results
 sqltable <- "usage"
+# system_role <- "Act as a experienced data scientist and statistician. You will write code following instructions. Do not provide explanation. 
+# If the goal can be achieved by showing quantitative results, do not produce a plot. When a plot is required, ggplot2 is preferred. 
+# If multiple plots are generated, try to combine them into one."
 system_role <- "Act as a experienced data scientist and statistician. You will write code following instructions. Do not provide explanation. 
-If the goal can be achieved by showing quantitative results, do not produce a plot. When a plot is required, ggplot2 is preferred. 
-If multiple plots are generated, try to combine them into one."
+Try to product a plot when possible. ggplot2 is preferred. If multiple plots are generated, try to combine them into one."
 system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. 
 You will respond like answering questions by students. If the question is in languages other than English, respond in that language. 
 If the question is not remotely related to your expertise, respond with 'No comment'."
@@ -102,6 +104,10 @@ data_path <- paste0(gsub("\\\\", "/", data_path), '/')
 # load meta data, from JSON file
 meta_data <- function() {
   readr::read_file(paste0(data_path, "metadata.json"))
+}
+# load meta data, from csv file
+meta_data_csv <- function() {
+  read.csv(paste0(data_path, "hmcl_metadata.csv"))
 }
 
 # data_path <- "../../data/datasets/"
@@ -429,7 +435,7 @@ clean_cmd <- function(cmd, selected_data, on_server = FALSE) {
   # prevent running system commands, malicious
   # system("...")  --> #system("...")
   cmd <- gsub("system *\\(", "#system\\()", cmd)
-    cmd <- gsub("source *\\(", "#source\\()", cmd)
+  cmd <- gsub("source *\\(", "#source\\()", cmd)
   cmd <- gsub("unlink *\\(", "#unlink\\()", cmd)
   cmd <- gsub(
     "(link|dir|link)_(create|delete|chmod|chown|move) *\\(",
