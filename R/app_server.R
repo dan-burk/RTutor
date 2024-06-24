@@ -736,7 +736,7 @@ app_server <- function(input, output, session) {
                 prompt_total,
                 list(list(
                   role = "system",
-                  content = system_role
+                  content = paste0(system_role, system_role_growth)
                 ))
               )
             }
