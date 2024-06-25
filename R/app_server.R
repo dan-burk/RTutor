@@ -736,7 +736,7 @@ app_server <- function(input, output, session) {
                 prompt_total,
                 list(list(
                   role = "system",
-                  content = paste0(system_role, system_role_growth)
+                  content = system_role# paste0(system_role, system_role_growth)
                 ))
               )
             }
@@ -1026,6 +1026,8 @@ app_server <- function(input, output, session) {
               role = "user",
               content = paste(
                 prepared_request,
+                system_role_growth,
+                system_role_date,
                 # "If user mentions growth, then ensure...",
                 " Available dataset: \"\"\"",
                 sub_meta_data_json,

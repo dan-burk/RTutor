@@ -43,11 +43,10 @@ sqltable <- "usage"
 # If multiple plots are generated, try to combine them into one."
 system_role <- "Act as a experienced data scientist and statistician. You will write code following instructions. Do not provide explanation. 
 Try to product a plot when possible. ggplot2 is preferred. Make the plot visually appealing. If multiple plots are generated, try to combine them into one."
-system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. 
-You will respond like answering questions by students. If the question is in languages other than English, respond in that language. 
-If the question is not remotely related to your expertise, respond with 'No comment'."
-system_role_growth <- "If growth or time period comparison is mentioned, ensure code takes vital steps to answer the question including 
-filter data, summarize specified metric over given time, and calculate growth/trend between two dates based on date range in the data."
+# system_role_growth <- "If growth, decline, or time period comparison is mentioned, ensure code takes vital steps to answer the question including 
+# filter data, summarize specified metric over given time, and calculate growth/decline between two dates based on date range in the data."
+system_role_growth <- "If growth or decline was mentioned, CALCULATE growth rate! Ensure to include a fair comparison period of equal length."
+system_role_date <- paste("Assume Today's date is","2024-03-26")
 # voice input parameters
 wake_word <- "Tutor" #Tutor, Emma, Note that "Hey Cox" does not work very well.
 # this triggers the submit button
