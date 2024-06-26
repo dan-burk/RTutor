@@ -46,6 +46,7 @@ system_role_date <- "Assume Today's date is 2024-03-26."
 system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. 
 You will respond like answering questions by students. If the question is in languages other than English, respond in that language. 
 If the question is not remotely related to your expertise, respond with 'No comment'."
+
 # voice input parameters
 wake_word <- "Tutor" #Tutor, Emma, Note that "Hey Cox" does not work very well.
 # this triggers the submit button
