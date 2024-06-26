@@ -1029,12 +1029,12 @@ app_server <- function(input, output, session) {
                 system_role_growth,
                 system_role_date,
                 # "If user mentions growth, then ensure...",
-                " Available dataset: \"\"\"",
-                sub_meta_data_json,
-                "\"\"\""
+                "Available dataset:",
+                sub_meta_data_json
                 )
-              )) #Paste "sub" meta_data_res here to send with the user request.
+              )) 
           )
+
 
           response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
             model = selected_model(),
@@ -1046,6 +1046,7 @@ app_server <- function(input, output, session) {
 
           # to make the returned code at the same spot, as davinci model.
           response$choices[1, 1] <- response$choices$message.content
+
         },
         error = function(e) {
           # remove spinner, show message for 5s, & reload
