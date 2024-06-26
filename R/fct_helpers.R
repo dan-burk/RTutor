@@ -41,7 +41,7 @@ sqltable <- "usage"
 system_role <- "Act as a experienced data scientist and statistician. You will write R code following instructions. Do not provide explanation.
 Try to produce a plot when possible. ggplot2 is preferred. Make the plot visually appealing. If multiple plots are generated, try to combine them into one."
 system_role_growth <- "If growth or time period comparison was mentioned, CALCULATE growth rate! Ensure all date and time manipulations are 
-dynamically handled based on the data. Try using dplyr::lag() for time comparisons. Ensure to include a fair comparison period of equal length"
+dynamically handled based on the data. Try using dplyr::lag() for time comparisons. Ensure to include a fair comparison period of equal length."
 system_role_date <- "Assume Today's date is 2024-03-26."
 system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. 
 You will respond like answering questions by students. If the question is in languages other than English, respond in that language. 
@@ -188,16 +188,16 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, selected_mo
       )
       relevant_var <- names(relevant_var)[relevant_var]
 
-      data_info <- describe_df(
-        df, 
-        list_levels = TRUE, 
-        relevant_var = relevant_var,
-        head = TRUE
-      )
+      # data_info <- describe_df(
+      #   df, 
+      #   list_levels = TRUE, 
+      #   relevant_var = relevant_var,
+      #   head = TRUE
+      # )
       # Always add 'use the df data frame.'
       txt <- paste(txt, after_text)
 
-      n_words <- tokens(data_info)
+      # n_words <- tokens(data_info)
       #if it is the first chunk;  always do this when Davinci model; or if data description is short
       more_info <- chunk_id <= 1 || selected_model == "text-davinci-003" || n_words < 200
 
@@ -205,9 +205,9 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, selected_mo
 
       # add data descrdiption
       # if it is not the first chunk and data description is long, do not add.
-      if (more_info && !(chunk_id > 1 && n_words > 600)) {
-        txt <- paste(txt, data_info)
-      }
+      # if (more_info && !(chunk_id > 1 && n_words > 600)) {
+      #   txt <- paste(txt, data_info)
+      # }
       
       # if there is a second data frame, add that too.
       if(!is.null(df2)) {
@@ -262,150 +262,150 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, selected_mo
 #' @param relevant_var  a list of variables mentioned by the user
 #' @param head whether to list the first few rows
 #' @return Returns a cleaned up version, so that it could be executed as R command.
-describe_df <- function(df, list_levels = FALSE, relevant_var = NULL, head = FALSE) {
+# describe_df <- function(df, list_levels = FALSE, relevant_var = NULL, head = FALSE) {
 
-      data_info <- ""
-      numeric_index <- sapply(
-        df,
-        function(x) {
-          if (is.numeric(x)) {
-            return(TRUE)
-          } else {
-            return(FALSE)
-          }
-        }
-      )
+#       data_info <- ""
+#       numeric_index <- sapply(
+#         df,
+#         function(x) {
+#           if (is.numeric(x)) {
+#             return(TRUE)
+#           } else {
+#             return(FALSE)
+#           }
+#         }
+#       )
 
-      numeric_var <- colnames(df)[numeric_index]
-      cat_var <- colnames(df)[!numeric_index]
+#       numeric_var <- colnames(df)[numeric_index]
+#       cat_var <- colnames(df)[!numeric_index]
 
-      # calculate total number of unique levels
-      total_levels <- sapply(cat_var, function(x) {length(unique(df[, x]))})
-      # remove columns that are names, strings, etc
-      cat_var <- cat_var[total_levels < nrow(df) * 0.8]
+#       # calculate total number of unique levels
+#       total_levels <- sapply(cat_var, function(x) {length(unique(df[, x]))})
+#       # remove columns that are names, strings, etc
+#       cat_var <- cat_var[total_levels < nrow(df) * 0.8]
 
-     # numeric variables
-      if (length(numeric_var) == 1) {
-        data_info <- paste0(
-          data_info,
-          "The df data frame has a column ",
-          numeric_var,
-          " that contains a numeric variable. "
-        )
-      } else if (length(numeric_var) > 1) {
-        data_info <- paste0(
-          data_info,
-          "The df data frame contains these numeric variables: ",
-          paste0(
-            numeric_var[1:(length(numeric_var) - 1)],
-            collapse = ", "
-          ),
-          ", and ",
-          numeric_var[length(numeric_var)],
-          ". "
-        )
-      }
-      # Categorical variables-----------------------------
-     # numeric variables
-      if (length(cat_var) == 1) {
-        data_info <- paste0(
-          data_info,
-          "The df data frame has a column ",
-          cat_var,
-          " that contains a categorical variable. "
-        )
-      } else if (length(cat_var) > 1) {
-        data_info <- paste0(
-          data_info,
-          "The df data frame contains these categorical variables: ",
-          paste0(
-            cat_var[1:(length(cat_var) - 1)],
-            collapse = ", "
-          ),
-          ", and ",
-          cat_var[length(cat_var)],
-          ". "
-        )
-      }
+#      # numeric variables
+#       if (length(numeric_var) == 1) {
+#         data_info <- paste0(
+#           data_info,
+#           "The df data frame has a column ",
+#           numeric_var,
+#           " that contains a numeric variable. "
+#         )
+#       } else if (length(numeric_var) > 1) {
+#         data_info <- paste0(
+#           data_info,
+#           "The df data frame contains these numeric variables: ",
+#           paste0(
+#             numeric_var[1:(length(numeric_var) - 1)],
+#             collapse = ", "
+#           ),
+#           ", and ",
+#           numeric_var[length(numeric_var)],
+#           ". "
+#         )
+#       }
+#       # Categorical variables-----------------------------
+#      # numeric variables
+#       if (length(cat_var) == 1) {
+#         data_info <- paste0(
+#           data_info,
+#           "The df data frame has a column ",
+#           cat_var,
+#           " that contains a categorical variable. "
+#         )
+#       } else if (length(cat_var) > 1) {
+#         data_info <- paste0(
+#           data_info,
+#           "The df data frame contains these categorical variables: ",
+#           paste0(
+#             cat_var[1:(length(cat_var) - 1)],
+#             collapse = ", "
+#           ),
+#           ", and ",
+#           cat_var[length(cat_var)],
+#           ". "
+#         )
+#       }
       
-      if(list_levels & length(relevant_var) > 0) {
+#       if(list_levels & length(relevant_var) > 0) {
 
-        # only list for categorical variables specified in user prompt
-        relevant_cat_var <- intersect(relevant_var, cat_var)
-        # describe the levels in categorical variable
-        for (var in relevant_cat_var) {
-          max_lelvels_description <- 4
-          ix <- match(var, colnames(df))
-          factor_levels <- sort(table(df[, ix]), decreasing = TRUE)
-          factor_levels <- names(factor_levels)
+#         # only list for categorical variables specified in user prompt
+#         relevant_cat_var <- intersect(relevant_var, cat_var)
+#         # describe the levels in categorical variable
+#         for (var in relevant_cat_var) {
+#           max_lelvels_description <- 4
+#           ix <- match(var, colnames(df))
+#           factor_levels <- sort(table(df[, ix]), decreasing = TRUE)
+#           factor_levels <- names(factor_levels)
 
-          # have more than 6 levels?
-          many_levels <- FALSE
+#           # have more than 6 levels?
+#           many_levels <- FALSE
 
-          if (length(factor_levels) > max_lelvels_description) {
-            many_levels <- TRUE
-            factor_levels <- factor_levels[1:max_lelvels_description]
-          }
+#           if (length(factor_levels) > max_lelvels_description) {
+#             many_levels <- TRUE
+#             factor_levels <- factor_levels[1:max_lelvels_description]
+#           }
 
-          last_level <- factor_levels[length(factor_levels)]
-          factor_levels <- factor_levels[-1 * length(factor_levels)]
-          tem <- paste0(
-            factor_levels,
-            collapse = "', '"
-          )
-          if (!many_levels) { # less than 6 levels
-            factor_levels <- paste0("'", tem, "', and '", last_level, "'")
-          } else { # more than 6 levels
-            factor_levels <- paste0(
-              "'",
-              tem,
-              "', '",
-              last_level,
-              "', etc"
-            )
-          }
-          data_info <- paste0(
-            data_info,
-            "The categorical variable ",
-            var,
-            " has these levels: ",
-            factor_levels,
-            ". "
-          )
-        }
-      }
+#           last_level <- factor_levels[length(factor_levels)]
+#           factor_levels <- factor_levels[-1 * length(factor_levels)]
+#           tem <- paste0(
+#             factor_levels,
+#             collapse = "', '"
+#           )
+#           if (!many_levels) { # less than 6 levels
+#             factor_levels <- paste0("'", tem, "', and '", last_level, "'")
+#           } else { # more than 6 levels
+#             factor_levels <- paste0(
+#               "'",
+#               tem,
+#               "', '",
+#               last_level,
+#               "', etc"
+#             )
+#           }
+#           data_info <- paste0(
+#             data_info,
+#             "The categorical variable ",
+#             var,
+#             " has these levels: ",
+#             factor_levels,
+#             ". "
+#           )
+#         }
+#       }
 
-      if(head) {
-        #randomly select 5 rows, print out, convert to string
-        sample_rows <- paste0(
-          capture.output(head(df[sample(nrow(df), 5),])), 
-          collapse = "\n"
-        )
-        # if too long, use only 2 rows
-        if(nchar(sample_rows) > 2000) {
-          sample_rows <- paste0(
-            capture.output(head(df[sample(nrow(df), 2),])), 
-            collapse = "\n"
-          )
-        }
-        sample_rows <- paste(
-          "The df data frame looks like this: \n",
-          sample_rows
-        )
+#       if(head) {
+#         #randomly select 5 rows, print out, convert to string
+#         sample_rows <- paste0(
+#           capture.output(head(df[sample(nrow(df), 5),])), 
+#           collapse = "\n"
+#         )
+#         # if too long, use only 2 rows
+#         if(nchar(sample_rows) > 2000) {
+#           sample_rows <- paste0(
+#             capture.output(head(df[sample(nrow(df), 2),])), 
+#             collapse = "\n"
+#           )
+#         }
+#         sample_rows <- paste(
+#           "The df data frame looks like this: \n",
+#           sample_rows
+#         )
         
-        # if still too long, skip
-        if(nchar(sample_rows) > 3000) {
-          sample_rows <- ""
-        }
+#         # if still too long, skip
+#         if(nchar(sample_rows) > 3000) {
+#           sample_rows <- ""
+#         }
 
-        data_info <- paste0(
-          data_info,
-          sample_rows    
-        )
-      }
+#         data_info <- paste0(
+#           data_info,
+#           sample_rows    
+#         )
+#       }
       
-      return(data_info)
-}
+#       return(data_info)
+# }
 
 
 #' Clean up R commands generated by GTP

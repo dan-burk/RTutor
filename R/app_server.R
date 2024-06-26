@@ -42,7 +42,7 @@ app_server <- function(input, output, session) {
         "input_text",
         value = "",
         placeholder =
-"Hi! I am a virtual data scientist. Ask me anything related to data from Hero MotoCorp Limited."
+"Hi! I am a virtual data scientist. Ask me anything related to data from Hero MotoCorp Limited. (See example prompts below)"
       )
     }
   })
@@ -1047,7 +1047,7 @@ app_server <- function(input, output, session) {
                 system_role_growth,
                 system_role_date,
                 # "If user mentions growth, then ensure...",
-                " Available dataset: \"\"\"",
+                " Available datasets: \"\"\"",
                 sub_meta_data_json,
                 "\"\"\""
                 )
