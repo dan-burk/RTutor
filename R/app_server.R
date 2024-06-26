@@ -343,10 +343,28 @@ app_server <- function(input, output, session) {
 
     if (input$select_data %in% c("mpg", no_data, "diamonds", rna_seq)) { #Default is select_data == "mpg"
       return(
-        selectInput(
-          inputId = "demo_prompt",
-          choices = choices,
-          label = NULL
+        tagList(
+          selectInput(
+            inputId = "demo_prompt",
+            choices = choices,
+            label = NULL
+          ),
+          tags$style(
+            HTML(
+              "
+              #demo_prompt+div .selectize-input {
+                background-color: #f7fcf2 !important;
+                border-color: #87BE3B !important;
+                color: #000 !important;
+              }
+              #demo_prompt+div .selectize-dropdown {
+                background-color: #f7fcf2 !important;
+                border-color: #87BE3B !important;
+                color: #000 !important;
+              }
+              "
+            )
+          )
         )
       )
     }
@@ -729,14 +747,14 @@ app_server <- function(input, output, session) {
 
           prompt_total <- list()
 
-          # System role: You are an experience programmar, etc
+          # System role: You are an experienced programmer, etc
           if (!is.null(system_role)) {
             if (nchar(system_role) > 10) {
               prompt_total <- append(
                 prompt_total,
                 list(list(
                   role = "system",
-                  content = paste0(system_role, system_role_growth)
+                  content = system_role
                 ))
               )
             }
@@ -1026,6 +1044,8 @@ app_server <- function(input, output, session) {
               role = "user",
               content = paste(
                 prepared_request,
+                system_role_growth,
+                system_role_date,
                 # "If user mentions growth, then ensure...",
                 " Available dataset: \"\"\"",
                 sub_meta_data_json,

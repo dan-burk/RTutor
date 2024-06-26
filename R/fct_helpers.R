@@ -38,13 +38,11 @@ max_levels_factor_conversion <- 5 # Numeric columns will be converted to factor 
 unique_ratio <- 0.05   # number of unique values / total # of rows
 sqlitePath <- "../../data/usage_data.db" # folder to store the user queries, generated R code, and running results
 sqltable <- "usage"
-# system_role <- "Act as a experienced data scientist and statistician. You will write code following instructions. Do not provide explanation. 
-# If the goal can be achieved by showing quantitative results, do not produce a plot. When a plot is required, ggplot2 is preferred. 
-# If multiple plots are generated, try to combine them into one."
-system_role <- "Act as a experienced data scientist and statistician. You will write code following these instructions. Do not provide explanation. 
-Try to produce a plot when possible. ggplot2 is preferred. Make the plot visually appealing. If multiple plots are generated, try to combine them into one. Never use backticks."
-system_role_growth <- "If growth, decline, or time period comparison is mentioned, ensure code takes vital steps to answer the question including 
-filter data, summarize specified metric over given time, and calculate growth (or decline) between two dates (or time period) based on date range in the data."
+system_role <- "Act as a experienced data scientist and statistician. You will write R code following instructions. Do not provide explanation.
+Try to produce a plot when possible. ggplot2 is preferred. Make the plot visually appealing. If multiple plots are generated, try to combine them into one."
+system_role_growth <- "If growth or time period comparison was mentioned, CALCULATE growth rate! Ensure all date and time manipulations are 
+dynamically handled based on the data. Try using dplyr::lag() for time comparisons. Ensure to include a fair comparison period of equal length"
+system_role_date <- "Assume Today's date is 2024-03-26."
 system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. 
 You will respond like answering questions by students. If the question is in languages other than English, respond in that language. 
 If the question is not remotely related to your expertise, respond with 'No comment'."
@@ -52,12 +50,12 @@ If the question is not remotely related to your expertise, respond with 'No comm
 wake_word <- "Tutor" #Tutor, Emma, Note that "Hey Cox" does not work very well.
 # this triggers the submit button
 action_verbs <- c(
-  "now", 
+  "now",
   "over",
-  "do it", 
-  "do it now", 
-  "go ahead", 
-  "submit", 
+  "do it",
+  "do it now",
+  "go ahead",
+  "submit",
   "what are you waiting for"
 )
 

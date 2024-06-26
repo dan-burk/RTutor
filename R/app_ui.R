@@ -15,10 +15,37 @@
 app_ui <- function(request) {
   tagList(
     golem_add_external_resources(),
+
+    ## Add color to UI
+    tags$head(
+      tags$style(HTML("
+        /* navbar */
+        .navbar {
+          background-color: #def0cb;border: none;color: #181818;font-weight: bold;
+        }
+
+        /* tabs */
+        .navbar-default .navbar-nav > li > a {
+          background-color: #def0cb;color: #181818;
+        }
+
+        /* active tab */
+        .navbar-default .navbar-nav > .active > a, 
+        .navbar-default .navbar-nav > .active > a:focus, 
+        .navbar-default .navbar-nav > .active > a:hover {
+          background-color: #c3e5a3;color: #181818;font-weight: bold;
+        }
+
+        /* sidebar panel */
+        .well {
+          background-color: #def0cb;
+      "))
+    ),
+
     navbarPage(
       "RTutor",
-    #  windowTitle = "RTutor",
-    # theme = bslib::bs_theme(bootswatch = "darkly"),
+       #  windowTitle = "RTutor",
+       # theme = bslib::bs_theme(bootswatch = "darkly"),
       id = "tabs",
       tabPanel(
         title = "Home",
@@ -47,7 +74,11 @@ app_ui <- function(request) {
             bottom: 0;
           }
         "),
-        
+        # tags$li(
+        #   class = "navbar-text",
+        #   tags$img(src = "www/logo.png", height = "30px", style = "margin-top: 5px;")
+        # ),
+
   ##########################################################
   ####### Sidebar
   ##########################################################
@@ -59,7 +90,7 @@ app_ui <- function(request) {
             fluidRow(
               column(
                 width = 6,
-                textOutput("selected_dataset") #Jenna had uiOutput
+                textOutput("selected_dataset")
               ),
 
               # Reset Button
@@ -67,7 +98,7 @@ app_ui <- function(request) {
                 width = 6,
                 actionButton(inputId = "reset_button", label = strong("Reset")),
                 tags$head(tags$style(
-                  "#reset_button{font-size: 16px;color: blue}"
+                  "#reset_button{font-size: 16px;color: blue;background-color: #f7fcf2;border-color: #87BE3B;}"
                 )),
                 align = "right",
                 tippy::tippy_this(
@@ -94,7 +125,13 @@ app_ui <- function(request) {
             ),
 
             uiOutput("prompt_ui"),
-            tags$style(type = "text/css", "textarea {width:100%}"),
+            tags$style(HTML("
+              textarea {
+                width: 100%;
+                background-color: #f7fcf2;
+                border-color: #87BE3B;
+              }
+            ")),
             tags$textarea(
               id = "input_text",
               placeholder = NULL,
@@ -107,7 +144,7 @@ app_ui <- function(request) {
                 width = 4,
                 actionButton("submit_button", strong("Submit")),
                 tags$head(tags$style(
-                  "#submit_button{font-size: 16px;color: red}"
+                  "#submit_button{font-size: 16px;color: red;background-color: #f7fcf2;border-color: #87BE3B;}"
                 )),
                 tippy::tippy_this(
                   "submit_button",
@@ -135,12 +172,17 @@ app_ui <- function(request) {
 
             fluidRow(
               column(12,
+                tags$style(HTML("hr{border-top: 1px solid #abda7f;}")),
                 hr(),
+                tags$head(tags$style(
+                  "#user_selected_dataset{background-color: #f7fcf2;border-color: #87BE3B;color: #000;}"
+                )),
                 selectInput(inputId = 'user_selected_dataset',
-                label = 'Select A Dataset for Analysis',
-                choices = names(available_datasets),
-                multiple=FALSE,
-                selectize=FALSE)
+                  label = 'Select A Dataset for Analysis',
+                  choices = names(available_datasets),
+                  multiple=FALSE,
+                  selectize=FALSE
+                )
               )
             ),
 
@@ -184,14 +226,23 @@ app_ui <- function(request) {
             fluidRow(
               column(
                 width = 4,
+                tags$head(tags$style(
+                  "#data_edit_modal{background-color: #f7fcf2;border-color: #87BE3B;}"
+                )),
                 actionButton("data_edit_modal", "Data Types")
               ),
               column(
                 width = 4,
+                tags$head(tags$style(
+                  "#data_desc_modal{background-color: #f7fcf2;border-color: #87BE3B;}"
+                )),
                 actionButton("data_desc_modal", "Description")
               ),
               column(
                 width = 4,
+                tags$head(tags$style(
+                  "#download_data{background-color: #f7fcf2;border-color: #87BE3B;}"
+                )),
                 # download data
                 downloadButton("download_data", "Data")
               ),
@@ -618,7 +669,7 @@ app_ui <- function(request) {
 
             h4(style = "font-weight: bold;", "Frequently Asked Questions"),
             uiOutput("faq_list"),
-            tags$style(htmltools::HTML("
+            tags$style(HTML("
               .faq-answer {
                 display: none;
                 padding-left: 10px;
@@ -630,7 +681,7 @@ app_ui <- function(request) {
                 background-color: #f1f1f1;
               }
             ")),
-            tags$script(htmltools::HTML('
+            tags$script(HTML('
               $(document).on("click", ".faq-question", function() {
                 var answer = $(this).next(".faq-answer");
                 if (answer.is(":visible")) {
