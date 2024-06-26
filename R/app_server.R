@@ -786,7 +786,7 @@ app_server <- function(input, output, session) {
                     #"Proportion of engergy use in the automotive industry in the US. ", # fail
                     # "Plot total energy use by sector in the US.",
 
-                    " Available datasets: \"\"\"",
+                    "Available datasets: \"\"\"",
                     meta_data_res(),
                     "\"\"\""
                   )
