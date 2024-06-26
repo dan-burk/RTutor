@@ -95,17 +95,7 @@ app_ui <- function(request) {
 
               # Reset Button
               column(
-                width = 6,
-                actionButton(inputId = "reset_button", label = strong("Reset")),
-                tags$head(tags$style(
-                  "#reset_button{font-size: 16px;color: blue;background-color: #f7fcf2;border-color: #87BE3B;}"
-                )),
-                align = "right",
-                tippy::tippy_this(
-                  "reset_button",
-                  "Reset before asking a new question. Clears data objects, chat history, & code chunks.",
-                  theme = "light-border"
-                )
+                width = 6
               )
             ),
 
@@ -124,7 +114,10 @@ app_ui <- function(request) {
               )
             ),
 
-            uiOutput("prompt_ui"),
+            # Horizontal Line
+            tags$style(HTML("hr{border-top: 1px solid #abda7f;}")),
+            hr(),
+            # User Input Text Box
             tags$style(HTML("
               textarea {
                 width: 100%;
@@ -137,19 +130,42 @@ app_ui <- function(request) {
               placeholder = NULL,
               rows = 8, ""
             ),
+            # Example Prompts
+            uiOutput("prompt_ui"),
+
+            # Horizontal Line
+            tags$style(HTML("hr{border-top: 1px solid #abda7f;}")),
+                hr(),
 
             fluidRow(
-              # Submit Button
               column(
-                width = 4,
-                actionButton("submit_button", strong("Submit")),
-                tags$head(tags$style(
-                  "#submit_button{font-size: 16px;color: red;background-color: #f7fcf2;border-color: #87BE3B;}"
-                )),
-                tippy::tippy_this(
-                  "submit_button",
-                  "ChatGPT can return different results for the same request.",
-                  theme = "light-border"
+                width = 12,
+                div(
+                  style = "display: flex; justify-content: space-between;",
+                  div(
+                    # Submit Button
+                    actionButton("submit_button", strong("Submit")),
+                    tags$head(tags$style(
+                      "#submit_button{font-size: 16px;color: red;background-color: #f7fcf2;border-color: #87BE3B;}"
+                    )),
+                    tippy::tippy_this(
+                      "submit_button",
+                      "ChatGPT can return different results for the same request.",
+                      theme = "light-border"
+                    )
+                  ),
+                  div(
+                    # Reset Button
+                    actionButton(inputId = "reset_button", label = strong("Reset")),
+                    tags$head(tags$style(
+                      "#reset_button{font-size: 16px;color: blue;background-color: #f7fcf2;border-color: #87BE3B;}"
+                    )),
+                    tippy::tippy_this(
+                      "reset_button",
+                      "Reset before asking a new question. Clears data objects, chat history, & code chunks.",
+                      theme = "light-border"
+                    )
+                  )
                 )
               ),
               # API keys and Python options
@@ -166,19 +182,21 @@ app_ui <- function(request) {
               )
             ),
 
-            # User FYI
-            h5(style = "font-weight: bold;", "Unsure what to ask?"),
-            h5("Submit 'Find data on ____ (i.e. sales)' first. Look at the 'Data' tab before asking another question."),
-
             fluidRow(
               column(12,
+                # Horizontal Line
                 tags$style(HTML("hr{border-top: 1px solid #abda7f;}")),
                 hr(),
+
+                # Select a Dataset
                 tags$head(tags$style(
                   "#user_selected_dataset{background-color: #f7fcf2;border-color: #87BE3B;color: #000;}"
                 )),
+                tags$head(tags$style(
+                  "#user_selected_dataset-label { font-weight: normal; }"
+                )),
                 selectInput(inputId = 'user_selected_dataset',
-                  label = 'Select A Dataset for Analysis',
+                  label = 'Optional: Select a Dataset for Analysis',
                   choices = names(available_datasets),
                   multiple=FALSE,
                   selectize=FALSE
@@ -197,7 +215,6 @@ app_ui <- function(request) {
             #     readonly = TRUE
             #   )
             # ),
-            br(),
 
             # User FYI
             conditionalPanel( #hide
@@ -223,29 +240,32 @@ app_ui <- function(request) {
             br(),
 
             # Data options
-            fluidRow(
-              column(
-                width = 4,
-                tags$head(tags$style(
-                  "#data_edit_modal{background-color: #f7fcf2;border-color: #87BE3B;}"
-                )),
-                actionButton("data_edit_modal", "Data Types")
-              ),
-              column(
-                width = 4,
-                tags$head(tags$style(
-                  "#data_desc_modal{background-color: #f7fcf2;border-color: #87BE3B;}"
-                )),
-                actionButton("data_desc_modal", "Description")
-              ),
-              column(
-                width = 4,
-                tags$head(tags$style(
-                  "#download_data{background-color: #f7fcf2;border-color: #87BE3B;}"
-                )),
-                # download data
-                downloadButton("download_data", "Data")
-              ),
+            conditionalPanel( #hide
+              condition = "0",
+              fluidRow(
+                column(
+                  width = 4,
+                  tags$head(tags$style(
+                    "#data_edit_modal{background-color: #f7fcf2;border-color: #87BE3B;}"
+                  )),
+                  actionButton("data_edit_modal", "Data Types")
+                ),
+                column(
+                  width = 4,
+                  tags$head(tags$style(
+                    "#data_desc_modal{background-color: #f7fcf2;border-color: #87BE3B;}"
+                  )),
+                  actionButton("data_desc_modal", "Description")
+                ),
+                column(
+                  width = 4,
+                  tags$head(tags$style(
+                    "#download_data{background-color: #f7fcf2;border-color: #87BE3B;}"
+                  )),
+                  # download data
+                  downloadButton("download_data", "Data")
+                ),
+              )
             ),
 
             # User FYI and feedback options
@@ -295,7 +315,7 @@ app_ui <- function(request) {
             shinyjs::useShinyjs(),
 
             conditionalPanel(
-              condition = "output.file_uploaded == 0 && input.submit_button == 0",
+              condition = "input.submit_button == 0",
               fluidRow(
                 column(
                   width = 9,
