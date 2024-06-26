@@ -26,7 +26,7 @@ default_model <- "GPT-4 Turbo" #"GPT-4 Turbo (11/23)" # "GPT-4o"  # "ChatGPT" # 
 max_content_length <- 3000 # max tokens:  Change according to model !!!!
 max_content_length_ask <- 3000 # max tokens:  Change according to model !!!!
 default_temperature <- 0.2
-pre_text <- "Write correct, efficient R code to analyze data."
+pre_text <- "Write correct, efficient R code to answer this prompt:"
 pre_text_python <- "Write correct, efficient Python code."
 after_text <- "Use the df data frame."
 max_char_question <- 1000 # max n. of characters in the Q&A
@@ -40,7 +40,7 @@ sqlitePath <- "../../data/usage_data.db" # folder to store the user queries, gen
 sqltable <- "usage"
 system_role <- "Act as a experienced data scientist and statistician. You will write R code following instructions. Do not provide explanation.
 Try to produce a plot when possible. ggplot2 is preferred. Make the plot visually appealing. If multiple plots are generated, try to combine them into one."
-system_role_growth <- "If growth or time period comparison was mentioned, CALCULATE growth rate! Ensure all date and time manipulations are 
+system_role_growth <- "If 'growth' or 'decline' is in the prompt, CALCULATE growth rate! Ensure all date and time manipulations are 
 dynamically handled based on the data. Try using dplyr::lag() for time comparisons. Ensure to include a fair comparison period of equal length."
 system_role_date <- "Assume Today's date is 2024-03-26."
 system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. 
@@ -200,7 +200,7 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, selected_mo
 
       # n_words <- tokens(data_info)
       #if it is the first chunk;  always do this when Davinci model; or if data description is short
-      more_info <- chunk_id <= 1 || selected_model == "text-davinci-003" || n_words < 200
+      # more_info <- chunk_id <= 1 || selected_model == "text-davinci-003" || n_words < 200
 
       # in a session, sometimes the first chunk has the id of 0. sometimes 1?????
 

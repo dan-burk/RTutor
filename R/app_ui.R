@@ -146,7 +146,7 @@ app_ui <- function(request) {
                     # Submit Button
                     actionButton("submit_button", strong("Submit")),
                     tags$head(tags$style(
-                      "#submit_button{font-size: 16px;color: red;background-color: #f7fcf2;border-color: #87BE3B;}"
+                      "#submit_button{font-size: 16px;color: blue;background-color: #f7fcf2;border-color: #87BE3B;}"
                     )),
                     tippy::tippy_this(
                       "submit_button",
@@ -158,7 +158,7 @@ app_ui <- function(request) {
                     # Reset Button
                     actionButton(inputId = "reset_button", label = strong("Reset")),
                     tags$head(tags$style(
-                      "#reset_button{font-size: 16px;color: blue;background-color: #f7fcf2;border-color: #87BE3B;}"
+                      "#reset_button{font-size: 16px;color: red;background-color: #f7fcf2;border-color: #87BE3B;}"
                     )),
                     tippy::tippy_this(
                       "reset_button",
