@@ -38,14 +38,23 @@ max_levels_factor_conversion <- 5 # Numeric columns will be converted to factor 
 unique_ratio <- 0.05   # number of unique values / total # of rows
 sqlitePath <- "../../data/usage_data.db" # folder to store the user queries, generated R code, and running results
 sqltable <- "usage"
-system_role <- "Act as a experienced data scientist and statistician. You will write R code following instructions. Do not provide explanation.
+
+# additional prompts to send to ChatGPT
+system_role <- "Act as an experienced data scientist and statistician. You will write R code following instructions. Do not provide explanation.
 Try to produce a plot when possible. ggplot2 is preferred. Make the plot visually appealing. If multiple plots are generated, try to combine them into one."
-system_role_growth <- "If 'growth' or 'decline' is in the prompt, CALCULATE growth rate! Ensure all date and time manipulations are 
-dynamically handled based on the data. Try using dplyr::lag() for time comparisons. Ensure to include a fair comparison period of equal length."
 system_role_date <- "Assume Today's date is 2024-03-26."
+growth_instruct <- "Calculate growth rate! Ensure all date and time manipulations are dynamically handled based on the data. Try using dplyr::lag() for 
+time comparisons. Ensure to include a fair comparison period of equal length. Do not use print() to display tables."
+decline_instruct <- "Calculate decline rate! Ensure all date and time manipulations are dynamically handled based on the data. Try using dplyr::lag() for 
+time comparisons. Ensure to include a fair comparison period of equal length. Do not use print() to display tables."
+forecast_instruct <- "Ensure the output includes a table of forecasted sales with confidence intervals, and validate the forecast accuracy against 
+historical data. Plot the time progression, doesn't have to be ggplot2. Do not use print() to display tables."
+
 system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. 
 You will respond like answering questions by students. If the question is in languages other than English, respond in that language. 
 If the question is not remotely related to your expertise, respond with 'No comment'."
+# system_role_growth <- "If 'growth' or 'decline' is in the prompt, CALCULATE growth rate! Ensure all date and time manipulations are 
+# dynamically handled based on the data. Try using dplyr::lag() for time comparisons. Ensure to include a fair comparison period of equal length."
 
 # voice input parameters
 wake_word <- "Tutor" #Tutor, Emma, Note that "Hey Cox" does not work very well.
@@ -250,6 +259,50 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, selected_mo
   txt <- gsub("\n", " ", txt)
   #cat("\n", txt)
   return(txt)
+}
+
+
+#' Search User input.
+#'
+#' Add additional info to prompt for certain user inputs.
+#'
+#' @param prepared_request A string that stores the user input.
+#'
+#' @return Returns specified instructions to be sent to GPT.
+input_search <- function(prepared_request) {
+  # define return vector
+  final_instructions <- character(0)
+
+  # create binary variables, each check if that keyword exists in the user's question
+  growth <- ifelse(grepl("growth", prepared_request, ignore.case = TRUE), 1, 0)
+  decline <- ifelse(grepl("declin", prepared_request, ignore.case = TRUE), 1, 0)  # typo intentional (decline/declining)
+  forecast <- ifelse(grepl("forecast", prepared_request, ignore.case = TRUE), 1, 0)
+
+  # define vector with existing keywords
+  total_keywords <- c(growth = growth, decline = decline, forecast = forecast)
+
+  # if no keywords exist, append nothing
+  if (sum(total_keywords) == 0) {
+    return(final_instructions)
+
+  } else {    # if any keyword exists, append appropriate instructions to prompt
+
+    instructions <- list(   # define instructions based on keyword
+      growth = growth_instruct,
+      decline = decline_instruct,
+      forecast = forecast_instruct
+    )
+
+    # identify active keywords
+    active_keywords <- names(total_keywords)[total_keywords == 1]
+
+    # get matching instructions
+    all_instructions <- instructions[active_keywords]
+
+    # combine into a single string
+    final_instructions <- paste(all_instructions, collapse = " ")
+    return(final_instructions)
+  }
 }
 
 
