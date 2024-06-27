@@ -353,13 +353,13 @@ app_server <- function(input, output, session) {
             HTML(
               "
               #demo_prompt+div .selectize-input {
-                background-color: #f7fcf2 !important;
-                border-color: #87BE3B !important;
+                background-color: #F6FFF5 !important;
+                border-color: #90BD8C !important;
                 color: #000 !important;
               }
               #demo_prompt+div .selectize-dropdown {
-                background-color: #f7fcf2 !important;
-                border-color: #87BE3B !important;
+                background-color: #F6FFF5 !important;
+                border-color: #90BD8C !important;
                 color: #000 !important;
               }
               "
@@ -1029,6 +1029,8 @@ app_server <- function(input, output, session) {
           } # end loading selected data
 
           prepared_request = prep_input(input$input_text, input$select_data, current_data(), input$use_python, logs$id, selected_model(), df2 = current_data_2())
+          additional_info = input_search(prepared_request)
+
 
           #Subsetting Meta Data csv file to send in with prompt
           sub_meta_data_csv <- meta_data_csv_res() %>%
@@ -1045,7 +1047,8 @@ app_server <- function(input, output, session) {
               role = "user",
               content = paste(
                 prepared_request,
-                system_role_growth,
+                additional_info,
+                # system_role_growth,
                 system_role_date,
                 # "If user mentions growth, then ensure...",
                 "Available datasets: \"\"\"",

@@ -21,29 +21,29 @@ app_ui <- function(request) {
       tags$style(HTML("
         /* navbar */
         .navbar {
-          background-color: #def0cb;border: none;color: #181818;font-weight: bold;
+          background-color: #C1E2BE;border-color: #90BD8C; color: #181818;font-weight: bold;
         }
 
         /* tabs */
         .navbar-default .navbar-nav > li > a {
-          background-color: #def0cb;color: #181818;
+          background-color: #C1E2BE;border-color: #9AC596;color: #181818;
         }
 
         /* active tab */
         .navbar-default .navbar-nav > .active > a, 
         .navbar-default .navbar-nav > .active > a:focus, 
         .navbar-default .navbar-nav > .active > a:hover {
-          background-color: #c3e5a3;color: #181818;font-weight: bold;
+          background-color: #A0BB9E;color: #181818;font-weight: bold;
         }
 
         /* sidebar panel */
         .well {
-          background-color: #def0cb;
+          background-color: #C1E2BE;border-color: #90BD8C;
       "))
     ),
 
     navbarPage(
-      "RTutor",
+      HTML('<span style="color: black;">RTutor</span>'),
        #  windowTitle = "RTutor",
        # theme = bslib::bs_theme(bootswatch = "darkly"),
       id = "tabs",
@@ -115,14 +115,14 @@ app_ui <- function(request) {
             ),
 
             # Horizontal Line
-            tags$style(HTML("hr{border-top: 1px solid #abda7f;}")),
+            tags$style(HTML("hr{border-top: 1px solid #90BD8C;}")),
             hr(),
             # User Input Text Box
             tags$style(HTML("
               textarea {
                 width: 100%;
-                background-color: #f7fcf2;
-                border-color: #87BE3B;
+                background-color: #F6FFF5;
+                border-color: #90BD8C;
               }
             ")),
             tags$textarea(
@@ -134,7 +134,7 @@ app_ui <- function(request) {
             uiOutput("prompt_ui"),
 
             # Horizontal Line
-            tags$style(HTML("hr{border-top: 1px solid #abda7f;}")),
+            tags$style(HTML("hr{border-top: 1px solid #90BD8C;}")),
                 hr(),
 
             fluidRow(
@@ -146,7 +146,7 @@ app_ui <- function(request) {
                     # Submit Button
                     actionButton("submit_button", strong("Submit")),
                     tags$head(tags$style(
-                      "#submit_button{font-size: 16px;color: blue;background-color: #f7fcf2;border-color: #87BE3B;}"
+                      "#submit_button{font-size: 16px;color: blue;background-color: #F6FFF5;border-color: #90BD8C;}"
                     )),
                     tippy::tippy_this(
                       "submit_button",
@@ -158,7 +158,7 @@ app_ui <- function(request) {
                     # Reset Button
                     actionButton(inputId = "reset_button", label = strong("Reset")),
                     tags$head(tags$style(
-                      "#reset_button{font-size: 16px;color: red;background-color: #f7fcf2;border-color: #87BE3B;}"
+                      "#reset_button{font-size: 16px;color: red;background-color: #F6FFF5;border-color: #90BD8C;}"
                     )),
                     tippy::tippy_this(
                       "reset_button",
@@ -185,21 +185,21 @@ app_ui <- function(request) {
             fluidRow(
               column(12,
                 # Horizontal Line
-                tags$style(HTML("hr{border-top: 1px solid #abda7f;}")),
+                tags$style(HTML("hr{border-top: 1px solid #90BD8C;}")),
                 hr(),
 
                 # Select a Dataset
                 tags$head(tags$style(
-                  "#user_selected_dataset{background-color: #f7fcf2;border-color: #87BE3B;color: #000;}"
+                  "#user_selected_dataset{background-color: #F6FFF5;border-color: #90BD8C;color: #000;}"
                 )),
                 tags$head(tags$style(
                   "#user_selected_dataset-label { font-weight: normal; }"
                 )),
                 selectInput(inputId = 'user_selected_dataset',
-                  label = 'Optional: Select a Dataset for Analysis',
+                  label = HTML('<span style="color: black;">Optional: Select a Dataset for Analysis</span>'),
                   choices = names(available_datasets),
                   multiple=FALSE,
-                  selectize=FALSE
+                  selectize=FALSE,
                 )
               )
             ),
@@ -246,21 +246,21 @@ app_ui <- function(request) {
                 column(
                   width = 4,
                   tags$head(tags$style(
-                    "#data_edit_modal{background-color: #f7fcf2;border-color: #87BE3B;}"
+                    "#data_edit_modal{background-color: #F6FFF5;border-color: #90BD8C;}"
                   )),
                   actionButton("data_edit_modal", "Data Types")
                 ),
                 column(
                   width = 4,
                   tags$head(tags$style(
-                    "#data_desc_modal{background-color: #f7fcf2;border-color: #87BE3B;}"
+                    "#data_desc_modal{background-color: #F6FFF5;border-color: #90BD8C;}"
                   )),
                   actionButton("data_desc_modal", "Description")
                 ),
                 column(
                   width = 4,
                   tags$head(tags$style(
-                    "#download_data{background-color: #f7fcf2;border-color: #87BE3B;}"
+                    "#download_data{background-color: #F6FFF5;border-color: #90BD8C;}"
                   )),
                   # download data
                   downloadButton("download_data", "Data")
