@@ -296,6 +296,42 @@ input_search <- function(prepared_request) {
     "year over year" = y_over_y_instruct
   )
 
+  ####################################
+  ########  Not working as is ########
+  # # prompt for ChatGPT
+  # prompt <- list(list(
+  #   role = "user",
+  #   content = paste(
+  #     "Based on the user's input:", prepared_request,
+  #     ", decide if it uses OR IMPLIES any of the following keywords:",
+  #     paste(names(keyword_instructions), collapse = ", "),
+  #     ". Your response should only be: 'c(...)'. Which will be filled with a series of 'TRUE' or 'FALSE' 
+  #     corresponding with each keyword with 'TRUE'=yes the keyword is in or is implied in the user's input."
+  #   )
+  # ))
+
+  # # store response from ChatGPT
+  # response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+  #               model = "gpt-4",
+  #               openai_api_key = api_key_global,
+  #               #max_tokens = 500,
+  #               temperature = 0.2,
+  #               messages = prompt
+  #             )
+  # detected_keywords <- response$choices$message.content
+  # print(detected_keywords)
+
+  # detected_keywords <- as.logical(parse(text = detected_keywords))
+
+  # # get matching instructions for any detected keywords
+  # matching_keywords <- names(keyword_instructions)[detected_keywords]
+  # print(matching_keywords)
+
+  # # create final instructions based on detected keywords
+  # if (length(matching_keywords) > 0) {
+  #   final_instructions <- paste(keyword_instructions[matching_keywords], collapse = " ")
+  # }
+
   # check for any keywords in user's input
   detected_keywords <- sapply(names(keyword_instructions), function(kw) {
     grepl(kw, prepared_request, ignore.case = TRUE)
