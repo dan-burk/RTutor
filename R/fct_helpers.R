@@ -296,8 +296,8 @@ input_search <- function(prepared_request) {
     "year over year" = y_over_y_instruct
   )
 
-  ###################################
-  #######  Not working as is  #######
+  ####################################
+  ########  Not working as is ########
   # # prompt for ChatGPT
   # prompt <- list(list(
   #   role = "user",
