@@ -2150,11 +2150,11 @@ app_server <- function(input, output, session) {
     tagList(
       actionButton(
         inputId = "report",
-        label = "Session report"
+        label = "HTML Session Report"
       ),
       tippy::tippy_this(
         "report",
-        "Render a HTML report for this session.",
+        "Render a HTML report file for this session.",
         theme = "light-border"
       )
    )
