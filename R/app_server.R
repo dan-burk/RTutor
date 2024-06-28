@@ -867,7 +867,6 @@ app_server <- function(input, output, session) {
               run_env_start(as.list(run_env()))
 
             }
-
             
             # manage context length. If it is too long, remove the oldest ones, except the first one
             history_tokens <- sapply(
@@ -947,7 +946,7 @@ app_server <- function(input, output, session) {
               )
 
               # ChatGPT API
-              response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+              response1 <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
                 model = selected_model(),
                 openai_api_key = api_key_session()$api_key,
                 #max_tokens = 500,
@@ -955,7 +954,7 @@ app_server <- function(input, output, session) {
                   messages = data_prompt
               )
 
-              df_name <- response$choices$message.content
+              df_name <- response1$choices$message.content
 
               tem1 <- gsub("\\..*", "", df_name)
               tem2 <- gsub("_", " ", tem1)
@@ -1002,6 +1001,16 @@ app_server <- function(input, output, session) {
             } else {
 
               df_name <- available_datasets[[input$user_selected_dataset]]
+
+              tem1 <- gsub("\\..*", "", df_name)
+              tem2 <- gsub("_", " ", tem1)
+              selected_data_file(tem2)
+              # show message for 10s with the fine name
+              showNotification(
+                paste("Selected dataset: ", tem2),
+                duration = 60
+              )
+
               selected_file_path <- paste0(data_path, df_name)
               df <- readRDS(selected_file_path)
               if (convert_to_factor()) {
@@ -1017,6 +1026,7 @@ app_server <- function(input, output, session) {
               # update runtime environment with new data frame
               run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
               run_env_start(as.list(run_env()))
+
 
               # showNotification(
               #   "Congrats! Made it through the 1st nested if-else statement!",
@@ -1057,7 +1067,6 @@ app_server <- function(input, output, session) {
               )
             ))
           )
-
 
           response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
             model = selected_model(),
