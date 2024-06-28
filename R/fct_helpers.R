@@ -49,6 +49,16 @@ decline_instruct <- "Calculate decline rate! Ensure all date and time manipulati
 time comparisons. Ensure to include a fair comparison period of equal length. Do not use print() to display tables."
 forecast_instruct <- "Ensure the output includes a table of forecasted sales with confidence intervals, and validate the forecast accuracy against 
 historical data. Plot the time progression, doesn't have to be ggplot2. Do not use print() to display tables."
+compare_instruct <- "Compare the specified metrics to identify differences/similarities. Focus on key metrics like performance indicators. Highlight 
+significant variations."
+performance_instruct <- "Analyze performance metrics for the specified period. Include key performance indicators (KPIs). Compare current performance to 
+historical data to identify trends."
+trend_instruct <- "Identify and analyze trends over the specified timeframe. Use time series analysis to detect patterns and changes in the data. 
+Highlight upward or downward trends."
+m_over_m_instruct <- "Conduct month-over-month analysis comparing the data between consecutive months. Calculate percentage changes and identify 
+significant increases or decreases. Highlight any recurring monthly patterns or anomalies."
+y_over_y_instruct <- "Conduct year-over-year analysis comparing the data from the same period in different years. Calculate growth rate and 
+percentage changes. Highlight any significant long-term trends/shifts in the data."
 
 system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. 
 You will respond like answering questions by students. If the question is in languages other than English, respond in that language. 
@@ -273,36 +283,35 @@ input_search <- function(prepared_request) {
   # define return vector
   final_instructions <- character(0)
 
-  # create binary variables, each check if that keyword exists in the user's question
-  growth <- ifelse(grepl("growth", prepared_request, ignore.case = TRUE), 1, 0)
-  decline <- ifelse(grepl("declin", prepared_request, ignore.case = TRUE), 1, 0)  # typo intentional (decline/declining)
-  forecast <- ifelse(grepl("forecast", prepared_request, ignore.case = TRUE), 1, 0)
+  # place specific instructions into vector
+  # name them the keyword to search for
+  keyword_instructions <- c(
+    "growth" = growth_instruct,
+    "declin" = decline_instruct,
+    "forecast" = forecast_instruct,
+    "compar" = compare_instruct,
+    "trend" = trend_instruct,
+    "performance" = performance_instruct,
+    "month over month" = m_over_m_instruct,
+    "year over year" = y_over_y_instruct
+  )
 
-  # define vector with existing keywords
-  total_keywords <- c(growth = growth, decline = decline, forecast = forecast)
+  # check for any keywords in user's input
+  detected_keywords <- sapply(names(keyword_instructions), function(kw) {
+    grepl(kw, prepared_request, ignore.case = TRUE)
+  })
 
-  # if no keywords exist, append nothing
-  if (sum(total_keywords) == 0) {
-    return(final_instructions)
+  # get matching instructions for any detected keywords
+  all_instructions <- keyword_instructions[detected_keywords]
 
-  } else {    # if any keyword exists, append appropriate instructions to prompt
-
-    instructions <- list(   # define instructions based on keyword
-      growth = growth_instruct,
-      decline = decline_instruct,
-      forecast = forecast_instruct
-    )
-
-    # identify active keywords
-    active_keywords <- names(total_keywords)[total_keywords == 1]
-
-    # get matching instructions
-    all_instructions <- instructions[active_keywords]
-
+  # if any keyword exists, append appropriate instructions to prompt
+  # else, no keywords exist, append nothing
+  if (any(detected_keywords)) {
     # combine into a single string
     final_instructions <- paste(all_instructions, collapse = " ")
-    return(final_instructions)
   }
+
+  return(final_instructions)
 }
 
 

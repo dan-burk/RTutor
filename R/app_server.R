@@ -1054,8 +1054,8 @@ app_server <- function(input, output, session) {
                 "Available datasets: \"\"\"",
                 sub_meta_data_json,
                 "\"\"\""
-                )
-              )) 
+              )
+            ))
           )
 
 
