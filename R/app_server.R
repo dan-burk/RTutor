@@ -250,12 +250,12 @@ app_server <- function(input, output, session) {
 
       #If User doesn't select a dataset, print ChatGPT's selection.
       #   else print user selection
-      if(is.null(available_datasets[[input$user_selected_dataset]])){
-        txt <- paste0("", selected_data_file())
-      }else{
+      #if(is.null(available_datasets[[input$user_selected_dataset]])){
+      #  txt <- paste0("", selected_data_file())
+      #}else{
         selected_data_file(input$user_selected_dataset)
         txt <- paste0("", selected_data_file())
-      }
+      #}
       return(txt)
 
   })
@@ -765,74 +765,9 @@ app_server <- function(input, output, session) {
           if (length(logs$code_history) > 0) {
 
             if (is.null(available_datasets[[input$user_selected_dataset]])) {
-              #Reselect dataset we want to use
-              # construct prompt for selecting a dataset
-              data_prompt <- list()
-              data_prompt <- append(
-                data_prompt,
-                list(list(
-                  role = "system",
-                  content = "Act as an experienced data engineer. You will identify a file that is best suited for a task. "
-                ))
-              )
-              data_prompt <- append(
-                data_prompt,
-                list(list(
-                  role = "user",
-                  content = paste(
-                    "Identify a single file by file name, without explanation, that contain information related to this question or analytical goal.  Use the latest data.
-                    Respond with \"Not found\" if no file is found. ",
-                    input$input_text,
-                    #"Plot the distribution of residential electricity rates in South Dakota. ",
-                    #"Proportion of engergy use in the automotive industry in the US. ", # fail
-                    # "Plot total energy use by sector in the US.",
-
-                    "Available datasets: \"\"\"",
-                    meta_data_res(),
-                    "\"\"\""
-                  )
-                ))
-              )
-
-              # ChatGPT API
-              response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-                model = selected_model(),
-                openai_api_key = api_key_session()$api_key,
-                #max_tokens = 500,
-                temperature = sample_temp(),
-                  messages = data_prompt
-              )
-
-              df_name <- response$choices$message.content
-
-              tem1 <- gsub("\\..*", "", df_name)
-              tem2 <- gsub("_", " ", tem1)
-              selected_data_file(tem2)
-              # show message for 10s with the file name
-              showNotification(
-                paste("Selected dataset: ", tem2),
-                duration = 60
-              )
-              selected_file_path <- paste0(data_path, df_name)
-
-              # if file is found, load it and update the current_data() reactive value
-              if(selected_file_path != "Not found" && file.exists(selected_file_path)) {
-
-                df <- readRDS(selected_file_path)
-                if (convert_to_factor()) {
-                  df <- numeric_to_factor(
-                    df,
-                    max_levels_factor(),
-                    max_proptortion_factor()
-                  )
-                }
-                # update the current_data() reactive value 
-                current_data(df)
-                selected_file(df_name) # update selected_file() reactive value
-              } else {
-                # show error message
+              # show error if user does not select file
                 showNotification(
-                  "No file is found. Please try again.",
+                  "No file is found. Please select a file and try again.",
                   duration = 10
                 )
 
@@ -840,14 +775,89 @@ app_server <- function(input, output, session) {
                 Sys.sleep(5)
                 session$reload()
 
+              # #Reselect dataset we want to use
+              # # construct prompt for selecting a dataset
+              # data_prompt <- list()
+              # data_prompt <- append(
+              #   data_prompt,
+              #   list(list(
+              #     role = "system",
+              #     content = "Act as an experienced data engineer. You will identify a file that is best suited for a task. "
+              #   ))
+              # )
+              # data_prompt <- append(
+              #   data_prompt,
+              #   list(list(
+              #     role = "user",
+              #     content = paste(
+              #       "Identify a single file by file name, without explanation, that contain information related to this question or analytical goal.  Use the latest data.
+              #       Respond with \"Not found\" if no file is found. ",
+              #       input$input_text,
+              #       #"Plot the distribution of residential electricity rates in South Dakota. ",
+              #       #"Proportion of engergy use in the automotive industry in the US. ", # fail
+              #       # "Plot total energy use by sector in the US.",
 
-              }
+              #       "Available datasets: \"\"\"",
+              #       meta_data_res(),
+              #       "\"\"\""
+              #     )
+              #   ))
+              # )
 
-              # update runtime environment with new data frame
-              run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
-              run_env_start(as.list(run_env()))
+              # # ChatGPT API
+              # response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+              #   model = selected_model(),
+              #   openai_api_key = api_key_session()$api_key,
+              #   #max_tokens = 500,
+              #   temperature = sample_temp(),
+              #     messages = data_prompt
+              # )
 
-            } else {
+              # df_name <- response$choices$message.content
+
+              # tem1 <- gsub("\\..*", "", df_name)
+              # tem2 <- gsub("_", " ", tem1)
+              # selected_data_file(tem2)
+              # # show message for 10s with the file name
+              # showNotification(
+              #   paste("Selected dataset: ", tem2),
+              #   duration = 60
+              # )
+              # selected_file_path <- paste0(data_path, df_name)
+
+              # # if file is found, load it and update the current_data() reactive value
+              # if(selected_file_path != "Not found" && file.exists(selected_file_path)) {
+
+              #   df <- readRDS(selected_file_path)
+              #   if (convert_to_factor()) {
+              #     df <- numeric_to_factor(
+              #       df,
+              #       max_levels_factor(),
+              #       max_proptortion_factor()
+              #     )
+              #   }
+              #   # update the current_data() reactive value 
+              #   current_data(df)
+              #   selected_file(df_name) # update selected_file() reactive value
+              } # else {
+                # # show error message
+                # showNotification(
+                #   "No file is found. Please select a file and try again.",
+                #   duration = 10
+                # )
+
+                # # restart
+                # Sys.sleep(5)
+                # session$reload()
+
+
+              # }
+
+              # # update runtime environment with new data frame
+              # run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
+              # run_env_start(as.list(run_env()))
+           # }
+             else {   # user has selected a file
               
               df_name <- available_datasets[[input$user_selected_dataset]]
               selected_file_path <- paste0(data_path, df_name)
@@ -916,89 +926,98 @@ app_server <- function(input, output, session) {
           } else {  # if first prompt,  identify and load dataset
 
             if (is.null(available_datasets[[input$user_selected_dataset]])) {
-              
-              # construct prompt for selecting a dataset
-              data_prompt <- list()
-              data_prompt <- append(
-                data_prompt,
-                list(list(
-                  role = "system",
-                  content = "Act as an experienced data engineer. You will identify a file that is best suited for a task. "
-                ))
-              )
-              data_prompt <- append(
-                data_prompt,
-                list(list(
-                  role = "user",
-                  content = paste(
-                    "Identify a single file by file name, without explanation, that contain information related to this question or analytical goal.  Use the latest data.
-                    Respond with \"Not found\" if no file is found. ",
-                    input$input_text,
-                    #"Plot the distribution of residential electricity rates in South Dakota. ",
-                    #"Proportion of engergy use in the automotive industry in the US. ", # fail
-                    # "Plot total energy use by sector in the US.",
-
-                    " Available datasets: \"\"\"",
-                    meta_data_res(),
-                    "\"\"\""
-                  )
-                ))
-              )
-
-              # ChatGPT API
-              response1 <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-                model = selected_model(),
-                openai_api_key = api_key_session()$api_key,
-                #max_tokens = 500,
-                temperature = sample_temp(),
-                  messages = data_prompt
-              )
-
-              df_name <- response1$choices$message.content
-
-              tem1 <- gsub("\\..*", "", df_name)
-              tem2 <- gsub("_", " ", tem1)
-              selected_data_file(tem2)
-              # show message for 10s with the fine name
+              # show error message if user did not select file
               showNotification(
-                paste("Selected dataset: ", tem2),
-                duration = 60
+                "No file is found. Please select a file and try again.",
+                duration = 10
               )
-              selected_file_path <- paste0(data_path, df_name)
 
-              # if file is found, load it and update the current_data() reactive value
-              if(selected_file_path != "Not found" && file.exists(selected_file_path)) {
+              # restart
+              Sys.sleep(5)
+              session$reload()
 
-                df <- readRDS(selected_file_path)
-                if (convert_to_factor()) {
-                  df <- numeric_to_factor(
-                    df,
-                    max_levels_factor(),
-                    max_proptortion_factor()
-                  )
-                }
-                # update the current_data() reactive value
-                current_data(df)
-                selected_file(df_name) # update the selected_file() reactive value
-              } else {
-                # show error message
-                showNotification(
-                  "No file is found. Please try again.",
-                  duration = 10
-                )
+              # # construct prompt for selecting a dataset
+              # data_prompt <- list()
+              # data_prompt <- append(
+              #   data_prompt,
+              #   list(list(
+              #     role = "system",
+              #     content = "Act as an experienced data engineer. You will identify a file that is best suited for a task. "
+              #   ))
+              # )
+              # data_prompt <- append(
+              #   data_prompt,
+              #   list(list(
+              #     role = "user",
+              #     content = paste(
+              #       "Identify a single file by file name, without explanation, that contain information related to this question or analytical goal.  Use the latest data.
+              #       Respond with \"Not found\" if no file is found. ",
+              #       input$input_text,
+              #       #"Plot the distribution of residential electricity rates in South Dakota. ",
+              #       #"Proportion of engergy use in the automotive industry in the US. ", # fail
+              #       # "Plot total energy use by sector in the US.",
 
-                # restart
-                Sys.sleep(5)
-                session$reload()
+              #       " Available datasets: \"\"\"",
+              #       meta_data_res(),
+              #       "\"\"\""
+              #     )
+              #   ))
+              # )
+
+              # # ChatGPT API
+              # response1 <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+              #   model = selected_model(),
+              #   openai_api_key = api_key_session()$api_key,
+              #   #max_tokens = 500,
+              #   temperature = sample_temp(),
+              #     messages = data_prompt
+              # )
+
+              # df_name <- response1$choices$message.content
+
+              # tem1 <- gsub("\\..*", "", df_name)
+              # tem2 <- gsub("_", " ", tem1)
+              # selected_data_file(tem2)
+              # # show message for 10s with the fine name
+              # showNotification(
+              #   paste("Selected dataset: ", tem2),
+              #   duration = 60
+              # )
+              # selected_file_path <- paste0(data_path, df_name)
+
+              # # if file is found, load it and update the current_data() reactive value
+              # if(selected_file_path != "Not found" && file.exists(selected_file_path)) {
+
+              #   df <- readRDS(selected_file_path)
+              #   if (convert_to_factor()) {
+              #     df <- numeric_to_factor(
+              #       df,
+              #       max_levels_factor(),
+              #       max_proptortion_factor()
+              #     )
+              #   }
+              #   # update the current_data() reactive value
+              #   current_data(df)
+              #   selected_file(df_name) # update the selected_file() reactive value
+            } # else {
+                # # show error message
+                # showNotification(
+                #   "No file is found. Please try again.",
+                #   duration = 10
+                # )
+
+                # # restart
+                # Sys.sleep(5)
+                # session$reload()
 
 
-              }
+              # }
 
-              # update runtime environment with new data frame
-              run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
-              run_env_start(as.list(run_env()))
-
-            } else {
+              # # update runtime environment with new data frame
+              # run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
+              # run_env_start(as.list(run_env()))
+           # }
+            else {  # user has selected a file
 
               df_name <- available_datasets[[input$user_selected_dataset]]
 
@@ -1008,7 +1027,7 @@ app_server <- function(input, output, session) {
               # show message for 10s with the fine name
               showNotification(
                 paste("Selected dataset: ", tem2),
-                duration = 60
+                duration = 10
               )
 
               selected_file_path <- paste0(data_path, df_name)
@@ -1037,6 +1056,57 @@ app_server <- function(input, output, session) {
 
 
           } # end loading selected data
+
+          # Is the user's question relevant? -- relevancy agent
+          # Construct prompt for deciding relevancy of user prompt
+          relevancy_prompt <- list()
+          relevancy_prompt <- append(
+            relevancy_prompt,
+            list(list(
+              role = "system",
+              content = "Act as an experienced data analyst. Determine if the following prompt is relevant to data on sales, registrations, or dispatch. "
+            ))
+          )
+          relevancy_prompt <- append(
+            relevancy_prompt,
+            list(list(
+              role = "user",
+              content = paste(
+                "If it is relevant to any of that data, respond with 'True'. Otherwise, respond with 'False'. Here's the prompt: ",
+                input$input_text
+              )
+            ))
+          )
+
+          # ChatGPT API
+          response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+            model = selected_model(),
+            openai_api_key = api_key_session()$api_key,
+            #max_tokens = 500,
+            temperature = sample_temp(),
+            messages = relevancy_prompt
+          )
+
+          # Store True or False
+          relevancy_response <- tolower(response$choices$message.content) == "true"
+
+          # If prompt is not relevant, show warning message and reset
+          if (!relevancy_response) {
+            showModal(
+              modalDialog(
+                title = "Error",
+                "Please ask a question related to HMCL data and try again.",
+                footer = actionButton("reset", "Reset")
+              )
+            )
+
+            observeEvent(input$reset, {
+              removeModal()  # Close the modal dialog when "Reset" is clicked
+            })
+
+            session$reload()  # Restart session
+          } # end relevancy agent
+
 
           prepared_request = prep_input(input$input_text, input$select_data, current_data(), input$use_python, logs$id, selected_model(), df2 = current_data_2())
           additional_info = input_search(prepared_request)
