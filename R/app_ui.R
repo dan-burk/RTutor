@@ -86,18 +86,32 @@ app_ui <- function(request) {
           sidebarPanel(
             #uiOutput("timer_ui"),
 
-            # Show selected dataset
-            fluidRow(
-              column(
-                width = 6,
-                textOutput("selected_dataset")
-              ),
-
-              # Reset Button
-              column(
-                width = 6
-              )
+            # Select a Dataset
+            tags$head(tags$style(
+              "#user_selected_dataset{background-color: #F6FFF5;border-color: #90BD8C;color: #000;}"
+            )),
+            tags$head(tags$style(
+              "#user_selected_dataset-label { font-weight: normal; }"
+            )),
+            selectInput(inputId = 'user_selected_dataset',
+              label = HTML('<span style="color: black;">Select a Dataset for Analysis</span>'),
+              choices = names(available_datasets),
+              multiple=FALSE,
+              selectize=FALSE,
             ),
+
+            # # Show selected dataset
+            # fluidRow(
+            #   column(
+            #     width = 6,
+            #     textOutput("selected_dataset")
+            #   ),
+
+            #   # Reset Button
+            #   column(
+            #     width = 6
+            #   )
+            # ),
 
             conditionalPanel(
               condition = "0",
@@ -186,21 +200,7 @@ app_ui <- function(request) {
               column(12,
                 # Horizontal Line
                 tags$style(HTML("hr{border-top: 1px solid #90BD8C;}")),
-                hr(),
-
-                # Select a Dataset
-                tags$head(tags$style(
-                  "#user_selected_dataset{background-color: #F6FFF5;border-color: #90BD8C;color: #000;}"
-                )),
-                tags$head(tags$style(
-                  "#user_selected_dataset-label { font-weight: normal; }"
-                )),
-                selectInput(inputId = 'user_selected_dataset',
-                  label = HTML('<span style="color: black;">Optional: Select a Dataset for Analysis</span>'),
-                  choices = names(available_datasets),
-                  multiple=FALSE,
-                  selectize=FALSE,
-                )
+                hr()
               )
             ),
 
@@ -237,7 +237,6 @@ app_ui <- function(request) {
               ),
               shinyjs::hidden(actionButton("ask_button", strong("Ask RTutor")))
             ),
-            br(),
 
             # Data options
             conditionalPanel( #hide
@@ -310,7 +309,6 @@ app_ui <- function(request) {
       ###############################################################################
       # Main
       ###############################################################################
-
           mainPanel(
             shinyjs::useShinyjs(),
 
