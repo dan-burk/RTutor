@@ -279,76 +279,76 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, selected_mo
 #' @param prepared_request A string that stores the user input.
 #'
 #' @return Returns specified instructions to be sent to GPT.
-input_search <- function(prepared_request) {
-  # define return vector
-  final_instructions <- character(0)
+# input_search <- function(prepared_request) {
+#   # define return vector
+#   final_instructions <- character(0)
 
-  # place specific instructions into vector
-  # name them the keyword to search for
-  keyword_instructions <- c(
-    "growth" = growth_instruct,
-    "declin" = decline_instruct,
-    "forecast" = forecast_instruct,
-    "compar" = compare_instruct,
-    "trend" = trend_instruct,
-    "performance" = performance_instruct,
-    "month over month" = m_over_m_instruct,
-    "year over year" = y_over_y_instruct
-  )
+#   # place specific instructions into vector
+#   # name them the keyword to search for
+#   keyword_instructions <- c(
+#     "growth" = growth_instruct,
+#     "declin" = decline_instruct,
+#     "forecast" = forecast_instruct,
+#     "compar" = compare_instruct,
+#     "trend" = trend_instruct,
+#     "performance" = performance_instruct,
+#     "month over month" = m_over_m_instruct,
+#     "year over year" = y_over_y_instruct
+#   )
 
-  ####################################
-  ########  Not working as is ########
-  # # prompt for ChatGPT
-  # prompt <- list(list(
-  #   role = "user",
-  #   content = paste(
-  #     "Based on the user's input:", prepared_request,
-  #     ", decide if it uses OR IMPLIES any of the following keywords:",
-  #     paste(names(keyword_instructions), collapse = ", "),
-  #     ". Your response should only be: 'c(...)'. Which will be filled with a series of 'TRUE' or 'FALSE' 
-  #     corresponding with each keyword with 'TRUE'=yes the keyword is in or is implied in the user's input."
-  #   )
-  # ))
+#   ####################################
+#   ########  Not working as is ########
+#   # # prompt for ChatGPT
+#   # prompt <- list(list(
+#   #   role = "user",
+#   #   content = paste(
+#   #     "Based on the user's input:", prepared_request,
+#   #     ", decide if it uses OR IMPLIES any of the following keywords:",
+#   #     paste(names(keyword_instructions), collapse = ", "),
+#   #     ". Your response should only be: 'c(...)'. Which will be filled with a series of 'TRUE' or 'FALSE' 
+#   #     corresponding with each keyword with 'TRUE'=yes the keyword is in or is implied in the user's input."
+#   #   )
+#   # ))
 
-  # # store response from ChatGPT
-  # response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-  #               model = "gpt-4",
-  #               openai_api_key = api_key_global,
-  #               #max_tokens = 500,
-  #               temperature = 0.2,
-  #               messages = prompt
-  #             )
-  # detected_keywords <- response$choices$message.content
-  # print(detected_keywords)
+#   # # store response from ChatGPT
+#   # response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+#   #               model = "gpt-4",
+#   #               openai_api_key = api_key_global,
+#   #               #max_tokens = 500,
+#   #               temperature = 0.2,
+#   #               messages = prompt
+#   #             )
+#   # detected_keywords <- response$choices$message.content
+#   # print(detected_keywords)
 
-  # detected_keywords <- as.logical(parse(text = detected_keywords))
+#   # detected_keywords <- as.logical(parse(text = detected_keywords))
 
-  # # get matching instructions for any detected keywords
-  # matching_keywords <- names(keyword_instructions)[detected_keywords]
-  # print(matching_keywords)
+#   # # get matching instructions for any detected keywords
+#   # matching_keywords <- names(keyword_instructions)[detected_keywords]
+#   # print(matching_keywords)
 
-  # # create final instructions based on detected keywords
-  # if (length(matching_keywords) > 0) {
-  #   final_instructions <- paste(keyword_instructions[matching_keywords], collapse = " ")
-  # }
+#   # # create final instructions based on detected keywords
+#   # if (length(matching_keywords) > 0) {
+#   #   final_instructions <- paste(keyword_instructions[matching_keywords], collapse = " ")
+#   # }
 
-  # check for any keywords in user's input
-  detected_keywords <- sapply(names(keyword_instructions), function(kw) {
-    grepl(kw, prepared_request, ignore.case = TRUE)
-  })
+#   # check for any keywords in user's input
+#   detected_keywords <- sapply(names(keyword_instructions), function(kw) {
+#     grepl(kw, prepared_request, ignore.case = TRUE)
+#   })
 
-  # get matching instructions for any detected keywords
-  all_instructions <- keyword_instructions[detected_keywords]
+#   # get matching instructions for any detected keywords
+#   all_instructions <- keyword_instructions[detected_keywords]
 
-  # if any keyword exists, append appropriate instructions to prompt
-  # else, no keywords exist, append nothing
-  if (any(detected_keywords)) {
-    # combine into a single string
-    final_instructions <- paste(all_instructions, collapse = " ")
-  }
+#   # if any keyword exists, append appropriate instructions to prompt
+#   # else, no keywords exist, append nothing
+#   if (any(detected_keywords)) {
+#     # combine into a single string
+#     final_instructions <- paste(all_instructions, collapse = " ")
+#   }
 
-  return(final_instructions)
-}
+#   return(final_instructions)
+# }
 
 
 
