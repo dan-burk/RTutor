@@ -851,7 +851,7 @@ app_server <- function(input, output, session) {
             relevancy_prompt <- list(list(
               role = "user",
               content = paste(
-                "Determine if the current prompt is relevant to any the previous prompts. It is relevant if it is: a followup question, a modification for the analysis or visualizations, OR a separate question about the current dataset. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
+                "Determine if the current prompt is relevant to any the previous prompts. It is relevant if it is a followup question or modification for the analysis or visualizations. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
                 input$input_text,
                 "Current dataset: ",
                 sub_meta_data_json
