@@ -658,16 +658,32 @@ app_server <- function(input, output, session) {
         duration = 10
       )
     }
-    # if too short, do not send.
+    # if too long, do not send.
     if (nchar(input$input_text) > max_query_length) {
-        showNotification(
-          paste(
-            "Request too long! Should be less than ",
-            max_query_length,
-            " characters."
-          ),
-          duration = 10
-        )
+      showNotification(
+        paste(
+          "Request too long! Should be less than ",
+          max_query_length,
+          " characters."
+        ),
+        duration = 10
+      )
+    }
+    # if no file is selected, do not send.
+    if (is.null(available_datasets[[input$user_selected_dataset]])) {
+      showNotification(
+        paste("No file found. Please select a dataset and try again."),
+        duration = 10
+      )
+    }
+
+    # if prompt is not relevant, do not send.
+    if (!relevancy_response()) {
+      showNotification(
+        paste("Consider selecting a different dataset and try again. Make sure your question is related to HMCL data."),
+        duration = 10,
+        type = "error"
+      )
     }
   })
 
@@ -712,13 +728,78 @@ app_server <- function(input, output, session) {
     meta_data_csv()
   })
 
+  # Relevancy Agent - Is the user's question relevant?
+  relevancy_response <- reactive({
+    req(input$submit_button)
+    browser()
+    isolate({
+
+      # Subset Meta Data csv file to send in with prompt
+      print(df_name)
+      print(system_relevancy)
+      print(user_relevancy)
+      file_desc <- meta_data_csv_res() %>%
+        filter(file_name == df_name) %>%
+        mutate(file_name = case_when(
+        file_name == df_name ~ "df"
+        )) %>%
+        pull(description)
+
+      file_desc <- jsonlite::toJSON(file_desc)
+      print(file_desc)
+
+      relevancy_prompt <- list()
+      relevancy_prompt <- append(
+        relevancy_prompt,
+        list(list(
+          role = "system",
+          content = system_relevancy
+        ))
+      )
+      relevancy_prompt <- append(
+        relevancy_prompt,
+        list(list(
+          role = "user",
+          content = paste(
+            "Current data: ",
+            file_desc,
+            "Previous prompt history: ",
+            logs$code_history[[id]]$prompt,
+            user_relevancy,
+            "Here's the prompt in question: ",
+            input$input_text
+          )
+        ))
+      )
+      print(relevancy_prompt)
+      # Construct prompt for
+      #prompt_total_test <- append(prompt_total, relevancy_prompt)
+
+      # ChatGPT API
+      response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+        model = selected_model(),
+        openai_api_key = api_key_session()$api_key,
+        #max_tokens = 500,
+        temperature = sample_temp(),
+        messages = relevancy_prompt
+      )
+
+      # Store True or False
+      relevant <- tolower(response$choices$message.content) == "true" # end relevancy agent
+      print(relevant)
+      return(relevant)
+    })
+  })
+
   openAI_response <- reactive({
     req(input$submit_button)
 
-    isolate({  # so that it will not responde to text, until submitted
+    isolate({  # so that it will not respond to text, until submitted
       req(input$input_text)
       prepared_request <- openAI_prompt()
       req(prepared_request)
+      req(available_datasets[[input$user_selected_dataset]])  # require user to select a dataset
+      req(relevancy_response()) # require user input is relevant to company data
 
       # when submit is clicked, but no data is uploaded.
       if(input$select_data == uploaded_data) {
@@ -831,49 +912,6 @@ app_server <- function(input, output, session) {
             }
             prompt_total <- append(prompt_total, history)
 
-            # RELEVANCY AGENT #
-            # Is the user's question relevant?
-            # Construct prompt
-            relevancy_prompt <- list(list(
-                role = "user",
-                content = paste(
-                  "Determine if the current prompt is relevant to any the previous prompts AND relevant to the current dataset. It is relevant if it is a followup question or modification for the analysis or visualizations. If it is relevant to any of the previous prompts AND the current dataset, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
-                  input$input_text,
-                  "Current dataset: ",
-                  df_name
-                )
-            ))
-            prompt_total_test <- append(prompt_total, relevancy_prompt)
-
-            # ChatGPT API
-            response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-              model = selected_model(),
-              openai_api_key = api_key_session()$api_key,
-              #max_tokens = 500,
-              temperature = sample_temp(),
-              messages = prompt_total_test
-            )
-
-            # Store True or False
-            relevancy_response <- tolower(response$choices$message.content) == "true"
-            print(relevancy_response)
-            # If prompt is not relevant, show warning message and reset
-            if (!relevancy_response) {
-              showModal(
-                modalDialog(
-                  title = "Error",
-                  "Consider selecting a different dataset and try again. Make sure your question related to HMCL data.",
-                  footer = actionButton("reset", "Reset")
-                )
-              )
-
-              observeEvent(input$reset, {
-                removeModal()  # Close the modal dialog when "Reset" is clicked
-              })
-
-              session$reload()  # Restart session
-            } # end relevancy agent
-
           } else {  # if first prompt,  identify and load dataset
 
             # user selected file
@@ -903,56 +941,6 @@ app_server <- function(input, output, session) {
             # update runtime environment with new data frame
             run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
             run_env_start(as.list(run_env()))
-
-            # Is the user's question relevant? -- relevancy agent
-            # Construct prompt
-            relevancy_prompt <- list()
-            relevancy_prompt <- append(
-              relevancy_prompt,
-              list(list(
-                role = "system",
-                content = "Act as an experienced data analyst. Determine if the following prompt is relevant to data on sales, registrations, or dispatch. "
-              ))
-            )
-            relevancy_prompt <- append(
-              relevancy_prompt,
-              list(list(
-                role = "user",
-                content = paste(
-                  "If it is relevant to any of that data, respond with 'True'. Otherwise, respond with 'False'. Here's the prompt: ",
-                  input$input_text
-                )
-              ))
-            )
-
-            # ChatGPT API
-            response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-              model = selected_model(),
-              openai_api_key = api_key_session()$api_key,
-              #max_tokens = 500,
-              temperature = sample_temp(),
-              messages = relevancy_prompt
-            )
-
-            # Store True or False
-            relevancy_response <- tolower(response$choices$message.content) == "true"
-
-            # If prompt is not relevant, show warning message and reset
-            if (!relevancy_response) {
-              showModal(
-                modalDialog(
-                  title = "Error",
-                  "Please ask a question related to HMCL data and try again.",
-                  footer = actionButton("reset", "Reset")
-                )
-              )
-
-              observeEvent(input$reset, {
-                removeModal()  # Close the modal dialog when "Reset" is clicked
-              })
-
-              session$reload()  # Restart session
-            } # end relevancy agent
 
           } # end first user prompt
 
