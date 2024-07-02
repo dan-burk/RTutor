@@ -659,16 +659,23 @@ app_server <- function(input, output, session) {
         duration = 10
       )
     }
-    # if too short, do not send.
+    # if too long, do not send.
     if (nchar(input$input_text) > max_query_length) {
-        showNotification(
-          paste(
-            "Request too long! Should be less than ",
-            max_query_length,
-            " characters."
-          ),
-          duration = 10
-        )
+      showNotification(
+        paste(
+          "Request too long! Should be less than ",
+          max_query_length,
+          " characters."
+        ),
+        duration = 10
+      )
+    }
+    # if no file is selected, do not send.
+    if (is.null(available_datasets[[input$user_selected_dataset]])) {
+      showNotification(
+        paste("No file found. Please select a dataset and try again."),
+        duration = 10
+      )
     }
   })
 
@@ -714,10 +721,11 @@ app_server <- function(input, output, session) {
     req(input$submit_button)
     # req(relevency_prompt == TRUE)
 
-    isolate({  # so that it will not responde to text, until submitted
+    isolate({  # so that it will not respond to text, until submitted
       req(input$input_text)
       prepared_request <- openAI_prompt()
       req(prepared_request)
+      req(available_datasets[[input$user_selected_dataset]])  # require user to select a dataset
 
       # when submit is clicked, but no data is uploaded.
       if(input$select_data == uploaded_data) {

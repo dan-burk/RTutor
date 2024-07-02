@@ -60,6 +60,11 @@ significant increases or decreases. Highlight any recurring monthly patterns or 
 y_over_y_instruct <- "Conduct year-over-year analysis comparing the data from the same period in different years. Calculate growth rate and 
 percentage changes. Highlight any significant long-term trends/shifts in the data."
 
+system_relevancy <- "Act as an experienced data analyst. You will determine two things. Decide if the following prompt: 1. is relevant to the 
+ current data and 2. is a follow-up inquiry to the previous one (including modifications to visualizations, follow-up analysis, etc.)."
+user_relevancy <- "If either 1. or 2. is true, respond with only 'True'. If the prompt is asking about something not in the current data AND isn't a 
+ follow-up or modification to visualizations, respond with only 'False'. "
+
 system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. 
 You will respond like answering questions by students. If the question is in languages other than English, respond in that language. 
 If the question is not remotely related to your expertise, respond with 'No comment'."
@@ -584,12 +589,14 @@ polish_cmd <- function(cmd) {
 # A file, demo requests for different datasets, demo questions
 demo <- read.csv(app_sys("app", "www", "demo_questions.csv"))
 
+# extract demo questions
 ix <- which(demo$data == "questions")
 demo_questions <- demo$requests[ix]
 names(demo_questions) <- demo$name[ix]
 
+# extract jokes
 jokes <- demo[
-  which(demo$data == "jokes"), 
+  which(demo$data == "jokes"),
   "requests"
 ]
 
@@ -1227,7 +1234,7 @@ missing_values_plot <- function(df) {
 #   "Historical Dispatch Information"
 # )
 available_datasets <- list(
-  #"Let RTutor Decide" = NULL,
+  "Available Datasets:" = NULL,
   "Sales Masked Rtutor" = "Sales_Masked_Rtutor.rds",
   "Vahan Masked Rtutor" = "Vahan_Masked_Rtutor.rds",
   "Dispatch Masked Rtutor" = "Dispatch_Masked_Rtutor.rds"
