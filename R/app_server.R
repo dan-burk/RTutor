@@ -721,6 +721,7 @@ app_server <- function(input, output, session) {
   observeEvent(input$close_modal, {
     removeModal()  # Close the modal dialog when "Reset" is clicked
     # session$reload() # Restart session
+    relevancy_response(TRUE)
 
   })
 
@@ -1012,6 +1013,7 @@ app_server <- function(input, output, session) {
                   footer = actionButton("close_modal", "Close")
                 )
               )
+              
               response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
                 model = selected_model(),
                 openai_api_key = api_key_session()$api_key,
@@ -1019,12 +1021,13 @@ app_server <- function(input, output, session) {
                 temperature = sample_temp(),
                 messages = list(list(
                   role = "user",
-                  content = "Return NULL"
+                  content = "In R give me NULL. Don't assign it to a variable."
                 ))
               )
 
               # to make the returned code at the same spot, as davinci model.
               response$choices[1, 1] <- response$choices$message.content
+
             } # end relevancy agent
 
 
