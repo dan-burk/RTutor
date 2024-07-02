@@ -858,13 +858,13 @@ app_server <- function(input, output, session) {
             sub_meta_data_json <- jsonlite::toJSON(sub_meta_data_csv)
 
             relevancy_prompt <- list(list(
-                role = "user",
-                content = paste(
-                  "Determine if the current prompt is relevant to any the previous prompts. It is relevant if it is a followup question or modification for the analysis or visualizations. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
-                  input$input_text,
-                  "Current dataset: ",
-                  sub_meta_data_json
-                ) #AND relevant to the current dataset
+              role = "user",
+              content = paste(
+                "Determine if the current prompt is relevant to any the previous prompts. It is relevant if it is a followup question or modification for the analysis or visualizations. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
+                input$input_text,
+                "Current dataset: ",
+                sub_meta_data_json
+              ) #AND relevant to the current dataset
             ))
             prompt_total_test <- append(prompt_total, relevancy_prompt)
 
@@ -878,6 +878,7 @@ app_server <- function(input, output, session) {
             )
 
             # Store True or False
+
             yn <- tolower(response$choices$message.content) == "true"
             relevancy_response(yn) #Update relevancy_response with TRUE\FALSE from OpenAI
             print(relevancy_response())
