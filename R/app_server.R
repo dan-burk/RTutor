@@ -849,13 +849,15 @@ app_server <- function(input, output, session) {
             sub_meta_data_json <- jsonlite::toJSON(sub_meta_data_csv)
 
             relevancy_prompt <- list(list(
-                role = "user",
-                content = paste(
-                  "Determine if the current prompt is relevant to any the previous prompts. It is relevant if it is a followup question or modification for the analysis or visualizations. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
-                  input$input_text,
-                  "Current dataset: ",
-                  sub_meta_data_json
-                ) #AND relevant to the current dataset
+              role = "user",
+              content = paste(
+                "Determine if the current prompt is relevant to any the previous prompts. It is relevant if it is: a followup question, a modification for the analysis or visualizations, OR a separate question about the current dataset. ",
+                avoid_words,
+                "If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
+                input$input_text,
+                "Current dataset: ",
+                sub_meta_data_json
+              ) #AND relevant to the current dataset
             ))
             prompt_total_test <- append(prompt_total, relevancy_prompt)
 
@@ -871,7 +873,7 @@ app_server <- function(input, output, session) {
             # Store True or False
             relevancy_response <- tolower(response$choices$message.content) == "true"
             print(relevancy_response)
-            browser()
+            
             # If prompt is not relevant, show warning message and reset
             if (!relevancy_response) {
               showModal(
@@ -1008,9 +1010,8 @@ app_server <- function(input, output, session) {
             openai_api_key = api_key_session()$api_key,
             #max_tokens = 500,
             temperature = sample_temp(),
-              messages = prompt_total
+            messages = prompt_total
           )
-          browser()
 
           # to make the returned code at the same spot, as davinci model.
           response$choices[1, 1] <- response$choices$message.content
