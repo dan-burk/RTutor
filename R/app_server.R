@@ -250,12 +250,13 @@ app_server <- function(input, output, session) {
 
       #If User doesn't select a dataset, print ChatGPT's selection.
       #   else print user selection
-      #if(is.null(available_datasets[[input$user_selected_dataset]])){
+      # if(is.null(available_datasets[[input$user_selected_dataset]])){
       #  txt <- paste0("", selected_data_file())
-      #}else{
-        selected_data_file(input$user_selected_dataset)
-        txt <- paste0("", selected_data_file())
-      #}
+      # }else{
+      #   selected_data_file(input$user_selected_dataset)
+      #   txt <- paste0("", selected_data_file())
+      # }
+      txt <- paste("Selected Dataset:", input$user_selected_dataset)
       return(txt)
 
   })
@@ -704,16 +705,14 @@ app_server <- function(input, output, session) {
     })
 
   })
+#  relevency_prompt <- reactive({#input_text, #history})
+  meta_data_res <- meta_data()
+  meta_data_csv_res <- meta_data_csv()
 
-  meta_data_res <- reactive({
-    meta_data()
-  })
-  meta_data_csv_res <- reactive({
-    meta_data_csv()
-  })
 
   openAI_response <- reactive({
     req(input$submit_button)
+    # req(relevency_prompt == TRUE)
 
     isolate({  # so that it will not responde to text, until submitted
       req(input$input_text)
@@ -834,14 +833,21 @@ app_server <- function(input, output, session) {
             # RELEVANCY AGENT #
             # Is the user's question relevant?
             # Construct prompt
+            sub_meta_data_csv <- meta_data_csv_res %>%
+              filter(file_name == df_name) %>% 
+              mutate(file_name = case_when(
+                file_name == df_name ~ "df"
+            ))
+            sub_meta_data_json <- jsonlite::toJSON(sub_meta_data_csv)
+
             relevancy_prompt <- list(list(
                 role = "user",
                 content = paste(
-                  "Determine if the current prompt is relevant to any the previous prompts AND relevant to the current dataset. It is relevant if it is a followup question or modification for the analysis or visualizations. If it is relevant to any of the previous prompts AND the current dataset, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
+                  "Determine if the current prompt is relevant to any the previous prompts. It is relevant if it is a followup question or modification for the analysis or visualizations. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
                   input$input_text,
                   "Current dataset: ",
-                  df_name
-                )
+                  sub_meta_data_json
+                ) #AND relevant to the current dataset
             ))
             prompt_total_test <- append(prompt_total, relevancy_prompt)
 
@@ -857,6 +863,7 @@ app_server <- function(input, output, session) {
             # Store True or False
             relevancy_response <- tolower(response$choices$message.content) == "true"
             print(relevancy_response)
+            browser()
             # If prompt is not relevant, show warning message and reset
             if (!relevancy_response) {
               showModal(
@@ -911,7 +918,8 @@ app_server <- function(input, output, session) {
               relevancy_prompt,
               list(list(
                 role = "system",
-                content = "Act as an experienced data analyst. Determine if the following prompt is relevant to data on sales, registrations, or dispatch. "
+                content = paste("Act as an experienced data analyst. Determine if the following prompt is relevant to any of the metadata: ",
+                meta_data_res)
               ))
             )
             relevancy_prompt <- append(
@@ -962,7 +970,7 @@ app_server <- function(input, output, session) {
 
 
           #Subsetting Meta Data csv file to send in with prompt
-          sub_meta_data_csv <- meta_data_csv_res() %>%
+          sub_meta_data_csv <- meta_data_csv_res %>%
             filter(file_name == df_name) %>% 
             mutate(file_name = case_when(
               file_name == df_name ~ "df"
@@ -994,6 +1002,7 @@ app_server <- function(input, output, session) {
             temperature = sample_temp(),
               messages = prompt_total
           )
+          browser()
 
           # to make the returned code at the same spot, as davinci model.
           response$choices[1, 1] <- response$choices$message.content

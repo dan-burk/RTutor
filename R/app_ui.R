@@ -93,20 +93,25 @@ app_ui <- function(request) {
             tags$head(tags$style(
               "#user_selected_dataset-label { font-weight: normal; }"
             )),
-            selectInput(inputId = 'user_selected_dataset',
-              label = HTML('<span style="color: black;">Select a Dataset for Analysis</span>'),
-              choices = names(available_datasets),
-              multiple=FALSE,
-              selectize=FALSE,
+            conditionalPanel(
+              condition = "input.submit_button == 0",
+              selectInput(inputId = 'user_selected_dataset',
+                label = HTML('<span style="color: black;">Select a Dataset for Analysis</span>'),
+                choices = names(available_datasets),
+                multiple=FALSE,
+                selectize=FALSE,
+            )
             ),
-
-            # # Show selected dataset
-            # fluidRow(
-            #   column(
-            #     width = 6,
-            #     textOutput("selected_dataset")
-            #   ),
-
+            # Show selected dataset
+            conditionalPanel(
+              condition = "input.submit_button >= 1",
+              fluidRow(
+                column(
+                  width = 12,
+                  textOutput("selected_dataset")
+                )
+              )
+            ),
             #   # Reset Button
             #   column(
             #     width = 6
