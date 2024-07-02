@@ -677,6 +677,7 @@ app_server <- function(input, output, session) {
         duration = 10
       )
     }
+    #Add another if statement on if prompt passes the smell test of relevency.... if(relevency_response == FALSE){showNotification}
   })
 
 
@@ -712,19 +713,27 @@ app_server <- function(input, output, session) {
     })
 
   })
-#  relevency_prompt <- reactive({#input_text, #history})
+
+  relevancy_response <- reactiveVal(TRUE) #Initializing relevancy_response to be TRUE as a reactive varaible.
   meta_data_res <- meta_data()
   meta_data_csv_res <- meta_data_csv()
+
+  observeEvent(input$close_modal, {
+    removeModal()  # Close the modal dialog when "Reset" is clicked
+    # session$reload() # Restart session
+    relevancy_response(TRUE)
+
+  })
 
 
   openAI_response <- reactive({
     req(input$submit_button)
-    # req(relevency_prompt == TRUE)
 
     isolate({  # so that it will not respond to text, until submitted
       req(input$input_text)
       prepared_request <- openAI_prompt()
       req(prepared_request)
+      req(relevancy_response())
       req(available_datasets[[input$user_selected_dataset]])  # require user to select a dataset
 
       # when submit is clicked, but no data is uploaded.
@@ -869,25 +878,22 @@ app_server <- function(input, output, session) {
             )
 
             # Store True or False
-            relevancy_response <- tolower(response$choices$message.content) == "true"
-            print(relevancy_response)
+
+            yn <- tolower(response$choices$message.content) == "true"
+            relevancy_response(yn) #Update relevancy_response with TRUE\FALSE from OpenAI
+            print(relevancy_response())
 
             # If prompt is not relevant, show warning message and reset
-            if (!relevancy_response) {
-              showModal(
-                modalDialog(
-                  title = "Error",
-                  "Consider selecting a different dataset and try again. Make sure your question related to HMCL data.",
-                  footer = actionButton("reset", "Reset")
-                )
-              )
+            # if (!relevancy_response()) {
+            #   showModal(
+            #     modalDialog(
+            #       title = "Error",
+            #       "Consider selecting a different dataset and try again. Make sure your question related to HMCL data.",
+            #       footer = actionButton(inputId = "close_modal", label = "Close")
+            #     )
+            #   )
 
-              observeEvent(input$reset, {
-                removeModal()  # Close the modal dialog when "Reset" is clicked
-              })
-
-              session$reload()  # Restart session
-            } # end relevancy agent
+            # } # end relevancy agent
 
           } else {  # if first prompt,  identify and load dataset
 
@@ -951,68 +957,80 @@ app_server <- function(input, output, session) {
             )
 
             # Store True or False
-            relevancy_response <- tolower(response$choices$message.content) == "true"
+            yn <- tolower(response$choices$message.content) == "true"
+            relevancy_response(yn)
 
-            # If prompt is not relevant, show warning message and reset
-            if (!relevancy_response) {
+
+          } # end first user prompt
+
+          if (relevancy_response()) {
+            prepared_request = prep_input(input$input_text, input$select_data, current_data(), input$use_python, logs$id, selected_model(), df2 = current_data_2())
+              #additional_info = input_search(prepared_request)
+
+
+              #Subsetting Meta Data csv file to send in with prompt
+            sub_meta_data_csv <- meta_data_csv_res %>%
+              filter(file_name == df_name) %>% 
+              mutate(file_name = case_when(
+                file_name == df_name ~ "df"
+                ))
+            sub_meta_data_json <- jsonlite::toJSON(sub_meta_data_csv)
+
+              # add new user prompt
+            prompt_total <- append(
+              prompt_total,
+              list(list(
+                role = "user",
+                content = paste(
+                  prepared_request,
+                  # additional_info,
+                  # system_role_growth,
+                  system_role_date,
+                  # "If user mentions growth, then ensure...",
+                  "Available datasets: \"\"\"",
+                  sub_meta_data_json,
+                  "\"\"\""
+                  )
+                ))
+              )
+
+            response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+              model = selected_model(),
+              openai_api_key = api_key_session()$api_key,
+              #max_tokens = 500,
+              temperature = sample_temp(),
+                messages = prompt_total
+            )
+
+              # to make the returned code at the same spot, as davinci model.
+              response$choices[1, 1] <- response$choices$message.content
+
+
+            } else{
               showModal(
                 modalDialog(
                   title = "Error",
                   "Please ask a question related to HMCL data and try again.",
-                  footer = actionButton("reset", "Reset")
+                  footer = actionButton("close_modal", "Close")
                 )
               )
+              
+              response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+                model = selected_model(),
+                openai_api_key = api_key_session()$api_key,
+                #max_tokens = 500,
+                temperature = sample_temp(),
+                messages = list(list(
+                  role = "user",
+                  content = "In R give me NULL. Don't assign it to a variable."
+                ))
+              )
 
-              observeEvent(input$reset, {
-                removeModal()  # Close the modal dialog when "Reset" is clicked
-              })
+              # to make the returned code at the same spot, as davinci model.
+              response$choices[1, 1] <- response$choices$message.content
 
-              session$reload()  # Restart session
             } # end relevancy agent
 
-          } # end first user prompt
-
-
-          prepared_request = prep_input(input$input_text, input$select_data, current_data(), input$use_python, logs$id, selected_model(), df2 = current_data_2())
-          #additional_info = input_search(prepared_request)
-
-
-          #Subsetting Meta Data csv file to send in with prompt
-          sub_meta_data_csv <- meta_data_csv_res %>%
-            filter(file_name == df_name) %>% 
-            mutate(file_name = case_when(
-              file_name == df_name ~ "df"
-            ))
-          sub_meta_data_json <- jsonlite::toJSON(sub_meta_data_csv)
-
-          # add new user prompt
-          prompt_total <- append(
-            prompt_total,
-            list(list(
-              role = "user",
-              content = paste(
-                prepared_request,
-                # additional_info,
-                # system_role_growth,
-                system_role_date,
-                # "If user mentions growth, then ensure...",
-                "Available datasets: \"\"\"",
-                sub_meta_data_json,
-                "\"\"\""
-              )
-            ))
-          )
-
-          response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-            model = selected_model(),
-            openai_api_key = api_key_session()$api_key,
-            #max_tokens = 500,
-            temperature = sample_temp(),
-            messages = prompt_total
-          )
-
-          # to make the returned code at the same spot, as davinci model.
-          response$choices[1, 1] <- response$choices$message.content
 
         },
         error = function(e) {
