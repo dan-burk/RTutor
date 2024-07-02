@@ -677,6 +677,7 @@ app_server <- function(input, output, session) {
         duration = 10
       )
     }
+    #Add another if statement on if prompt passes the smell test of relevency.... if(relevency_response == FALSE){showNotification}
   })
 
 
@@ -712,19 +713,25 @@ app_server <- function(input, output, session) {
     })
 
   })
-#  relevency_prompt <- reactive({#input_text, #history})
+
+  relevancy_response <- reactiveVal(TRUE) #Initializing relevancy_response to be TRUE as a reactive varaible.
   meta_data_res <- meta_data()
   meta_data_csv_res <- meta_data_csv()
+
+  observeEvent(input$reset, {
+    removeModal()  # Close the modal dialog when "Reset" is clicked
+    session$reload() # Restart session
+  })
 
 
   openAI_response <- reactive({
     req(input$submit_button)
-    # req(relevency_prompt == TRUE)
 
     isolate({  # so that it will not respond to text, until submitted
       req(input$input_text)
       prepared_request <- openAI_prompt()
       req(prepared_request)
+      req(relevancy_response())
       req(available_datasets[[input$user_selected_dataset]])  # require user to select a dataset
 
       # when submit is clicked, but no data is uploaded.
@@ -869,24 +876,20 @@ app_server <- function(input, output, session) {
             )
 
             # Store True or False
-            relevancy_response <- tolower(response$choices$message.content) == "true"
-            print(relevancy_response)
-            browser()
+            yn <- tolower(response$choices$message.content) == "true"
+            relevancy_response(yn) #Update relevancy_response with TRUE\FALSE from OpenAI
+            print(relevancy_response())
+
             # If prompt is not relevant, show warning message and reset
-            if (!relevancy_response) {
+            if (!relevancy_response()) {
               showModal(
                 modalDialog(
                   title = "Error",
                   "Consider selecting a different dataset and try again. Make sure your question related to HMCL data.",
-                  footer = actionButton("reset", "Reset")
+                  footer = actionButton(inputId = "reset", label = "Reset")
                 )
               )
 
-              observeEvent(input$reset, {
-                removeModal()  # Close the modal dialog when "Reset" is clicked
-              })
-
-              session$reload()  # Restart session
             } # end relevancy agent
 
           } else {  # if first prompt,  identify and load dataset
@@ -951,10 +954,12 @@ app_server <- function(input, output, session) {
             )
 
             # Store True or False
-            relevancy_response <- tolower(response$choices$message.content) == "true"
+            yn <- tolower(response$choices$message.content) == "true"
+            relevancy_response(yn)
 
             # If prompt is not relevant, show warning message and reset
-            if (!relevancy_response) {
+            if (!relevancy_response()) {
+
               showModal(
                 modalDialog(
                   title = "Error",
@@ -1010,7 +1015,6 @@ app_server <- function(input, output, session) {
             temperature = sample_temp(),
               messages = prompt_total
           )
-          browser()
 
           # to make the returned code at the same spot, as davinci model.
           response$choices[1, 1] <- response$choices$message.content
