@@ -1037,7 +1037,7 @@ app_server <- function(input, output, session) {
                 messages = list(list(
                   role = "user",
                   content = paste("Return this exact statement:",
-                  "print('Please ask a question related to HMCL dataset",input$user_selected_dataset,"and try again.')")
+                  "print('Please ask a question related to HMCL dataset",input$user_selected_dataset,"and try again. (Reset to select a different dataset)')")
                   # content = paste("In R give me NULL. Don't assign it to a variable. Above NULL write this comment:",
                   # "Please ask a question related to HMCL dataset",input$user_selected_dataset,"and try again.")
                 ))
