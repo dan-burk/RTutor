@@ -908,7 +908,7 @@ app_server <- function(input, output, session) {
             selected_data_file(tem2)
             # show message for 10s with the fine name
             showNotification(
-              paste("Selected dataset: ", tem2),
+              paste("Selected dataset: ", input$user_selected_dataset),
               duration = 10
             )
 
