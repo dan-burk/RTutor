@@ -2399,9 +2399,10 @@ app_server <- function(input, output, session) {
       }
       # if uploaded, use that data
       req(input$select_data)
+      df <- current_data()
       if (input$select_data != no_data) {
         params <- list(
-          df = current_data(),
+          df = df,
           df2 = df2
         )
       }
