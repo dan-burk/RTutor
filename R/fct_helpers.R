@@ -1234,7 +1234,7 @@ missing_values_plot <- function(df) {
 #   "Historical Dispatch Information"
 # )
 available_datasets <- list(
-  "Available Datasets:" = NULL,
+  "Select a dataset:" = NULL,
   "Sales Data" = "Sales_Masked_Rtutor.rds",
   "Registration Data" = "Vahan_Masked_Rtutor.rds",
   "Dispatch Data" = "Dispatch_Masked_Rtutor.rds"

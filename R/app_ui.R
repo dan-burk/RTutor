@@ -43,7 +43,7 @@ app_ui <- function(request) {
     ),
 
     navbarPage(
-      HTML('<span style="color: black;">RTutor</span>'),
+      HTML('<span style="color: black;">HMCL</span>'),
        #  windowTitle = "RTutor",
        # theme = bslib::bs_theme(bootswatch = "darkly"),
       id = "tabs",
@@ -94,9 +94,9 @@ app_ui <- function(request) {
               "#user_selected_dataset-label { font-weight: normal; }"
             )),
             conditionalPanel(
-              condition = "input.submit_button == 0 || input.user_selected_dataset === 'Available Datasets:'",
+              condition = "input.submit_button == 0 || input.user_selected_dataset === 'Select a dataset:'",
               selectInput(inputId = 'user_selected_dataset',
-                label = HTML('<span style="color: black;">Select a Dataset for Analysis</span>'),
+                label = NULL, #HTML('<span style="color: black;">Select a Dataset for Analysis</span>'),
                 choices = names(available_datasets),
                 multiple=FALSE,
                 selectize=FALSE,
@@ -322,8 +322,8 @@ app_ui <- function(request) {
               fluidRow(
                 column(
                   width = 9,
-                  h3(style = "font-weight: bold;", "Hero MotoCorp Data Portal (demo)"),
-                  h4("Based on available datasets shared by HMCL"),
+                  h3(style = "font-weight: bold;", "Hero MotoCorp Data Portal"),
+                  h4("Based on the RTutor platform. Work in progress in proof of concept stage. Feedback welcome."),
                   # h4(
                   #   "Start by watching a short ",
                   #   a(

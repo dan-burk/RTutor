@@ -42,7 +42,7 @@ app_server <- function(input, output, session) {
         "input_text",
         value = "",
         placeholder =
-"Hi! I am a virtual data scientist. Ask me anything related to data from Hero MotoCorp Limited. (See example prompts below)"
+"Hi! I am your AI assistant. Select a dataset first and ask questions. See examples below."
       )
     }
   })
@@ -257,7 +257,7 @@ app_server <- function(input, output, session) {
       #   selected_data_file(input$user_selected_dataset)
       #   txt <- paste0("", selected_data_file())
       # }
-      txt <- paste("Selected Dataset:", input$user_selected_dataset)
+      txt <- paste(input$user_selected_dataset, "  Click Reset to switch." )
       return(txt)
 
   })
@@ -321,7 +321,7 @@ app_server <- function(input, output, session) {
     # hide after data is uploaded
     # req(is.null(input$user_file)) #Not a necessary condition when removing this option
 
-    if(input$user_selected_dataset == "Available Datasets:"){
+    if(input$user_selected_dataset == "Select a dataset:"){
       # subset based on dataset
       demo_related <- subset(
         demo,
@@ -368,11 +368,33 @@ app_server <- function(input, output, session) {
     if (input$select_data %in% c("mpg", no_data, "diamonds", rna_seq)) { #Default is select_data == "mpg"
       return(
         tagList(
-          selectInput(
-            inputId = "demo_prompt",
-            choices = choices,
-            label = NULL
+          tags$head(
+            tags$style(HTML("
+              .vertical-padding {
+                padding-top: 10px;  /* Adjust this value based on your specific UI */
+                padding-bottom: 10px;  /* Adjust this value based on your specific UI */
+              }
+            "))
           ),
+          fluidRow(
+            column(
+              width = 3,
+              div(
+                "Examples:",
+                class = "vertical-padding"
+             )
+            ),
+            column(
+              width = 9,
+              align = "left",
+              selectInput(
+                inputId = "demo_prompt",
+                choices = choices,
+                label = NULL
+              )
+            )
+          ),
+
           tags$style(
             HTML(
               "
@@ -2438,9 +2460,8 @@ app_server <- function(input, output, session) {
         )
       }
 
-
       req(params)
-browser()
+
       tryCatch({
         rmarkdown::render(
           input = tempReport, # markdown_location,

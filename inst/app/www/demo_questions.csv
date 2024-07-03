@@ -1,5 +1,5 @@
 ﻿data,R,Python,name,requests,memo
-Available Datasets:,1,1,Example Prompts: ,Example requests,
+Select a dataset:,1,1,Prompts,Example requests,
 Sales Data,1,1,Sales Over Time,Show me sales over time.,
 Sales Data,1,1,Highest Sales by Dealer,Show me the 10 dealers that have the highest sales in March 2023.,
 Sales Data,1,1,Area Office Sales in 2023,Plot a bar chart of sales by area office in January 2023.,
