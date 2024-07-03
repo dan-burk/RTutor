@@ -1943,7 +1943,8 @@ app_server <- function(input, output, session) {
     [OpenAI's](https://cran.rstudio.com/web/packages/openai/index.html) \"",
     selected_model(),
     "\" model.",
-    "\n\nRTutor Website: [https://RTutor.ai](https://RTutor.ai)"#,
+    "\n\nRTutor Website: [https://RTutor.ai](https://RTutor.ai)",
+    "\n"
     # "\nSource code: [GitHub.](https://github.com/gexijin/RTutor)\n"
   )
 
