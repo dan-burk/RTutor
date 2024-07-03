@@ -321,11 +321,33 @@ app_server <- function(input, output, session) {
     # hide after data is uploaded
     # req(is.null(input$user_file)) #Not a necessary condition when removing this option
 
-    # subset based on dataset
-    demo_related <- subset(
-      demo,
-      data == input$select_data
-    )
+    if(input$user_selected_dataset == "Available Datasets:"){
+      # subset based on dataset
+      demo_related <- subset(
+        demo,
+        data == input$user_selected_dataset
+      )
+
+    }else if(input$user_selected_dataset == "Sales Data"){
+      # subset based on dataset
+      demo_related <- subset(
+        demo,
+        data == input$user_selected_dataset
+      )
+    }else if(input$user_selected_dataset== "Registration Data"){
+      # subset based on dataset
+      demo_related <- subset(
+        demo,
+        data == input$user_selected_dataset
+      )
+    }else if(input$user_selected_dataset == "Dispatch Data"){
+      # subset based on dataset
+      demo_related <- subset(
+        demo,
+        data == input$user_selected_dataset
+      )
+    }
+
 
     #subset based on R or Python
     if(input$use_python) {
@@ -1943,7 +1965,8 @@ app_server <- function(input, output, session) {
     [OpenAI's](https://cran.rstudio.com/web/packages/openai/index.html) \"",
     selected_model(),
     "\" model.",
-    "\n\nRTutor Website: [https://RTutor.ai](https://RTutor.ai)"#,
+    "\n\nRTutor Website: [https://RTutor.ai](https://RTutor.ai)",
+    "\n"
     # "\nSource code: [GitHub.](https://github.com/gexijin/RTutor)\n"
   )
 
