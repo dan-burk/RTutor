@@ -94,7 +94,7 @@ app_ui <- function(request) {
               "#user_selected_dataset-label { font-weight: normal; }"
             )),
             conditionalPanel(
-              condition = "input.submit_button == 0",
+              condition = "input.submit_button == 0 || input.user_selected_dataset === 'Available Datasets:'",
               selectInput(inputId = 'user_selected_dataset',
                 label = HTML('<span style="color: black;">Select a Dataset for Analysis</span>'),
                 choices = names(available_datasets),

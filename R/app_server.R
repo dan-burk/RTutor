@@ -245,6 +245,7 @@ app_server <- function(input, output, session) {
 
   output$selected_dataset <- renderText({ #renderUI
       req(input$submit_button)
+      req(!is.null(available_datasets[[input$user_selected_dataset]]))
       # txt <- paste0("", selected_data_file())
       # return(txt)
 
@@ -718,12 +719,12 @@ app_server <- function(input, output, session) {
   meta_data_res <- meta_data()
   meta_data_csv_res <- meta_data_csv()
 
-  observeEvent(input$close_modal, {
-    removeModal()  # Close the modal dialog when "Reset" is clicked
-    # session$reload() # Restart session
-    relevancy_response(TRUE)
+  # observeEvent(input$close_modal, {
+  #   removeModal()  # Close the modal dialog when "Reset" is clicked
+  #   # session$reload() # Restart session
+  #   relevancy_response(TRUE)
 
-  })
+  # })
 
 
   openAI_response <- reactive({
@@ -733,7 +734,7 @@ app_server <- function(input, output, session) {
       req(input$input_text)
       prepared_request <- openAI_prompt()
       req(prepared_request)
-      req(relevancy_response())
+      # req(relevancy_response())
       req(available_datasets[[input$user_selected_dataset]])  # require user to select a dataset
 
       # when submit is clicked, but no data is uploaded.
@@ -860,13 +861,14 @@ app_server <- function(input, output, session) {
             relevancy_prompt <- list(list(
               role = "user",
               content = paste(
-                "Determine if the current prompt is relevant to any the previous prompts. It is relevant if it is a followup question or modification for the analysis or visualizations. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
+                "Determine if the current prompt is relevant to any of the previous prompts. The prompt is relevant if it is a followup question for the analysis on the current dataset. If the prompt is a question about a different dataset it is not relevant. The prompt is also relevant if it is a modification for the visualizations. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
                 input$input_text,
                 "Current dataset: ",
                 sub_meta_data_json
               ) #AND relevant to the current dataset
             ))
             prompt_total_test <- append(prompt_total, relevancy_prompt)
+            prompt_total_test[[1]][[2]] <- paste("Act as an experienced data analyst. Determine if the following prompts are relevant to the metadata: ", meta_data_res)
 
             # ChatGPT API
             response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
@@ -882,6 +884,7 @@ app_server <- function(input, output, session) {
             yn <- tolower(response$choices$message.content) == "true"
             relevancy_response(yn) #Update relevancy_response with TRUE\FALSE from OpenAI
             print(relevancy_response())
+            browser()
 
             # If prompt is not relevant, show warning message and reset
             # if (!relevancy_response()) {
@@ -927,12 +930,20 @@ app_server <- function(input, output, session) {
 
             # Is the user's question relevant? -- relevancy agent
             # Construct prompt
+
+            sub_meta_data_csv <- meta_data_csv_res %>%
+              filter(file_name == df_name) %>% 
+              mutate(file_name = case_when(
+                file_name == df_name ~ "df"
+            ))
+            sub_meta_data_json <- jsonlite::toJSON(sub_meta_data_csv)
+
             relevancy_prompt <- list()
             relevancy_prompt <- append(
               relevancy_prompt,
               list(list(
                 role = "system",
-                content = paste("Act as an experienced data analyst. Determine if the following prompt is relevant to any of the metadata: ",
+                content = paste("Act as an experienced data analyst. Determine if the following prompts are relevant to the metadata: ",
                 meta_data_res)
               ))
             )
@@ -941,9 +952,11 @@ app_server <- function(input, output, session) {
               list(list(
                 role = "user",
                 content = paste(
-                  "If it is relevant to any of that data, respond with 'True'. Otherwise, respond with 'False'. Here's the prompt: ",
-                  input$input_text
-                )
+                "Determine if the current prompt is relevant to the selected dataset. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
+                input$input_text,
+                "Current dataset: ",
+                sub_meta_data_json
+              ) #AND relevant to the current dataset
               ))
             )
 
@@ -1007,13 +1020,14 @@ app_server <- function(input, output, session) {
 
 
             } else{
-              showModal(
-                modalDialog(
-                  title = "Error",
-                  "Please ask a question related to HMCL data and try again.",
-                  footer = actionButton("close_modal", "Close")
-                )
-              )
+              # showModal(
+              #   modalDialog(
+              #     title = "Error",
+              #     paste("Please ask a question related to HMCL dataset",input$user_selected_dataset,"and try again."),
+              #     footer = NULL
+              #     # footer = actionButton("close_modal", "Close")
+              #   )
+              # )
               
               response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
                 model = selected_model(),
@@ -1022,12 +1036,17 @@ app_server <- function(input, output, session) {
                 temperature = sample_temp(),
                 messages = list(list(
                   role = "user",
-                  content = "In R give me NULL. Don't assign it to a variable."
+                  content = paste("Return this exact statement:",
+                  "print('Please ask a question related to HMCL dataset",input$user_selected_dataset,"and try again.')")
+                  # content = paste("In R give me NULL. Don't assign it to a variable. Above NULL write this comment:",
+                  # "Please ask a question related to HMCL dataset",input$user_selected_dataset,"and try again.")
                 ))
               )
 
               # to make the returned code at the same spot, as davinci model.
               response$choices[1, 1] <- response$choices$message.content
+              relevancy_response(TRUE) #Reinitiate the relevancy to be TRUE
+              # browser()
 
             } # end relevancy agent
 
@@ -1172,6 +1191,7 @@ app_server <- function(input, output, session) {
   )
 
   observeEvent(input$submit_button, {
+
     logs$id <- logs$id + 1
 
     logs$code <-  openAI_response()$cmd
@@ -1345,6 +1365,7 @@ app_server <- function(input, output, session) {
     }, {
     req(logs$code != "")
     req(!input$use_python)
+    # req(relevancy_response())
     result <- NULL
     console_output <- NULL
     error_message <- NULL
@@ -1416,6 +1437,7 @@ app_server <- function(input, output, session) {
   output$result_plot <- renderPlot({
     req(!code_error())
     req(logs$code)
+    # req(relevancy_response())
     # Check if the result is not a ggplot or a known plot type
     if (inherits(run_result()$result, "ggplot") || is.null(run_result()$console_output)) {
       return(run_result()$result)
@@ -1493,6 +1515,7 @@ app_server <- function(input, output, session) {
     req(!input$use_python)
     req(!code_error())
     req(logs$code)
+    # req(relevancy_response())
     if (
       is_interactive_plot() ||   # natively interactive
       turned_on(input$make_ggplot_interactive) # converted
