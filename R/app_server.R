@@ -1989,7 +1989,7 @@ app_server <- function(input, output, session) {
     # Get the data from the params list for every chunk-----------
     # Do not change this without changing the output$Rmd_source function
     # this chunk is removed for local knitting.
-    "```{R, echo = FALSE}\n",
+    "\n```{R, echo = FALSE}\n",
     "df <- params$df\ndf2 <- params$df2\n",
     "```\n"
   )
@@ -2371,7 +2371,15 @@ app_server <- function(input, output, session) {
         "  input: checkbox\n",
         "---\n"
       )
-
+      Rmd_script <- paste0(
+        Rmd_script,
+        # Get the data from the params list for every chunk-----------
+        # Do not change this without changing the output$Rmd_source function
+        # this chunk is removed for local knitting.
+        "\n```{R, echo = FALSE}\n",
+        "df <- params$df\ndf2 <- params$df2\n",
+        "```\n"
+      )
       Rmd_script <- paste0(
         Rmd_script,
         "\n\n### "
@@ -2409,7 +2417,7 @@ app_server <- function(input, output, session) {
 
 
       req(params)
-
+browser()
       tryCatch({
         rmarkdown::render(
           input = tempReport, # markdown_location,
