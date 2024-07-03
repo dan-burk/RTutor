@@ -883,8 +883,8 @@ app_server <- function(input, output, session) {
 
             yn <- tolower(response$choices$message.content) == "true"
             relevancy_response(yn) #Update relevancy_response with TRUE\FALSE from OpenAI
-            print(relevancy_response())
-            browser()
+            # print(relevancy_response())
+            # browser()
 
             # If prompt is not relevant, show warning message and reset
             # if (!relevancy_response()) {
@@ -908,7 +908,7 @@ app_server <- function(input, output, session) {
             selected_data_file(tem2)
             # show message for 10s with the fine name
             showNotification(
-              paste("Selected dataset: ", tem2),
+              paste("Selected dataset: ", input$user_selected_dataset),
               duration = 10
             )
 
@@ -1037,7 +1037,7 @@ app_server <- function(input, output, session) {
                 messages = list(list(
                   role = "user",
                   content = paste("Return this exact statement:",
-                  "print('Please ask a question related to HMCL dataset",input$user_selected_dataset,"and try again.')")
+                  "print('Please ask a question related to HMCL dataset",input$user_selected_dataset,"and try again. (Reset to select a different dataset)')")
                   # content = paste("In R give me NULL. Don't assign it to a variable. Above NULL write this comment:",
                   # "Please ask a question related to HMCL dataset",input$user_selected_dataset,"and try again.")
                 ))
@@ -1943,8 +1943,8 @@ app_server <- function(input, output, session) {
     [OpenAI's](https://cran.rstudio.com/web/packages/openai/index.html) \"",
     selected_model(),
     "\" model.",
-    "\n\nRTutor Website: [https://RTutor.ai](https://RTutor.ai)",
-    "\nSource code: [GitHub.](https://github.com/gexijin/RTutor)\n"
+    "\n\nRTutor Website: [https://RTutor.ai](https://RTutor.ai)"#,
+    # "\nSource code: [GitHub.](https://github.com/gexijin/RTutor)\n"
   )
 
   # if the first chunk & data is uploaded,
