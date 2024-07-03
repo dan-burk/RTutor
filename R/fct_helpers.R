@@ -113,18 +113,20 @@ on_server <- "on_server.txt"
 
 
 ######### Folder/Data Path with RDS files #########
-# Get the user's home directory
-home_dir <- Sys.getenv("USERPROFILE") # For Windows
-if (home_dir == "") {
-  home_dir <- Sys.getenv("HOME") # For other systems
+# if environmental variable is not set, use relative path
+# set the HMCL_DATA environment variable to the data folder such as C:/data/HMCL/
+data_path <<- Sys.getenv("HMCL_DATA")[1]
+# if not defined in the environment, use too levels above
+if (nchar(data_path) == 0) {
+  data_path <<- paste0("../../data/")
 }
+# add a trailing slash C:/data/HMCL  --> C:/data/HMCL/
+data_path <<- paste0(data_path, "/")
 
-# Construct the full path dynamically
-base_path <- "OneDrive/RTutor/Proj_HeroMotoCorp/Data/"
-data_path <- normalizePath(file.path(home_dir, base_path))
-
-# Replace backslashes with forward slashes
-data_path <- paste0(gsub("\\\\", "/", data_path), '/')
+# load data
+Sales_Masked_Rtutor <- readRDS(paste0(data_path, "Sales_Masked_Rtutor.rds"))
+Dispatch_Masked_Rtutor <- readRDS(paste0(data_path, "Dispatch_Masked_Rtutor.rds"))
+Vahan_Share_Masked_Rtutor <- readRDS(paste0(data_path, "Vahan_Masked_Rtutor.rds"))
 
 # load meta data, from JSON file
 meta_data <- function() {
