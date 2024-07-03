@@ -324,6 +324,14 @@ app_ui <- function(request) {
                   width = 9,
                   h3(style = "font-weight: bold;", "Hero MotoCorp Data Portal (demo)"),
                   h4("Based on available datasets shared by HMCL"),
+                  h4(
+                    "Start by watching a short ",
+                    a(
+                      "YouTube video!",
+                      href = "https://youtu.be/a-bZW26nK9k",
+                      target = "_blank"
+                    )
+                  ),
                   align = "left"
                 ),
                 column(
