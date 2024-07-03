@@ -322,16 +322,19 @@ app_ui <- function(request) {
               fluidRow(
                 column(
                   width = 9,
-                  h3(style = "font-weight: bold;", "Hero MotoCorp Data Portal"),
-                  h4("Based on the RTutor platform. Work in progress in proof of concept stage. Feedback welcome."),
-                  # h4(
-                  #   "Start by watching a short ",
-                  #   a(
-                  #     "YouTube video!",
-                  #     href = "https://youtu.be/a-bZW26nK9k",
-                  #     target = "_blank"
-                  #   )
-                  # ),
+                  h3(style = "font-weight: bold;", "Hero MotoCorp Data Portal (v0.01)"),
+                  h4("Based on the RTutor platform. Work in progress in proof of concept stage. Feedbacks welcome."),
+                  br(),br(),
+                  h4("Be aware of the limitations of the generative AI."),
+                  br(),
+                  h4(
+                    "Start by watching a short ",
+                    a(
+                      "video!",
+                      href = "https://youtu.be/a-bZW26nK9k",
+                      target = "_blank"
+                    )
+                  ),
                   align = "left"
                 ),
                 column(
@@ -344,7 +347,9 @@ app_ui <- function(request) {
                   align = 'left'
                 )
               ),
+            
             ),
+
             conditionalPanel(
               condition = "input.submit_button != 0",
               fluidRow(
@@ -490,7 +495,7 @@ app_ui <- function(request) {
           )
         ),
         br(),
-        verbatimTextOutput("rmd_chunk_output")
+        #verbatimTextOutput("rmd_chunk_output")
       ),
 
       #############################
@@ -626,8 +631,33 @@ app_ui <- function(request) {
       tabPanel(
         title = "About",
         value = "About",
-        uiOutput("RTutor_version"),
+        #uiOutput("RTutor_version"),
         hr(),
+        p(" Developed by ",
+          # a(
+          #   "(Twitter, ",
+          #   href = "https://twitter.com/StevenXGe",
+          #   target = "_blank"
+          # ),
+          # a(
+          #   "LinkedIn),",
+          #   href = "https://www.linkedin.com/in/steven-ge-ab016947/",
+          #   target = "_blank"
+          # ),       
+          " RTutor LLC for HeroMotor Corp." #"For feedback, please email",
+          # a(
+          #   "gexijin@gmail.com.",
+          #   href = "mailto:gexijin@gmail.com?Subject=RTutor"
+          # ),
+          # " Source code at ",
+          # a(
+          #   "GitHub,",
+          #   href = "https://github.com/gexijin/RTutor"
+          # ),
+          # " from where you can also find 
+          # instruction to install RTutor as an R package. 
+          # The RTutor website and the source code is free for non-profit organizations ONLY. Licensing is required for commercial use."
+        ),
         p("RTutor uses ",
           a(
             "OpenAI's",
@@ -648,31 +678,7 @@ app_ui <- function(request) {
         ),
 
         # hr(),
-        p(" Written by Dr. Steven Ge",
-          # a(
-          #   "(Twitter, ",
-          #   href = "https://twitter.com/StevenXGe",
-          #   target = "_blank"
-          # ),
-          # a(
-          #   "LinkedIn),",
-          #   href = "https://www.linkedin.com/in/steven-ge-ab016947/",
-          #   target = "_blank"
-          # ),       
-          " as part of RTutor LLC." #"For feedback, please email",
-          # a(
-          #   "gexijin@gmail.com.",
-          #   href = "mailto:gexijin@gmail.com?Subject=RTutor"
-          # ),
-          # " Source code at ",
-          # a(
-          #   "GitHub,",
-          #   href = "https://github.com/gexijin/RTutor"
-          # ),
-          # " from where you can also find 
-          # instruction to install RTutor as an R package. 
-          # The RTutor website and the source code is free for non-profit organizations ONLY. Licensing is required for commercial use."
-        ),
+
         # h4("For businesses, RTutor can be customized and locally installed to  
         # easily gain insights from your data (files, SQL databases, or APIs) at a low cost. We will be happy to discuss."),
 

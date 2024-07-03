@@ -257,7 +257,7 @@ app_server <- function(input, output, session) {
       #   selected_data_file(input$user_selected_dataset)
       #   txt <- paste0("", selected_data_file())
       # }
-      txt <- paste(input$user_selected_dataset, "  Click Reset to switch." )
+      txt <- paste0(input$user_selected_dataset, ".  Reset to switch." )
       return(txt)
 
   })
