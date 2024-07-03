@@ -115,13 +115,11 @@ on_server <- "on_server.txt"
 ######### Folder/Data Path with RDS files #########
 # if environmental variable is not set, use relative path
 # set the HMCL_DATA environment variable to the data folder such as C:/data/HMCL/
-data_path <<- Sys.getenv("HMCL_DATA")[1]
+data_path <- Sys.getenv("HMCL_DATA")[1]
 # if not defined in the environment, use too levels above
 if (nchar(data_path) == 0) {
-  data_path <<- paste0("../../data/")
+  data_path <- "/srv/data/" # linux; change to your path if not using HMCL_DATA environment variable
 }
-# add a trailing slash C:/data/HMCL  --> C:/data/HMCL/
-data_path <<- paste0(data_path, "/")
 
 # load data
 Sales_Masked_Rtutor <- readRDS(paste0(data_path, "Sales_Masked_Rtutor.rds"))

@@ -15,14 +15,11 @@ golem::document_and_reload()
 # Run the application
 run_app()
 }
+
+
 # for testing R package
-if(0){
 remove.packages("RTutor")
-
-remotes::install_github("gexijin/RTutor", upgrade = "never")
-
-.rs.restartR()
-
+#remotes::install_github("gexijin/RTutor", upgrade = "never")
+# install from current folder
+install.packages(".", repos = NULL, type = "source")
 RTutor::run_app()
-
-}
