@@ -1008,15 +1008,21 @@ app_server <- function(input, output, session) {
   })
 
 
-  output$openAI <- renderText({
+  output$openAI <- renderCode({
     req(openAI_response()$cmd)
+
+    # ONLY WORKS WITH R CODE
+    # PYTHON CODE WILL NEED A NEW renderText
+    req(!input$use_python)
+
     res <- logs$raw
     # Replace multiple newlines with just one.
     #res <- gsub("\n+", "\n", res)
     # Replace emplty lines,  [ ]{0, }--> zero or more space
     #res <- gsub("^[ ]{0, }\n", "", res)
-    res <- gsub("```", "", res)
 
+    # print raw code with higlighted syntax
+    return(res)
   })
 
  # Defining & initializing the reactiveValues object

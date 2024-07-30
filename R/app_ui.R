@@ -105,7 +105,7 @@ app_ui <- function(request) {
               column(
                 width = 12,
                 tags$label("2. Modify Data Fields",
-                style = "font-size: 14px;font-weight: bold;color: #333;display: block;margin-bottom: 5px;")
+                style = "font-size: 18px;font-weight: bold;color: #333;display: block;margin-bottom: 5px;")
               ),
               br(),
               column(
@@ -201,7 +201,7 @@ app_ui <- function(request) {
                   textInput(
                     inputId = "ask_question",
                     label = "Ask about Results",
-                    placeholder = "Q&A: Ask about the code, result, error, or statistics in general.",
+                    placeholder = "Ask about the code, result, error, general statistics, etc.",
                     value = ""
                   ),
 
@@ -286,7 +286,8 @@ app_ui <- function(request) {
                   )
                 )
               ),
-              verbatimTextOutput("openAI"),
+              codeOutput("openAI"),
+
               conditionalPanel(
                 condition = "input.use_python == 0",
 
@@ -1184,7 +1185,10 @@ golem_add_external_resources <- function() {
     bundle_resources(
       path = app_sys("app/www"),
       app_title = "RTutor 0.98"
-    )
+    ),
+
+    includeHighlightJs()  # for code output syntax highlighting
+
     # Add here other external resources
     # for example, you can add shinyalert::useShinyalert()
   )
