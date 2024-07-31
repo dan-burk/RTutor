@@ -42,19 +42,3 @@ multiple times.}
 These functions work similar to `renderText` and `verbatimTextOutput` but
 will include highlighting with `highlight.js` and `rstudio.css`.
 }
-\examples{
-\dontrun{
-shinyApp(
-  fluidPage(
-    textAreaInput("code_in", NULL, width = "1000px", height = "200px",
-      paste("f <- function(x) {2*x + 3}", "f(1)", "#> 5", sep = "\n")),
-    codeOutput("code_out")
-  ),
-  function(input, output, session){
-    output$code_out <- renderCode({
-      paste(input$code_in)
-    })
-  }
-)
-}
-}

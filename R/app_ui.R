@@ -286,7 +286,9 @@ app_ui <- function(request) {
                   )
                 )
               ),
-              codeOutput("openAI"),
+
+              # runs different UI components based on code lang to print results
+              uiOutput("dynamic_openAI"),
 
               conditionalPanel(
                 condition = "input.use_python == 0",

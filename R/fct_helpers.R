@@ -1104,21 +1104,6 @@ missing_values_plot <- function(df) {
 #'   syntax highlighting script. For `length(delay) > 1` the script will fire
 #'   multiple times.
 #'
-#' @examples
-#' \dontrun{
-#' shinyApp(
-#'   fluidPage(
-#'     textAreaInput("code_in", NULL, width = "1000px", height = "200px",
-#'       paste("f <- function(x) {2*x + 3}", "f(1)", "#> 5", sep = "\n")),
-#'     codeOutput("code_out")
-#'   ),
-#'   function(input, output, session){
-#'     output$code_out <- renderCode({
-#'       paste(input$code_in)
-#'     })
-#'   }
-#' )
-#' }
 renderCode <- function(expr, env = parent.frame(), quoted = FALSE,
                        outputArgs = list(), delay = 100){
   func <- exprToFunction(expr, env, quoted)
@@ -1144,7 +1129,7 @@ codeOutput <- function(outputId){
 }
 
 rCodeContainer <- function(...){
-  code <- HTML(as.character(tags$code(class = lang_class, ...)))
+  code <- HTML(as.character(tags$code(class = "language-r", ...)))
   div(pre(code))
 }
 
