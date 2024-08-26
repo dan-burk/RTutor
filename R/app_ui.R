@@ -508,6 +508,12 @@ app_ui <- function(request) {
             hr(class = "custom-hr-thick"),
             h4(strong("Comprehensive EDA (Exploratory Data Analysis)"), style = "font-size: 24px;"),
             uiOutput("eda_report_ui")
+          ),
+          tabPanel(
+            title = "Neural Net Reports",
+            hr(class = "custom-hr-thick"),
+            h4(strong("Neural Net Analysis"), style = "font-size: 24px;"),
+            uiOutput("nnet_report_ui")
           )
         )
       ), #tabPanel

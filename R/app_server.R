@@ -76,11 +76,13 @@ app_server <- function(input, output, session) {
 
   # privacy policy
   observeEvent(input$ppolicy, {
+    shiny::removeModal()
     updateNavbarPage(session, inputId = "tabs", selected = "privacy_policy")
   })
 
   # terms of use
   observeEvent(input$tofu, {
+    shiny::removeModal()
     updateNavbarPage(session, inputId = "tabs", selected = "terms_of_use")
   })
 
@@ -2113,6 +2115,8 @@ app_server <- function(input, output, session) {
     Rmd_total()
   })
 
+
+  ##### RTutor EDA Report/Regression #####
   output$eda_report_ui <- renderUI({
     req(input$select_data != no_data)
     req(!input$use_python)
@@ -2268,7 +2272,6 @@ app_server <- function(input, output, session) {
     })
   })
 
-
   # Markdown report
   output$eda_report_rtutor <- downloadHandler(
     # For PDF output, change this to "report.pdf"
@@ -2280,6 +2283,230 @@ app_server <- function(input, output, session) {
       file.copy(from = eda_file(), to = file, overwrite = TRUE)
     }
   )
+
+
+  ##### RTutor NNet Report #####
+  # UI for Neural Network Tab
+  output$nnet_report_ui <- renderUI({
+    req(input$select_data != no_data)
+    req(!input$use_python)
+    req(!is.null(current_data()))
+    df <- ggpairs_data()
+
+    # Calculate the number of levels for the selected target variable
+    # (required info for binary classification)
+    num_levels <- 0
+    target_levels <- character(0)
+    if (!is.null(input$nnet_target_variable) && input$nnet_target_variable %in% colnames(df)) {
+      selected_col <- df[[input$nnet_target_variable]]
+      
+      if (is.factor(selected_col)) {   # if target is a factor
+        num_levels <- length(levels(selected_col))  # number of levels
+        if (num_levels == 2) {   # if target is a binary factor
+          target_levels <- levels(selected_col)  # vector of target levels
+        }
+      }
+    }
+
+    tagList(
+      br(),
+      fluidRow(
+        column(
+          width = 3,
+          actionButton(
+            inputId = "render_nnet_report_rtutor",
+            label = strong("Render Report"),
+            class = "custom-action-button"
+          )
+        )
+      ),
+      br(),
+      fluidRow(
+        column(
+          width = 6,
+          selectInput(
+            inputId = "nnet_target_variable",
+            label = "Select a target variable:",
+            choices = colnames(df),
+            selected = input$nnet_target_variable,
+            multiple = FALSE
+          )
+        ),
+        if (num_levels == 2) {   # if target variable is binary factor
+          column(
+            width = 6,
+            selectInput(
+              inputId = "nnet_positive_class",
+              label = "Select the positive class:",
+              choices = target_levels,
+              selected = if (length(target_levels) > 0) target_levels[1] else NULL  # Default to the first level, or handle empty list
+            )
+          )
+        }
+      ),
+      br(),
+      checkboxGroupInput(
+        inputId = "nnet_variables",
+        label = "Select up to 20 predictor variables:",
+        choices = colnames(df),
+        selected = colnames(df)
+      ),
+      br(),
+      selectInput(
+        inputId = "nnet_size_value",
+        label = "Select number of neurons:",
+        choices = c(2:30),
+        selected = 6,
+        multiple = FALSE
+      )
+    )
+  })
+
+  # when user uploads a file and has more than 20 columns, only the first 20 is selected by nnet_variables.
+  observeEvent(input$user_file, {
+    req(!is.null(input$user_file))
+    req(input$select_data == uploaded_data)
+    req(!input$use_python)
+    req(!is.null(ggpairs_data()))
+    df <- ggpairs_data()
+    if(ncol(df) > max_eda_var) {
+      updateCheckboxGroupInput(
+        session = session,
+        inputId = "nnet_variables",
+        label = "Deselect variables to ignore (optional):",
+        choices = colnames(df),
+        selected = colnames(df)[1:max_eda_var]
+      )
+    }
+  })
+
+  # if user selects more than 20 columns for the nnet_variables, only the first 20 is selected by nnet_variables. Show a warning.
+  observeEvent(c(input$nnet_variables, input$nnet_target_variable), {
+    req(!input$use_python)
+    req(!is.null(ggpairs_data()))
+
+    selected_var <- input$nnet_variables
+    update_selection <- FALSE
+    # if the selected target variable is not included in the nnet_variables, add it to the top of the list.
+    if (!(input$nnet_target_variable %in% selected_var)) {
+      selected_var <- c(input$nnet_target_variable, selected_var)
+      update_selection <- TRUE
+    }
+
+    if(length(selected_var) > max_eda_var) {
+      selected_var <- selected_var[1:max_eda_var]
+
+      showNotification(
+        ui = paste("Only the first 20 variables are selected for EDA.
+        Please deselect some variables to continue."),
+        id = "nnet_variables_warning",
+        duration = 5,
+        type = "error"
+      )
+      update_selection <- TRUE
+    }
+
+    # if target variable is selected, add to it; if too many, only keep the first 20
+    if(update_selection){
+      updateCheckboxGroupInput(
+        session = session,
+        inputId = "nnet_variables",
+        label = "Deselect variables to ignore (optional):",
+        choices = colnames(ggpairs_data()),
+        selected = selected_var
+      )
+    }
+  })
+
+  nnet_file <- reactiveVal(NULL)
+
+  observeEvent(input$render_nnet_report_rtutor, {
+    req(input$select_data != no_data)
+    req(!input$use_python)
+    req(!is.null(current_data()))
+
+
+    withProgress(message = "Generating Report (5 minutes)", {
+      incProgress(0.2)
+      # Copy the report file to a temporary directory before processing it, in
+      # case we don't have write permissions to the current working dir (which
+      # can happen when deployed).
+      tempReport <- file.path(tempdir(), "RTutor_NNet.Rmd")
+      # tempReport
+      tempReport <- gsub("\\", "/", tempReport, fixed = TRUE)
+      output_file <- gsub("Rmd$", "html", tempReport)
+      # This should retrieve the project location on your device:
+      # "C:/Users/bdere/Documents/GitHub/idepGolem"
+      #wd <- getwd()
+
+      markdown_location <- app_sys("app/www/nnet.Rmd")
+      file.copy(from = markdown_location, to = tempReport, overwrite = TRUE)
+
+
+      # Extract negative class for binary classification
+      negative_class <- if (!is.null(input$nnet_positive_class)) {
+        setdiff(levels(ggpairs_data()[[input$nnet_target_variable]]), input$nnet_positive_class)
+      } else {
+        NULL
+      }
+      
+      # Set up parameters to pass to Rmd document
+      params <- list(
+        df = ggpairs_data()[, input$nnet_variables],
+        target = input$nnet_target_variable,
+        predictors = input$nnet_variables,
+        size = input$nnet_size_value,
+        positive_class_variable = input$nnet_positive_class,
+        negative_class_variable = negative_class
+      )
+      req(params)
+      # Knit the document, passing in the `params` list, and eval it in a
+      # child of the global environment (this isolates the code in the document
+      # from the code in this app).
+      tryCatch({
+        rmarkdown::render(
+          input = tempReport, # markdown_location,
+          output_file = output_file,
+          params = params,
+          envir = new.env(parent = globalenv())
+        )
+      },
+        error = function(e) {
+          showNotification(
+            ui = paste("Error when generating the report. Please try again."),
+            id = "nnet_report_error",
+            duration = 5,
+            type = "error"
+          )
+      },
+        finally = {
+          nnet_file(output_file)
+          # show modal with download button
+          showModal(modalDialog(
+            title = "Successfully rendered the report!",
+            downloadButton(
+              outputId = "nnet_report_rtutor",
+              label = "Download"
+            ),
+            easyClose = TRUE
+          ))
+        }
+      )
+    })
+  })
+
+  # Markdown report
+  output$nnet_report_rtutor <- downloadHandler(
+    # For PDF output, change this to "report.pdf"
+    filename = "RTutor_NNet.html",
+    content = function(file) {
+      validate(
+        need(!is.null(nnet_file()), "File not found.")
+      )
+      file.copy(from = nnet_file(), to = file, overwrite = TRUE)
+    }
+  )
+
 
 
   # Markdown report
