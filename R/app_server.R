@@ -1949,87 +1949,132 @@ app_server <- function(input, output, session) {
   # collect all RMarkdown chunks
   Rmd_total <- reactive({
 
-  Rmd_script <- ""
+    Rmd_script <- ""
 
-  # if first chunk
-  Rmd_script <- paste0(
-    Rmd_script,
-    # Get the data from the params list-----------
-    "\nDeveloped by [Steven Ge](https://twitter.com/StevenXGe) using API access via the
-[openai](https://cran.rstudio.com/web/packages/openai/index.html)
-    package  to
-    [OpenAI's](https://cran.rstudio.com/web/packages/openai/index.html) \"",
-    selected_model(),
-    "\" model.",
-    "\n\nRTutor Website: [https://RTutor.ai](https://RTutor.ai)",
-    "\nSource code: [GitHub.](https://github.com/gexijin/RTutor)\n"
-  )
+    # if first chunk
+    Rmd_script <- paste0(
+      Rmd_script,
+      # Get the data from the params list-----------
+      "\nDeveloped by [Steven Ge](https://twitter.com/StevenXGe) using API access via the
+  [openai](https://cran.rstudio.com/web/packages/openai/index.html)
+      package  to
+      [OpenAI's](https://cran.rstudio.com/web/packages/openai/index.html) \"",
+      selected_model(),
+      "\" model.",
+      "\n\nRTutor Website: [https://RTutor.ai](https://RTutor.ai)",
+      "\nSource code: [GitHub.](https://github.com/gexijin/RTutor)\n"
+    )
 
-  # if the first chunk & data is uploaded,
-  # insert script for reading data
-  if (input$select_data == uploaded_data) {
+    # if the first chunk & data is uploaded,
+    # insert script for reading data
+    if (input$select_data == uploaded_data) {
 
-    # Read file
-    file_name <- input$user_file$name
-    if(user_data()$file_type == "read_excel") {
-      txt <- paste0(
-        "# install.packages(readxl)\nlibrary(readxl)\ndf <- read_excel(\"",
-        file_name,
-        "\")"
-      )
+      # Read file
+      file_name <- input$user_file$name
+      if(user_data()$file_type == "read_excel") {
+        txt <- paste0(
+          "# install.packages(readxl)\nlibrary(readxl)\ndf <- read_excel(\"",
+          file_name,
+          "\")"
+        )
+      }
+      if (user_data()$file_type == "read.csv") {
+        txt <- paste0(
+          "df <- read.csv(\"",
+          file_name,
+          "\")"
+        )
+      }
+      if (user_data()$file_type == "read.table") {
+        txt <- paste0(
+          "df <- read.table(\"",
+          file_name,
+          "\", sep = \"\t\", header = TRUE)"
+        )
+      }
+      # If second upload file exists, read that file
+      if (!is.null(input$user_file_2)) {
+        file_name_2 <- input$user_file_2$name
+        if(user_data_2()$file_type == "read_excel" && user_data()$file_type != "read_excel") {
+          txt <- paste0(
+            txt,
+            "\n\n# install.packages(readxl)\nlibrary(readxl)\ndf2 <- read_excel(\"",
+            file_name_2,
+            "\")"
+          )
+        }
+        if(user_data_2()$file_type == "read_excel" && user_data()$file_type == "read_excel") {
+          txt <- paste0(
+            txt,
+            "\ndf2 <- read_excel(\"",
+            file_name_2,
+            "\")"
+          )
+        }
+        if (user_data_2()$file_type == "read.csv") {
+          txt <- paste0(
+            txt,
+            "\ndf2 <- read.csv(\"",
+            file_name_2,
+            "\")"
+          )
+        }
+        if (user_data_2()$file_type == "read.table") {
+          txt <- paste0(
+            txt,
+            "\ndf2 <- read.table(\"",
+            file_name_2,
+            "\", sep = \"\t\", header = TRUE)"
+          )
+        }
+      }
 
-    }
-    if (user_data()$file_type == "read.csv") {
-      txt <- paste0(
-        "df <- read.csv(\"",
-        file_name,
-        "\")"
-      )
-    }
-    if (user_data()$file_type == "read.table") {
-      txt <- paste0(
-        "df <- read.table(\"",
-        file_name,
-        "\", sep = \"\t\", header = TRUE)"
+      Rmd_script <- paste0(
+        "\n### 0a. Read File\n",
+        "```{R, eval = FALSE}\n",
+        txt,
+        "\n```\n"
       )
     }
 
     Rmd_script <- paste0(
-      "\n### 0. Read File\n",
-      "```{R, eval = FALSE}\n",
-      txt,
-      "\n```\n"
+      Rmd_script,
+      # Get the data from the params list for every chunk-----------
+      # Do not change this without changing the output$Rmd_source function
+      # this chunk is removed for local knitting.
+      "```{R, echo = FALSE}\n",
+      "df <- params$df\ndf2 <- params$df2\n",
+      "```\n"
     )
-  }
 
-  Rmd_script <- paste0(
-    Rmd_script,
-    # Get the data from the params list for every chunk-----------
-    # Do not change this without changing the output$Rmd_source function
-    # this chunk is removed for local knitting.
-    "```{R, echo = FALSE}\n",
-    "df <- params$df\ndf2 <- params$df2\n",
-    "```\n"
-  )
+    data_type_code <- data_type_changes()
+    data_type_code_2 <- data_type_changes2()
+    Rmd_script <- paste0(
+      Rmd_script,
+      "\n### 0b. Code to reproduce data type changes\n```{R, echo = FALSE}",
+      data_type_code,
+      data_type_code_2,
+      "\n```"
+    )
 
-  #------------------Add selected chunks
-  if("All chunks" %in% input$selected_chunk_report) {
-      ix <- 1:length(logs$code_history)
-  } else if("All chunks without errors" %in% input$selected_chunk_report) {
-    ix <- c()
-    for (i in 1:length(logs$code_history)) {
-      if(!logs$code_history[[i]]$error) {
-        ix <- c(ix, i)
+    #------------------Add selected chunks
+    if("All chunks" %in% input$selected_chunk_report) {
+        ix <- 1:length(logs$code_history)
+    } else if("All chunks without errors" %in% input$selected_chunk_report) {
+      ix <- c()
+      for (i in 1:length(logs$code_history)) {
+        if(!logs$code_history[[i]]$error) {
+          ix <- c(ix, i)
+        }
       }
+    } else {  # selected
+      ix <- as.integer(input$selected_chunk_report)
     }
-  } else {  # selected
-    ix <- as.integer(input$selected_chunk_report)
-  }
 
-  for (i in ix) {
-    Rmd_script <- paste0(Rmd_script, "\n", logs$code_history[[i]]$rmd)
-  }
-  return(Rmd_script)
+    for (i in ix) {
+      Rmd_script <- paste0(Rmd_script, "\n", logs$code_history[[i]]$rmd)
+    }
+    return(Rmd_script)
   })
 
 
@@ -3418,6 +3463,10 @@ output$RTutor_version <- renderUI({
     })
   })
 
+
+  # Reactive value to store data type changes as R code for the report
+  data_type_changes <- reactiveVal("")
+
   observe({
     req(current_data())
     req(input$revert_data == 0) #Negative: If we hit revert data button, we don't want to run all this junk
@@ -3428,31 +3477,45 @@ output$RTutor_version <- renderUI({
         #(i.e. If submit_button == 0 then selected chunk would be NULL and maximum code chunk is 0\NULL)
     # req(run_data_process())
 
+    
+    new_code <- "\n\n# Df Columns"
+
     for (i in seq_along(current_data())) {
       col_type <- input[[paste0("column_type_", i)]]
       if (!is.null(col_type)) {
         updated_data <- isolate(current_data())
 
+        # Generate R code for the changes, used in report later on
+        change_code <- ""
+
         # when converting to factor the as function gives an error
         if(col_type == "factor") {
           updated_data[[i]] <- as.factor(updated_data[[i]])
+          change_code <- paste0("df[[", i, "]] <- as(df[[", i, "]], '", col_type, "')") # record change
         } else if (col_type == "Date") {
-          updated_data[[i]] <- lubridate::parse_date_time(
-            updated_data[[i]],
-            orders = c("mdy", "dmy", "ymd")
-          )
+          updated_data[[i]] <- lubridate::parse_date_time(updated_data[[i]], orders = c("mdy", "dmy", "ymd"))
           updated_data[[i]] <- as.Date(updated_data[[i]])
-        } else if(col_type == "numeric" & class(updated_data[[i]]) == "factor"){
-          updated_data[[i]] <- as(as.character(updated_data[[i]]), col_type)
+
+          change_code <- paste0(    # record change
+            "df[[", i, "]] <- as.Date(lubridate::parse_date_time(df[[", i, "]], orders = c('mdy', 'dmy', 'ymd')))"
+          )
+        } else if (col_type == "numeric" && class(updated_data[[i]]) == "factor") {
+          updated_data[[i]] <- as.numeric(as.character(updated_data[[i]]))
+          change_code <- paste0("df[[", i, "]] <- as.numeric(as.character(df[[", i, "]]))")  # record change
         } else {
           updated_data[[i]] <- as(updated_data[[i]], col_type)
+          change_code <- paste0("df[[", i, "]] <- as(df[[", i, "]], '", col_type, "')") # record change
         }
         current_data(updated_data)
+
+        # Append the change code to the reactive
+        new_code <- paste0(new_code, "\n", change_code)
+
         isolate({
           # run_env(rlang::env(run_env(), df = current_data()))
           # run_env_start(as.list(run_env()))
 
-          #Code to update environment and not overwrite
+          # Code to update environment and not overwrite
           existing_vars <- as.list(run_env())
           existing_vars$df <- current_data()
           run_env(list2env(existing_vars))
@@ -3460,6 +3523,9 @@ output$RTutor_version <- renderUI({
         })
       }
     }
+
+    # Update reactive
+    data_type_changes(new_code)
 
   })
 
@@ -3696,31 +3762,49 @@ output$RTutor_version <- renderUI({
     })
   })
 
+
+  # Reactive value to store data type changes as R code for the report
+  data_type_changes2 <- reactiveVal("")
+
   # convert data types
   observe({
     req(current_data_2())
     req(input$revert_data2 == 0) #Negative: If we hit revert data button, we don't want to run all this junk
     req(input$submit_button == 0 || as.integer(input$selected_chunk) == length(logs$code_history))
+
+    new_code <- "\n\n# Df 2 Columns"
+
     for (i in seq_along(current_data_2())) {
       col_type <- input[[paste0("column_type_2_", i)]]
       if (!is.null(col_type)) {
         updated_data <- isolate(current_data_2())
 
+        # Generate R code for the changes, used in report later on
+        change_code <- ""
+
         # when converting to factor the as function gives an error
         if(col_type == "factor") {
           updated_data[[i]] <- as.factor(updated_data[[i]])
+          change_code <- paste0("df2[[", i, "]] <- as(df2[[", i, "]], '", col_type, "')") # record change
         } else if (col_type == "Date") {
-          updated_data[[i]] <- lubridate::parse_date_time(
-            updated_data[[i]],
-            orders = c("mdy", "dmy", "ymd")
-          )
+          updated_data[[i]] <- lubridate::parse_date_time(updated_data[[i]], orders = c("mdy", "dmy", "ymd"))
           updated_data[[i]] <- as.Date(updated_data[[i]])
-        } else if(col_type == "numeric" & class(updated_data[[i]]) == "factor"){
-          updated_data[[i]] <- as(as.character(updated_data[[i]]), col_type)
+
+          change_code <- paste0(    # record change
+            "df2[[", i, "]] <- as.Date(lubridate::parse_date_time(df2[[", i, "]], orders = c('mdy', 'dmy', 'ymd')))"
+          )
+        } else if(col_type == "numeric" && class(updated_data[[i]]) == "factor"){
+          updated_data[[i]] <- as.numeric(as.character(updated_data[[i]]))
+          change_code <- paste0("df2[[", i, "]] <- as.numeric(as.character(df2[[", i, "]]))")  # record change
         } else {
           updated_data[[i]] <- as(updated_data[[i]], col_type)
+          change_code <- paste0("df2[[", i, "]] <- as(df2[[", i, "]], '", col_type, "')") # record change
         }
         current_data_2(updated_data)
+
+        # Append the change code to the reactive
+        new_code <- paste0(new_code, "\n", change_code)
+
         isolate({
           # run_env(rlang::env(run_env(), df2 = current_data_2()))
           # run_env_start(as.list(run_env()))
@@ -3733,6 +3817,10 @@ output$RTutor_version <- renderUI({
         })
       }
     }
+
+    # Update reactive
+    data_type_changes2(new_code)
+
   })
 
 }

@@ -403,10 +403,10 @@ app_ui <- function(request) {
             shinyjs::hidden(
               div(
                 id = "second_file_summary",
-                br(), hr(class = "custom-hr"),
+                br(), hr(class = "custom-hr-thick"),
                 h4(strong("Data Structure: df2")),
                 verbatimTextOutput("data_structure_2"),
-                br(), hr(class = "custom-hr"),
+                br(), hr(class = "custom-hr-thick"),
                 h4(strong("Data Summary: df2")),
                 verbatimTextOutput("data_summary_2"),
                 plotly::plotlyOutput("missing_values_2", width = "60%")
