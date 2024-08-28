@@ -39,6 +39,11 @@ app_server <- function(input, output, session) {
     pdf(NULL)
   })
 
+  
+  output$seed <- renderText({
+    paste("Seed:",rand_seed())
+  })
+
 
   # load demo data when clicked
   observeEvent(input$demo_prompt, {
@@ -841,6 +846,7 @@ app_server <- function(input, output, session) {
 
   })
 
+  rand_seed <- reactiveVal(NULL) #Make the seed a reactive variable
   openAI_response <- reactive({
     req(input$submit_button)
 
@@ -945,13 +951,14 @@ app_server <- function(input, output, session) {
             list(list(role = "user", content = prepared_request))
           )
           # browser()
-
-          response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+          rand_seed(sample(1:999999,1))
+          response <- create_chat_completion_rtutor(  # chat model: gpt-3.5-turbo, gpt-4
             model = selected_model(),
             openai_api_key = api_key_session()$api_key,
             #max_tokens = 500,
             temperature = sample_temp(),
-              messages = prompt_total
+            messages = prompt_total,
+            seed = rand_seed()
           )
 
           # to make the returned code at the same spot, as davinci model.
@@ -1092,6 +1099,7 @@ app_server <- function(input, output, session) {
     raw = "",  # cumulative orginal code for print out
     last_code = "", # last code for Rmarkdown
     language = "", # Python or R
+    seed = 0,
     code_history = list(), # keep all code chunks
 
   )
@@ -1106,6 +1114,7 @@ app_server <- function(input, output, session) {
     logs$raw <- gsub("^\n+", "", logs$raw)
     logs$last_code <- ""
     logs$language <- ifelse(input$use_python, "Python", "R")
+    logs$seed <- rand_seed()
 
     # A list holds current request
     current_code <- list(
@@ -1118,6 +1127,7 @@ app_server <- function(input, output, session) {
       error_message = run_result()$error_message,
       rmd = Rmd_chunk(),
       language = ifelse(input$use_python, "Python", "R"),
+      seed = logs$seed,
       # saves the rendered file in the logs object.
       html_file = ifelse(input$use_python, python_to_html(), -1),
       prompt_tokens = openAI_response()$response$usage$prompt_tokens,
@@ -1148,6 +1158,8 @@ app_server <- function(input, output, session) {
     id <- as.integer(input$selected_chunk)
     logs$code <- logs$code_history[[id]]$code
     logs$raw <- logs$code_history[[id]]$raw
+    logs$seed <- logs$code_history[[id]]$seed
+    rand_seed(logs$code_history[[id]]$seed)
 
     #Switch to previous chunks
     if(id < length(logs$code_history)) {
@@ -1157,6 +1169,7 @@ app_server <- function(input, output, session) {
       run_env(list2env(logs$code_history[[id]]$env))
       current_data(run_env()$df) #Update current_data() with the df added on 8/21/2024. Alternative logs$code_history[[id]]$env$df
       current_data_2(run_env()$df2)
+      rand_seed(logs$code_history[[id]]$seed)
 
       # enable re-calculation of the code
       reverted(reverted() + 1)
@@ -2733,7 +2746,7 @@ app_server <- function(input, output, session) {
 
       # Send to openAI
       tryCatch(
-        response <- openai::create_chat_completion(
+        response <- create_chat_completion_rtutor(
           model = selected_model(),
           openai_api_key = api_key_session()$api_key,
           temperature = sample_temp(),
@@ -3164,6 +3177,7 @@ output$RTutor_version <- renderUI({
   observeEvent(input$submit_button, {
     req(openAI_prompt())
     req(logs$code)
+    browser()
 
     if(contribute_data()) {
       # remove user data, only keep column names and data type
@@ -3175,6 +3189,7 @@ output$RTutor_version <- renderUI({
           time = format(Sys.time(), "%H:%M:%S"),
           request = openAI_prompt(),
           code = logs$code,
+          seed = logs$seed,
           error_status = code_error(),  # 1 --> error!  0 --> no error, success!!
           data_str = paste(txt, collapse = "\n"),
           dataset = input$select_data,

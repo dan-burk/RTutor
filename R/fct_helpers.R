@@ -709,6 +709,7 @@ save_data <- function(
   time,
   request,
   code,
+  seed,
   error_status,
   data_str,
   dataset,
@@ -728,13 +729,14 @@ save_data <- function(
     txt <- sprintf(
       "INSERT INTO %s (%s) VALUES ('%s')",
       sqltable,
-      "date, time, request, code, error, data_str, dataset, session, filename, filesize, chunk, api_time, tokens, language",
+      "date, time, request, code, error, seed, data_str, dataset, session, filename, filesize, chunk, api_time, tokens, language",
       paste(
         c(
           as.character(date),
           as.character(time),
           clean_txt(request),
           clean_txt(code),
+          seed,
           as.integer(error_status),
           clean_txt(data_str),
           dataset,
@@ -1335,4 +1337,214 @@ privacy_policy_content <- function() {
       <p style="padding-bottom: 90px;">If you have questions about this policy, please email us at: ge@orditus.com.</p>
   </div>
   ')
+}
+
+verify_mime_type_rtutor <- function(result) {
+
+    if (httr::http_type(result) != "application/json") {
+        paste(
+            "OpenAI API probably has been changed. If you see this, please",
+            "rise an issue at: https://github.com/irudnyts/openai/issues"
+        ) %>%
+            stop()
+    }
+
+}
+
+#' Create chat completion
+#'
+#' Creates a completion for the chat message. See [this
+#' page](https://platform.openai.com/docs/api-reference/chat/create) for
+#' details.
+#'
+#' For arguments description please refer to the [official
+#' documentation](https://platform.openai.com/docs/api-reference/chat/create).
+#'
+#' @param model required; a length one character vector.
+#' @param messages required; defaults to `NULL`; a list in the following
+#'   format: `list(list("role" = "user", "content" = "Hey! How old are you?")`
+#' @param temperature required; defaults to `1`; a length one numeric vector
+#'   with the value between `0` and `2`.
+#' @param top_p required; defaults to `1`; a length one numeric vector with the
+#'   value between `0` and `1`.
+#' @param n required; defaults to `1`; a length one numeric vector with the
+#'   integer value greater than `0`.
+#' @param stream required; defaults to `FALSE`; a length one logical vector.
+#'   **Currently is not implemented.**
+#' @param stop optional; defaults to `NULL`; a character vector of length
+#'   between one and four.
+#' @param max_tokens required; defaults to `(4096 - prompt tokens)`; a length
+#'   one numeric vector with the integer value greater than `0`.
+#' @param presence_penalty required; defaults to `0`; a length one numeric
+#'   vector with a value between `-2` and `2`.
+#' @param frequency_penalty required; defaults to `0`; a length one numeric
+#'   vector with a value between `-2` and `2`.
+#' @param logit_bias optional; defaults to `NULL`; a named list.
+#' @param user optional; defaults to `NULL`; a length one character vector.
+#' @param openai_api_key required; defaults to `Sys.getenv("OPENAI_API_KEY")`
+#'   (i.e., the value is retrieved from the `.Renviron` file); a length one
+#'   character vector. Specifies OpenAI API key.
+#' @param openai_organization optional; defaults to `NULL`; a length one
+#'   character vector. Specifies OpenAI organization.
+#' @param seed optional; defaults to `NULL`; a length one
+#'   numeric vector with integer values. Attempts deterministic sampling.
+#' @return Returns a list, elements of which contain chat completion(s) and
+#'   supplementary information.
+#' @examples \dontrun{
+#' create_chat_completion(
+#'    model = "gpt-3.5-turbo",
+#'    messages = list(
+#'        list(
+#'            "role" = "system",
+#'            "content" = "You are a helpful assistant."
+#'        ),
+#'        list(
+#'            "role" = "user",
+#'            "content" = "Who won the world series in 2020?"
+#'        ),
+#'        list(
+#'            "role" = "assistant",
+#'            "content" = "The Los Angeles Dodgers won the World Series in 2020."
+#'        ),
+#'        list(
+#'            "role" = "user",
+#'            "content" = "Where was it played?"
+#'        )
+#'    )
+#' )
+#' }
+#' @export
+create_chat_completion_rtutor <- function(
+        model,
+        messages = NULL,
+        temperature = 1,
+        top_p = 1,
+        n = 1,
+        stream = FALSE,
+        stop = NULL,
+        max_tokens = NULL,
+        presence_penalty = 0,
+        frequency_penalty = 0,
+        logit_bias = NULL,
+        user = NULL,
+        openai_api_key = Sys.getenv("OPENAI_API_KEY"),
+        openai_organization = NULL,
+        seed = NULL
+) {
+
+    #---------------------------------------------------------------------------
+    # Validate arguments
+
+    assertthat::assert_that(
+        assertthat::is.string(model),
+        assertthat::noNA(model)
+    )
+
+    if (!is.null(messages)) {
+        assertthat::assert_that(
+            is.list(messages)
+        )
+    }
+
+    assertthat::assert_that(
+        assertthat::is.count(n)
+    )
+
+
+    if (!is.null(max_tokens)) {
+        assertthat::assert_that(
+            assertthat::is.count(max_tokens)
+        )
+    }
+
+    if (!is.null(logit_bias)) {
+        assertthat::assert_that(
+            is.list(logit_bias)
+        )
+    }
+
+    if (!is.null(user)) {
+        assertthat::assert_that(
+            assertthat::is.string(user),
+            assertthat::noNA(user)
+        )
+    }
+
+    assertthat::assert_that(
+        assertthat::is.string(openai_api_key),
+        assertthat::noNA(openai_api_key)
+    )
+
+    if (!is.null(openai_organization)) {
+        assertthat::assert_that(
+            assertthat::is.string(openai_organization),
+            assertthat::noNA(openai_organization)
+        )
+    }
+
+    #---------------------------------------------------------------------------
+    # Build path parameters
+
+    task <- "chat/completions"
+
+    base_url <- glue::glue("https://api.openai.com/v1/{task}")
+
+    headers <- c(
+        "Authorization" = paste("Bearer", openai_api_key),
+        "Content-Type" = "application/json"
+    )
+
+    if (!is.null(openai_organization)) {
+        headers["OpenAI-Organization"] <- openai_organization
+    }
+
+    #---------------------------------------------------------------------------
+    # Build request body
+
+    body <- list()
+    body[["model"]] <- model
+    body[["messages"]] <- messages
+    body[["temperature"]] <- temperature
+    body[["top_p"]] <- top_p
+    body[["n"]] <- n
+    body[["stream"]] <- stream
+    body[["stop"]] <- stop
+    body[["max_tokens"]] <- max_tokens
+    body[["presence_penalty"]] <- presence_penalty
+    body[["frequency_penalty"]] <- frequency_penalty
+    body[["logit_bias"]] <- logit_bias
+    body[["user"]] <- user
+    body[["seed"]] <- seed
+
+    #---------------------------------------------------------------------------
+    # Make a request and parse it
+
+    response <- httr::POST(
+        url = base_url,
+        httr::add_headers(.headers = headers),
+        body = body,
+        encode = "json"
+    )
+
+    verify_mime_type_rtutor(response)
+
+    parsed <- response %>%
+        httr::content(as = "text", encoding = "UTF-8") %>%
+        jsonlite::fromJSON(flatten = TRUE)
+
+    #---------------------------------------------------------------------------
+    # Check whether request failed and return parsed
+
+    if (httr::http_error(response)) {
+        paste0(
+            "OpenAI API request failed [",
+            httr::status_code(response),
+            "]:\n\n",
+            parsed$error$message
+        ) %>%
+            stop(call. = FALSE)
+    }
+
+    parsed
+
 }
