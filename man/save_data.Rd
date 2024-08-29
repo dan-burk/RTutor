@@ -9,6 +9,7 @@ save_data(
   time,
   request,
   code,
+  seed,
   error_status,
   data_str,
   dataset,
