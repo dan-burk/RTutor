@@ -38,14 +38,38 @@ max_levels_factor_conversion <- 5 # Numeric columns will be converted to factor 
 unique_ratio <- 0.05   # number of unique values / total # of rows
 sqlitePath <- "../../data/usage_data.db" # folder to store the user queries, generated R code, and running results
 sqltable <- "usage"
-system_role <- "Act as a experienced data scientist and statistician. You will write R code following instructions. Do not provide explanation.
+
+# additional prompts to send to ChatGPT
+system_role <- "Act as an experienced data scientist and statistician. You will write R code following instructions. Do not provide explanation.
 Try to produce a plot when possible. ggplot2 is preferred. Make the plot visually appealing. If multiple plots are generated, try to combine them into one."
-system_role_growth <- "If 'growth' or 'decline' is in the prompt, CALCULATE growth rate! Ensure all date and time manipulations are 
-dynamically handled based on the data. Try using dplyr::lag() for time comparisons. Ensure to include a fair comparison period of equal length."
 system_role_date <- "Assume Today's date is 2024-03-26."
+growth_instruct <- "Calculate growth rate! Ensure all date and time manipulations are dynamically handled based on the data. Try using dplyr::lag() for 
+time comparisons. Ensure to include a fair comparison period of equal length. Do not use print() to display tables."
+decline_instruct <- "Calculate decline rate! Ensure all date and time manipulations are dynamically handled based on the data. Try using dplyr::lag() for 
+time comparisons. Ensure to include a fair comparison period of equal length. Do not use print() to display tables."
+forecast_instruct <- "Ensure the output includes a table of forecasted sales with confidence intervals, and validate the forecast accuracy against 
+historical data. Plot the time progression, doesn't have to be ggplot2. Do not use print() to display tables."
+compare_instruct <- "Compare the specified metrics to identify differences/similarities. Focus on key metrics like performance indicators. Highlight 
+significant variations."
+performance_instruct <- "Analyze performance metrics for the specified period. Include key performance indicators (KPIs). Compare current performance to 
+historical data to identify trends."
+trend_instruct <- "Identify and analyze trends over the specified timeframe. Use time series analysis to detect patterns and changes in the data. 
+Highlight upward or downward trends."
+m_over_m_instruct <- "Conduct month-over-month analysis comparing the data between consecutive months. Calculate percentage changes and identify 
+significant increases or decreases. Highlight any recurring monthly patterns or anomalies."
+y_over_y_instruct <- "Conduct year-over-year analysis comparing the data from the same period in different years. Calculate growth rate and 
+percentage changes. Highlight any significant long-term trends/shifts in the data."
+
+system_relevancy <- "Act as an experienced data analyst. You will determine two things. Decide if the following prompt: 1. is relevant to the 
+ current data and 2. is a follow-up inquiry to the previous one (including modifications to visualizations, follow-up analysis, etc.)."
+user_relevancy <- "If either 1. or 2. is true, respond with only 'True'. If the prompt is asking about something not in the current data AND isn't a 
+ follow-up or modification to visualizations, respond with only 'False'. "
+
 system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. 
 You will respond like answering questions by students. If the question is in languages other than English, respond in that language. 
 If the question is not remotely related to your expertise, respond with 'No comment'."
+# system_role_growth <- "If 'growth' or 'decline' is in the prompt, CALCULATE growth rate! Ensure all date and time manipulations are 
+# dynamically handled based on the data. Try using dplyr::lag() for time comparisons. Ensure to include a fair comparison period of equal length."
 
 # voice input parameters
 wake_word <- "Tutor" #Tutor, Emma, Note that "Hey Cox" does not work very well.
@@ -89,18 +113,18 @@ on_server <- "on_server.txt"
 
 
 ######### Folder/Data Path with RDS files #########
-# Get the user's home directory
-home_dir <- Sys.getenv("USERPROFILE") # For Windows
-if (home_dir == "") {
-  home_dir <- Sys.getenv("HOME") # For other systems
+# if environmental variable is not set, use relative path
+# set the HMCL_DATA environment variable to the data folder such as C:/data/HMCL/
+data_path <- Sys.getenv("HMCL_DATA")[1]
+# if not defined in the environment, use too levels above
+if (nchar(data_path) == 0) {
+  data_path <- "/srv/data/" # linux; change to your path if not using HMCL_DATA environment variable
 }
 
-# Construct the full path dynamically
-base_path <- "OneDrive/RTutor/Proj_HeroMotoCorp/Data/"
-data_path <- normalizePath(file.path(home_dir, base_path))
-
-# Replace backslashes with forward slashes
-data_path <- paste0(gsub("\\\\", "/", data_path), '/')
+# load data
+Sales_Masked_Rtutor <- readRDS(paste0(data_path, "Sales_Masked_Rtutor.rds"))
+Dispatch_Masked_Rtutor <- readRDS(paste0(data_path, "Dispatch_Masked_Rtutor.rds"))
+Vahan_Share_Masked_Rtutor <- readRDS(paste0(data_path, "Vahan_Masked_Rtutor.rds"))
 
 # load meta data, from JSON file
 meta_data <- function() {
@@ -251,6 +275,85 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, selected_mo
   #cat("\n", txt)
   return(txt)
 }
+
+
+#' Search User input.
+#'
+#' Add additional info to prompt for certain user inputs.
+#'
+#' @param prepared_request A string that stores the user input.
+#'
+#' @return Returns specified instructions to be sent to GPT.
+# input_search <- function(prepared_request) {
+#   # define return vector
+#   final_instructions <- character(0)
+
+#   # place specific instructions into vector
+#   # name them the keyword to search for
+#   keyword_instructions <- c(
+#     "growth" = growth_instruct,
+#     "declin" = decline_instruct,
+#     "forecast" = forecast_instruct,
+#     "compar" = compare_instruct,
+#     "trend" = trend_instruct,
+#     "performance" = performance_instruct,
+#     "month over month" = m_over_m_instruct,
+#     "year over year" = y_over_y_instruct
+#   )
+
+#   ####################################
+#   ########  Not working as is ########
+#   # # prompt for ChatGPT
+#   # prompt <- list(list(
+#   #   role = "user",
+#   #   content = paste(
+#   #     "Based on the user's input:", prepared_request,
+#   #     ", decide if it uses OR IMPLIES any of the following keywords:",
+#   #     paste(names(keyword_instructions), collapse = ", "),
+#   #     ". Your response should only be: 'c(...)'. Which will be filled with a series of 'TRUE' or 'FALSE' 
+#   #     corresponding with each keyword with 'TRUE'=yes the keyword is in or is implied in the user's input."
+#   #   )
+#   # ))
+
+#   # # store response from ChatGPT
+#   # response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+#   #               model = "gpt-4",
+#   #               openai_api_key = api_key_global,
+#   #               #max_tokens = 500,
+#   #               temperature = 0.2,
+#   #               messages = prompt
+#   #             )
+#   # detected_keywords <- response$choices$message.content
+#   # print(detected_keywords)
+
+#   # detected_keywords <- as.logical(parse(text = detected_keywords))
+
+#   # # get matching instructions for any detected keywords
+#   # matching_keywords <- names(keyword_instructions)[detected_keywords]
+#   # print(matching_keywords)
+
+#   # # create final instructions based on detected keywords
+#   # if (length(matching_keywords) > 0) {
+#   #   final_instructions <- paste(keyword_instructions[matching_keywords], collapse = " ")
+#   # }
+
+#   # check for any keywords in user's input
+#   detected_keywords <- sapply(names(keyword_instructions), function(kw) {
+#     grepl(kw, prepared_request, ignore.case = TRUE)
+#   })
+
+#   # get matching instructions for any detected keywords
+#   all_instructions <- keyword_instructions[detected_keywords]
+
+#   # if any keyword exists, append appropriate instructions to prompt
+#   # else, no keywords exist, append nothing
+#   if (any(detected_keywords)) {
+#     # combine into a single string
+#     final_instructions <- paste(all_instructions, collapse = " ")
+#   }
+
+#   return(final_instructions)
+# }
 
 
 
@@ -486,12 +589,14 @@ polish_cmd <- function(cmd) {
 # A file, demo requests for different datasets, demo questions
 demo <- read.csv(app_sys("app", "www", "demo_questions.csv"))
 
+# extract demo questions
 ix <- which(demo$data == "questions")
 demo_questions <- demo$requests[ix]
 names(demo_questions) <- demo$name[ix]
 
+# extract jokes
 jokes <- demo[
-  which(demo$data == "jokes"), 
+  which(demo$data == "jokes"),
   "requests"
 ]
 
@@ -1129,10 +1234,10 @@ missing_values_plot <- function(df) {
 #   "Historical Dispatch Information"
 # )
 available_datasets <- list(
-  "Let RTutor Decide" = NULL,
-  "Sales Masked Rtutor" = "Sales_Masked_Rtutor.rds",
-  "Vahan Masked Rtutor" = "Vahan_Masked_Rtutor.rds",
-  "Dispatch Masked Rtutor" = "Dispatch_Masked_Rtutor.rds"
+  "Select a dataset:" = NULL,
+  "Sales Data" = "Sales_Masked_Rtutor.rds",
+  "Registration Data" = "Vahan_Masked_Rtutor.rds",
+  "Dispatch Data" = "Dispatch_Masked_Rtutor.rds"
 )
 
 # Create a data frame with questions and answers for FAQ section
@@ -1141,38 +1246,38 @@ faqs <- data.frame(
   question = c(
     "What is RTutor.ai?",
     "How does RTutor.ai work?",
-    "Is my data uploaded to OpenAI?",
+    #"Is my data uploaded to OpenAI?",
     "Who is it for?",
     "How do you make sure the results are correct?",
-    "Can you use RTutor to do R coding homework?",
-    "Can private companies use RTutor?",
-    "Can you run RTutor locally?",
+    #"Can you use RTutor to do R coding homework?",
+    #"Can private companies use RTutor?",
+    #"Can you run RTutor locally?",
     "Why do I get different results with the same request?",
     "Can people without R coding experience use RTutor for statistical analysis?",
     "Can this replace statisticians or data scientists?",
     "How do I write my request effectively?",
-    "Can I install R package in the AI generated code?",
-    "Can I upload big files to the site?",
-    "Voice input does not work!",
-    "Is that your photo?"
+    "Can I install R packages in the AI generated code?"#,
+    #"Can I upload big files to the site?",
+    #"Voice input does not work!",
+    #"Is that your photo?"
   ),
   answer = c(
-    "RTutor.ai is an artificial intelligence (AI)-based app that enables users to interact with their data via natural language. After uploading a dataset, users ask questions about or request analyses in English. The app generates and runs R code to answer that question with plots and numeric results.",
+    "RTutor.ai is an artificial intelligence (AI)-based app that enables users to interact with their data via natural language. Users ask questions about or request analyses in English. The app generates and runs R code to answer that question with plots and numeric results.",  #After uploading a dataset, users ask questions about or request analyses in English. The app generates and runs R code to answer that question with plots and numeric results.",
     "The requests are structured and sent to OpenAI’s AI system, which returns R code. The R code is cleaned up and executed in a Shiny environment, showing results or error messages. Multiple requests are logged to produce an R Markdown file, which can be knitted into an HTML report. This enables record keeping and reproducibility.",
-    "No. The column names of your data, not the data itself, are sent to OpenAI as a prompt to generate R code. Your data is not stored on our server after the session.",
+    #"No. The column names of your data, not the data itself, are sent to OpenAI as a prompt to generate R code. Your data is not stored on our server after the session.",
     "The primary goal is to help people with some R experience to learn R or be more productive. RTutor can be used to quickly speed up the coding process using R. It gives you a draft code to test and refine. Be wary of bugs and errors.",
-    "Try to word your question differently and try the same request several times. A higher temperature parameter will give diverse choices. Then users can double-check to see if they get the same results from different runs.",
-    "No. That would defeat the purpose. You need to learn R coding properly to be able to tell if the generated R coding is correct.",
-    "No. It can be tried as a demo. RTutor website and source code are freely available for non-profit organizations only and distributed using the CC NC 3.0 license.",
-    "Yes. Download the R package and install it locally. Then you need to obtain an API key from OpenAI.",
-    "OpenAI’s language model has a certain degree of randomness that could be adjusted by parameters called 'temperature'. Set this in Settings.",
+    "Try to word your question differently and try the same request several times. Then users can double-check to see if they get the same results from different runs.",  #A higher temperature parameter will give diverse choices. Then users can double-check to see if they get the same results from different runs.",
+    #"No. That would defeat the purpose. You need to learn R coding properly to be able to tell if the generated R coding is correct.",
+    #"No. It can be tried as a demo. RTutor website and source code are freely available for non-profit organizations only and distributed using the CC NC 3.0 license.",
+    #"Yes. Download the R package and install it locally. Then you need to obtain an API key from OpenAI.",
+    "OpenAI’s language model has a certain degree of randomness when giving results, controlled by a 'temperature' parameter. Though this is set low, the app still may produce varying results.", #"OpenAI’s language model has a certain degree of randomness that could be adjusted by parameters called 'temperature'. Set this in Settings.",
     "Not entirely. This is because the generated code can be wrong. However, it could be used to quickly conduct data visualization and exploratory data analysis (EDA). Just be mindful of this experimental technology.",
     "No. But RTutor can make them more efficient.",
     "Imagine you have a summer intern, a college student who took one semester of statistics and R. You send the intern emails with instructions, and he/she sends back code and results. The intern is not experienced, thus error-prone, but is hard-working. Thanks to AI, this intern is lightning-fast and nearly free.",
-    "No. But we are working to pre-install all the top 5000 most frequently used R packages on the server. Chances are that your favorite package is already installed.",
-    "Not if it is more than 10MB. Try to get a small portion of your data. Upload it to the site to get the code, which can be run locally on your laptop. Alternatively, download the RTutor R package and use it from your computer.",
-    "One of the main reasons is that your browser blocks the website from accessing the microphone. Make sure you access the site using https://RTutor.ai. With http, microphone access is automatically blocked in Chrome. Speak closer to the mic. Make sure there is only one browser tab using the mic.",
-    "No. I am an old guy. The photo was synthesized by AI. Using prompts 'statistics tutor', the image was generated by Stable Diffusion 2.0. If you look carefully, you can see that her fingers are messed up."
+    "No. But we are working to pre-install all the top 5000 most frequently used R packages on the server. Chances are that your favorite package is already installed."#,
+    #"Not if it is more than 10MB. Try to get a small portion of your data. Upload it to the site to get the code, which can be run locally on your laptop. Alternatively, download the RTutor R package and use it from your computer.",
+    #"One of the main reasons is that your browser blocks the website from accessing the microphone. Make sure you access the site using https://RTutor.ai. With http, microphone access is automatically blocked in Chrome. Speak closer to the mic. Make sure there is only one browser tab using the mic.",
+    #"No. I am an old guy. The photo was synthesized by AI. Using prompts 'statistics tutor', the image was generated by Stable Diffusion 2.0. If you look carefully, you can see that her fingers are messed up."
   ),
   stringsAsFactors = FALSE
 )

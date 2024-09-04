@@ -42,7 +42,7 @@ app_server <- function(input, output, session) {
         "input_text",
         value = "",
         placeholder =
-"Hi! I am a virtual data scientist. Ask me anything related to data from Hero MotoCorp Limited. (See example prompts below)"
+"Hi! I am your AI assistant. Select a dataset first and ask questions. See examples below."
       )
     }
   })
@@ -245,17 +245,19 @@ app_server <- function(input, output, session) {
 
   output$selected_dataset <- renderText({ #renderUI
       req(input$submit_button)
+      req(!is.null(available_datasets[[input$user_selected_dataset]]))
       # txt <- paste0("", selected_data_file())
       # return(txt)
 
       #If User doesn't select a dataset, print ChatGPT's selection.
       #   else print user selection
-      if(is.null(available_datasets[[input$user_selected_dataset]])){
-        txt <- paste0("", selected_data_file())
-      }else{
-        selected_data_file(input$user_selected_dataset)
-        txt <- paste0("", selected_data_file())
-      }
+      # if(is.null(available_datasets[[input$user_selected_dataset]])){
+      #  txt <- paste0("", selected_data_file())
+      # }else{
+      #   selected_data_file(input$user_selected_dataset)
+      #   txt <- paste0("", selected_data_file())
+      # }
+      txt <- paste0(input$user_selected_dataset, ".  Reset to switch." )
       return(txt)
 
   })
@@ -319,11 +321,33 @@ app_server <- function(input, output, session) {
     # hide after data is uploaded
     # req(is.null(input$user_file)) #Not a necessary condition when removing this option
 
-    # subset based on dataset
-    demo_related <- subset(
-      demo,
-      data == input$select_data
-    )
+    if(input$user_selected_dataset == "Select a dataset:"){
+      # subset based on dataset
+      demo_related <- subset(
+        demo,
+        data == input$user_selected_dataset
+      )
+
+    }else if(input$user_selected_dataset == "Sales Data"){
+      # subset based on dataset
+      demo_related <- subset(
+        demo,
+        data == input$user_selected_dataset
+      )
+    }else if(input$user_selected_dataset== "Registration Data"){
+      # subset based on dataset
+      demo_related <- subset(
+        demo,
+        data == input$user_selected_dataset
+      )
+    }else if(input$user_selected_dataset == "Dispatch Data"){
+      # subset based on dataset
+      demo_related <- subset(
+        demo,
+        data == input$user_selected_dataset
+      )
+    }
+
 
     #subset based on R or Python
     if(input$use_python) {
@@ -344,22 +368,44 @@ app_server <- function(input, output, session) {
     if (input$select_data %in% c("mpg", no_data, "diamonds", rna_seq)) { #Default is select_data == "mpg"
       return(
         tagList(
-          selectInput(
-            inputId = "demo_prompt",
-            choices = choices,
-            label = NULL
+          tags$head(
+            tags$style(HTML("
+              .vertical-padding {
+                padding-top: 10px;  /* Adjust this value based on your specific UI */
+                padding-bottom: 10px;  /* Adjust this value based on your specific UI */
+              }
+            "))
           ),
+          fluidRow(
+            column(
+              width = 3,
+              div(
+                "Examples:",
+                class = "vertical-padding"
+             )
+            ),
+            column(
+              width = 9,
+              align = "left",
+              selectInput(
+                inputId = "demo_prompt",
+                choices = choices,
+                label = NULL
+              )
+            )
+          ),
+
           tags$style(
             HTML(
               "
               #demo_prompt+div .selectize-input {
-                background-color: #f7fcf2 !important;
-                border-color: #87BE3B !important;
+                background-color: #F6FFF5 !important;
+                border-color: #90BD8C !important;
                 color: #000 !important;
               }
               #demo_prompt+div .selectize-dropdown {
-                background-color: #f7fcf2 !important;
-                border-color: #87BE3B !important;
+                background-color: #F6FFF5 !important;
+                border-color: #90BD8C !important;
                 color: #000 !important;
               }
               "
@@ -658,17 +704,25 @@ app_server <- function(input, output, session) {
         duration = 10
       )
     }
-    # if too short, do not send.
+    # if too long, do not send.
     if (nchar(input$input_text) > max_query_length) {
-        showNotification(
-          paste(
-            "Request too long! Should be less than ",
-            max_query_length,
-            " characters."
-          ),
-          duration = 10
-        )
+      showNotification(
+        paste(
+          "Request too long! Should be less than ",
+          max_query_length,
+          " characters."
+        ),
+        duration = 10
+      )
     }
+    # if no file is selected, do not send.
+    if (is.null(available_datasets[[input$user_selected_dataset]])) {
+      showNotification(
+        paste("No file found. Please select a dataset and try again."),
+        duration = 10
+      )
+    }
+    #Add another if statement on if prompt passes the smell test of relevency.... if(relevency_response == FALSE){showNotification}
   })
 
 
@@ -705,20 +759,27 @@ app_server <- function(input, output, session) {
 
   })
 
-  meta_data_res <- reactive({
-    meta_data()
-  })
-  meta_data_csv_res <- reactive({
-    meta_data_csv()
-  })
+  relevancy_response <- reactiveVal(TRUE) #Initializing relevancy_response to be TRUE as a reactive varaible.
+  meta_data_res <- meta_data()
+  meta_data_csv_res <- meta_data_csv()
+
+  # observeEvent(input$close_modal, {
+  #   removeModal()  # Close the modal dialog when "Reset" is clicked
+  #   # session$reload() # Restart session
+  #   relevancy_response(TRUE)
+
+  # })
+
 
   openAI_response <- reactive({
     req(input$submit_button)
 
-    isolate({  # so that it will not responde to text, until submitted
+    isolate({  # so that it will not respond to text, until submitted
       req(input$input_text)
       prepared_request <- openAI_prompt()
       req(prepared_request)
+      # req(relevancy_response())
+      req(available_datasets[[input$user_selected_dataset]])  # require user to select a dataset
 
       # when submit is clicked, but no data is uploaded.
       if(input$select_data == uploaded_data) {
@@ -764,111 +825,26 @@ app_server <- function(input, output, session) {
           # add history, first, if any
           if (length(logs$code_history) > 0) {
 
-            if (is.null(available_datasets[[input$user_selected_dataset]])) {
-              #Reselect dataset we want to use
-              # construct prompt for selecting a dataset
-              data_prompt <- list()
-              data_prompt <- append(
-                data_prompt,
-                list(list(
-                  role = "system",
-                  content = "Act as an experienced data engineer. You will identify a file that is best suited for a task. "
-                ))
+            # if there's history,  identify and load dataset
+            df_name <- available_datasets[[input$user_selected_dataset]]
+            selected_file_path <- paste0(data_path, df_name)
+            df <- readRDS(selected_file_path)
+            if (convert_to_factor()) {
+              df <- numeric_to_factor(
+                df,
+                max_levels_factor(),
+                max_proptortion_factor()
               )
-              data_prompt <- append(
-                data_prompt,
-                list(list(
-                  role = "user",
-                  content = paste(
-                    "Identify a single file by file name, without explanation, that contain information related to this question or analytical goal.  Use the latest data.
-                    Respond with \"Not found\" if no file is found. ",
-                    input$input_text,
-                    #"Plot the distribution of residential electricity rates in South Dakota. ",
-                    #"Proportion of engergy use in the automotive industry in the US. ", # fail
-                    # "Plot total energy use by sector in the US.",
-
-                    "Available datasets: \"\"\"",
-                    meta_data_res(),
-                    "\"\"\""
-                  )
-                ))
-              )
-
-              # ChatGPT API
-              response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-                model = selected_model(),
-                openai_api_key = api_key_session()$api_key,
-                #max_tokens = 500,
-                temperature = sample_temp(),
-                  messages = data_prompt
-              )
-
-              df_name <- response$choices$message.content
-
-              tem1 <- gsub("\\..*", "", df_name)
-              tem2 <- gsub("_", " ", tem1)
-              selected_data_file(tem2)
-              # show message for 10s with the file name
-              showNotification(
-                paste("Selected dataset: ", tem2),
-                duration = 60
-              )
-              selected_file_path <- paste0(data_path, df_name)
-
-              # if file is found, load it and update the current_data() reactive value
-              if(selected_file_path != "Not found" && file.exists(selected_file_path)) {
-
-                df <- readRDS(selected_file_path)
-                if (convert_to_factor()) {
-                  df <- numeric_to_factor(
-                    df,
-                    max_levels_factor(),
-                    max_proptortion_factor()
-                  )
-                }
-                # update the current_data() reactive value 
-                current_data(df)
-                selected_file(df_name) # update selected_file() reactive value
-              } else {
-                # show error message
-                showNotification(
-                  "No file is found. Please try again.",
-                  duration = 10
-                )
-
-                # restart
-                Sys.sleep(5)
-                session$reload()
-
-
-              }
-
-              # update runtime environment with new data frame
-              run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
-              run_env_start(as.list(run_env()))
-
-            } else {
-              
-              df_name <- available_datasets[[input$user_selected_dataset]]
-              selected_file_path <- paste0(data_path, df_name)
-              df <- readRDS(selected_file_path)
-              if (convert_to_factor()) {
-                df <- numeric_to_factor(
-                  df,
-                  max_levels_factor(),
-                  max_proptortion_factor()
-                  )
-                }
-              # update the current_data() reactive value
-              current_data(df)
-              selected_file(df_name) # update selected_file() reactive value
-              # update runtime environment with new data frame
-              run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
-              run_env_start(as.list(run_env()))
-
             }
-
+            # update the current_data() reactive value
+            current_data(df)
+            selected_file(df_name) # update selected_file() reactive value
+            # update runtime environment with new data frame
+            run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
+            run_env_start(as.list(run_env()))
             
+
+            # HISTORY #
             # manage context length. If it is too long, remove the oldest ones, except the first one
             history_tokens <- sapply(
               1:length(logs$code_history),
@@ -879,7 +855,8 @@ app_server <- function(input, output, session) {
                   # since the chat history includes previous prompt and output
                   logs$code_history[[i]]$prompt_tokens + logs$code_history[[i]]$output_tokens  - logs$code_history[[i - 1]]$prompt_tokens - logs$code_history[[i - 1]]$output_tokens
                 }
-            })
+              }
+            )
 
             #cumulative from backwards
             cum_sum <- rev(cumsum(rev(history_tokens)))
@@ -914,158 +891,209 @@ app_server <- function(input, output, session) {
               )
             }
             prompt_total <- append(prompt_total, history)
+
+            # RELEVANCY AGENT #
+            # Is the user's question relevant?
+            # Construct prompt
+            sub_meta_data_csv <- meta_data_csv_res %>%
+              filter(file_name == df_name) %>% 
+              mutate(file_name = case_when(
+                file_name == df_name ~ "df"
+            ))
+            sub_meta_data_json <- jsonlite::toJSON(sub_meta_data_csv)
+
+            relevancy_prompt <- list(list(
+              role = "user",
+              content = paste(
+                "Determine if the current prompt is relevant to any of the previous prompts. The prompt is relevant if it is a followup question for the analysis on the current dataset. If the prompt is a question about a different dataset it is not relevant. The prompt is also relevant if it is a modification for the visualizations. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
+                input$input_text,
+                "Current dataset: ",
+                sub_meta_data_json
+              ) #AND relevant to the current dataset
+            ))
+            prompt_total_test <- append(prompt_total, relevancy_prompt)
+            prompt_total_test[[1]][[2]] <- paste("Act as an experienced data analyst. Determine if the following prompts are relevant to the metadata: ", meta_data_res)
+
+            # ChatGPT API
+            response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+              model = selected_model(),
+              openai_api_key = api_key_session()$api_key,
+              #max_tokens = 500,
+              temperature = sample_temp(),
+              messages = prompt_total_test
+            )
+
+            # Store True or False
+
+            yn <- tolower(response$choices$message.content) == "true"
+            relevancy_response(yn) #Update relevancy_response with TRUE\FALSE from OpenAI
+            # print(relevancy_response())
+            # browser()
+
+            # If prompt is not relevant, show warning message and reset
+            # if (!relevancy_response()) {
+            #   showModal(
+            #     modalDialog(
+            #       title = "Error",
+            #       "Consider selecting a different dataset and try again. Make sure your question related to HMCL data.",
+            #       footer = actionButton(inputId = "close_modal", label = "Close")
+            #     )
+            #   )
+
+            # } # end relevancy agent
+
           } else {  # if first prompt,  identify and load dataset
 
-            if (is.null(available_datasets[[input$user_selected_dataset]])) {
-              
-              # construct prompt for selecting a dataset
-              data_prompt <- list()
-              data_prompt <- append(
-                data_prompt,
-                list(list(
-                  role = "system",
-                  content = "Act as an experienced data engineer. You will identify a file that is best suited for a task. "
-                ))
-              )
-              data_prompt <- append(
-                data_prompt,
-                list(list(
-                  role = "user",
-                  content = paste(
-                    "Identify a single file by file name, without explanation, that contain information related to this question or analytical goal.  Use the latest data.
-                    Respond with \"Not found\" if no file is found. ",
-                    input$input_text,
-                    #"Plot the distribution of residential electricity rates in South Dakota. ",
-                    #"Proportion of engergy use in the automotive industry in the US. ", # fail
-                    # "Plot total energy use by sector in the US.",
+            # user selected file
+            df_name <- available_datasets[[input$user_selected_dataset]]
 
-                    " Available datasets: \"\"\"",
-                    meta_data_res(),
-                    "\"\"\""
+            tem1 <- gsub("\\..*", "", df_name)
+            tem2 <- gsub("_", " ", tem1)
+            selected_data_file(tem2)
+            # show message for 10s with the fine name
+            showNotification(
+              paste("Selected dataset: ", input$user_selected_dataset),
+              duration = 10
+            )
+
+            selected_file_path <- paste0(data_path, df_name)
+            df <- readRDS(selected_file_path)
+            if (convert_to_factor()) {
+              df <- numeric_to_factor(
+                df,
+                max_levels_factor(),
+                max_proptortion_factor()
+              )
+            }
+            # update the current_data() reactive value
+            current_data(df)
+            selected_file(df_name) # update the selected_file() reactive value
+            # update runtime environment with new data frame
+            run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
+            run_env_start(as.list(run_env()))
+
+            # Is the user's question relevant? -- relevancy agent
+            # Construct prompt
+
+            sub_meta_data_csv <- meta_data_csv_res %>%
+              filter(file_name == df_name) %>% 
+              mutate(file_name = case_when(
+                file_name == df_name ~ "df"
+            ))
+            sub_meta_data_json <- jsonlite::toJSON(sub_meta_data_csv)
+
+            relevancy_prompt <- list()
+            relevancy_prompt <- append(
+              relevancy_prompt,
+              list(list(
+                role = "system",
+                content = paste("Act as an experienced data analyst. Determine if the following prompts are relevant to the metadata: ",
+                meta_data_res)
+              ))
+            )
+            relevancy_prompt <- append(
+              relevancy_prompt,
+              list(list(
+                role = "user",
+                content = paste(
+                "Determine if the current prompt is relevant to the selected dataset. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
+                input$input_text,
+                "Current dataset: ",
+                sub_meta_data_json
+              ) #AND relevant to the current dataset
+              ))
+            )
+
+            # ChatGPT API
+            response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+              model = selected_model(),
+              openai_api_key = api_key_session()$api_key,
+              #max_tokens = 500,
+              temperature = sample_temp(),
+              messages = relevancy_prompt
+            )
+
+            # Store True or False
+            yn <- tolower(response$choices$message.content) == "true"
+            relevancy_response(yn)
+
+
+          } # end first user prompt
+
+          if (relevancy_response()) {
+            prepared_request = prep_input(input$input_text, input$select_data, current_data(), input$use_python, logs$id, selected_model(), df2 = current_data_2())
+              #additional_info = input_search(prepared_request)
+
+
+              #Subsetting Meta Data csv file to send in with prompt
+            sub_meta_data_csv <- meta_data_csv_res %>%
+              filter(file_name == df_name) %>% 
+              mutate(file_name = case_when(
+                file_name == df_name ~ "df"
+                ))
+            sub_meta_data_json <- jsonlite::toJSON(sub_meta_data_csv)
+
+              # add new user prompt
+            prompt_total <- append(
+              prompt_total,
+              list(list(
+                role = "user",
+                content = paste(
+                  prepared_request,
+                  # additional_info,
+                  # system_role_growth,
+                  system_role_date,
+                  # "If user mentions growth, then ensure...",
+                  "Available datasets: \"\"\"",
+                  sub_meta_data_json,
+                  "\"\"\""
                   )
                 ))
               )
 
-              # ChatGPT API
+            response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+              model = selected_model(),
+              openai_api_key = api_key_session()$api_key,
+              #max_tokens = 500,
+              temperature = sample_temp(),
+                messages = prompt_total
+            )
+
+              # to make the returned code at the same spot, as davinci model.
+              response$choices[1, 1] <- response$choices$message.content
+
+
+            } else{
+              # showModal(
+              #   modalDialog(
+              #     title = "Error",
+              #     paste("Please ask a question related to HMCL dataset",input$user_selected_dataset,"and try again."),
+              #     footer = NULL
+              #     # footer = actionButton("close_modal", "Close")
+              #   )
+              # )
+              
               response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
                 model = selected_model(),
                 openai_api_key = api_key_session()$api_key,
                 #max_tokens = 500,
                 temperature = sample_temp(),
-                  messages = data_prompt
+                messages = list(list(
+                  role = "user",
+                  content = paste("Return this exact statement:",
+                  "print('Please ask a question related to HMCL dataset",input$user_selected_dataset,"and try again. (Reset to select a different dataset)')")
+                  # content = paste("In R give me NULL. Don't assign it to a variable. Above NULL write this comment:",
+                  # "Please ask a question related to HMCL dataset",input$user_selected_dataset,"and try again.")
+                ))
               )
 
-              df_name <- response$choices$message.content
+              # to make the returned code at the same spot, as davinci model.
+              response$choices[1, 1] <- response$choices$message.content
+              relevancy_response(TRUE) #Reinitiate the relevancy to be TRUE
+              # browser()
 
-              tem1 <- gsub("\\..*", "", df_name)
-              tem2 <- gsub("_", " ", tem1)
-              selected_data_file(tem2)
-              # show message for 10s with the fine name
-              showNotification(
-                paste("Selected dataset: ", tem2),
-                duration = 60
-              )
-              selected_file_path <- paste0(data_path, df_name)
+            } # end relevancy agent
 
-              # if file is found, load it and update the current_data() reactive value
-              if(selected_file_path != "Not found" && file.exists(selected_file_path)) {
-
-                df <- readRDS(selected_file_path)
-                if (convert_to_factor()) {
-                  df <- numeric_to_factor(
-                    df,
-                    max_levels_factor(),
-                    max_proptortion_factor()
-                  )
-                }
-                # update the current_data() reactive value
-                current_data(df)
-                selected_file(df_name) # update the selected_file() reactive value
-              } else {
-                # show error message
-                showNotification(
-                  "No file is found. Please try again.",
-                  duration = 10
-                )
-
-                # restart
-                Sys.sleep(5)
-                session$reload()
-
-
-              }
-
-              # update runtime environment with new data frame
-              run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
-              run_env_start(as.list(run_env()))
-
-            } else {
-
-              df_name <- available_datasets[[input$user_selected_dataset]]
-              selected_file_path <- paste0(data_path, df_name)
-              df <- readRDS(selected_file_path)
-              if (convert_to_factor()) {
-                df <- numeric_to_factor(
-                  df,
-                  max_levels_factor(),
-                  max_proptortion_factor()
-                )
-              }
-              # update the current_data() reactive value
-              current_data(df)
-              selected_file(df_name) # update the selected_file() reactive value
-              # update runtime environment with new data frame
-              run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
-              run_env_start(as.list(run_env()))
-
-              # showNotification(
-              #   "Congrats! Made it through the 1st nested if-else statement!",
-              #   duration = 10
-              #   )
-
-            }
-
-
-          } # end loading selected data
-
-          prepared_request = prep_input(input$input_text, input$select_data, current_data(), input$use_python, logs$id, selected_model(), df2 = current_data_2())
-
-          #Subsetting Meta Data csv file to send in with prompt
-          sub_meta_data_csv <- meta_data_csv_res() %>%
-            filter(file_name == df_name) %>% 
-            mutate(file_name = case_when(
-              file_name == df_name ~ "df"
-            ))
-          sub_meta_data_json <- jsonlite::toJSON(sub_meta_data_csv)
-
-          # add new user prompt
-          prompt_total <- append(
-            prompt_total,
-            list(list(
-              role = "user",
-              content = paste(
-                prepared_request,
-                system_role_growth,
-                system_role_date,
-                # "If user mentions growth, then ensure...",
-                "Available datasets: \"\"\"",
-                sub_meta_data_json,
-                "\"\"\""
-                )
-              )) 
-          )
-
-
-          response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-            model = selected_model(),
-            openai_api_key = api_key_session()$api_key,
-            #max_tokens = 500,
-            temperature = sample_temp(),
-              messages = prompt_total
-          )
-
-          # to make the returned code at the same spot, as davinci model.
-          response$choices[1, 1] <- response$choices$message.content
 
         },
         error = function(e) {
@@ -1207,6 +1235,7 @@ app_server <- function(input, output, session) {
   )
 
   observeEvent(input$submit_button, {
+
     logs$id <- logs$id + 1
 
     logs$code <-  openAI_response()$cmd
@@ -1380,6 +1409,7 @@ app_server <- function(input, output, session) {
     }, {
     req(logs$code != "")
     req(!input$use_python)
+    # req(relevancy_response())
     result <- NULL
     console_output <- NULL
     error_message <- NULL
@@ -1451,6 +1481,7 @@ app_server <- function(input, output, session) {
   output$result_plot <- renderPlot({
     req(!code_error())
     req(logs$code)
+    # req(relevancy_response())
     # Check if the result is not a ggplot or a known plot type
     if (inherits(run_result()$result, "ggplot") || is.null(run_result()$console_output)) {
       return(run_result()$result)
@@ -1528,6 +1559,7 @@ app_server <- function(input, output, session) {
     req(!input$use_python)
     req(!code_error())
     req(logs$code)
+    # req(relevancy_response())
     if (
       is_interactive_plot() ||   # natively interactive
       turned_on(input$make_ggplot_interactive) # converted
@@ -1956,7 +1988,8 @@ app_server <- function(input, output, session) {
     selected_model(),
     "\" model.",
     "\n\nRTutor Website: [https://RTutor.ai](https://RTutor.ai)",
-    "\nSource code: [GitHub.](https://github.com/gexijin/RTutor)\n"
+    "\n"
+    # "\nSource code: [GitHub.](https://github.com/gexijin/RTutor)\n"
   )
 
   # if the first chunk & data is uploaded,
@@ -2001,7 +2034,7 @@ app_server <- function(input, output, session) {
     # Get the data from the params list for every chunk-----------
     # Do not change this without changing the output$Rmd_source function
     # this chunk is removed for local knitting.
-    "```{R, echo = FALSE}\n",
+    "\n```{R, echo = FALSE}\n",
     "df <- params$df\ndf2 <- params$df2\n",
     "```\n"
   )
@@ -2138,11 +2171,11 @@ app_server <- function(input, output, session) {
     tagList(
       actionButton(
         inputId = "report",
-        label = "Session report"
+        label = "HTML Session Report"
       ),
       tippy::tippy_this(
         "report",
-        "Render a HTML report for this session.",
+        "Render a HTML report file for this session.",
         theme = "light-border"
       )
    )
@@ -2383,7 +2416,15 @@ app_server <- function(input, output, session) {
         "  input: checkbox\n",
         "---\n"
       )
-
+      Rmd_script <- paste0(
+        Rmd_script,
+        # Get the data from the params list for every chunk-----------
+        # Do not change this without changing the output$Rmd_source function
+        # this chunk is removed for local knitting.
+        "\n```{R, echo = FALSE}\n",
+        "df <- params$df\ndf2 <- params$df2\n",
+        "```\n"
+      )
       Rmd_script <- paste0(
         Rmd_script,
         "\n\n### "
@@ -2411,13 +2452,13 @@ app_server <- function(input, output, session) {
       }
       # if uploaded, use that data
       req(input$select_data)
+      df <- current_data()
       if (input$select_data != no_data) {
         params <- list(
-          df = current_data(),
+          df = df,
           df2 = df2
         )
       }
-
 
       req(params)
 
