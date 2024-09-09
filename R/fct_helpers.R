@@ -837,7 +837,6 @@ save_data_azure <- function(
       RSQLite::dbExecute(con, txt)
     )
     # RSQLite::dbDisconnect(con)
-
 }
 
 

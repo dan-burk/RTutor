@@ -3195,7 +3195,7 @@ output$RTutor_version <- renderUI({
       # remove user data, only keep column names and data type
       txt <- capture.output(str(current_data(), vec.len = 0))
       txt <- gsub(" levels .*$", " levels", txt)
-      try(
+      t = try(
         save_data_azure(
           date = Sys.Date(),
           time = format(Sys.time(), "%H:%M:%S"),
@@ -3213,8 +3213,16 @@ output$RTutor_version <- renderUI({
           api_time = counter$time,
           tokens = counter$tokens_current,
           language = logs$language
-        )
+        ),
+        silent = TRUE
       )
+
+      if (inherits(t, "try-error")) {
+        showNotification("Error executing SQL query: check console for details", type = "error")
+      } else {
+        showNotification(paste("SQL query executed successfully. Rows affected:", t), type = "message")
+      }
+
     }
   })
 
