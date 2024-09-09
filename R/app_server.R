@@ -30,18 +30,21 @@ app_server <- function(input, output, session) {
   }
 
 
-
   # Ensure all devices are closed when the session ends
   session$onSessionEnded(function() {
     while (dev.cur() > 1) {
       dev.off()
     }
     pdf(NULL)
+    RSQLite::dbDisconnect(con)
   })
 
   
   output$seed <- renderText({
-    paste("Seed:",rand_seed())
+    paste("Seed:", logs$seed)
+  })
+  output$fingerprint <- renderText({
+    paste("Fingerprint:", logs$system_fingerprint)
   })
 
 
@@ -846,7 +849,7 @@ app_server <- function(input, output, session) {
 
   })
 
-  rand_seed <- reactiveVal(NULL) #Make the seed a reactive variable
+  seed <- reactiveVal(NULL) #Make the seed a reactive variable
   openAI_response <- reactive({
     req(input$submit_button)
 
@@ -951,14 +954,21 @@ app_server <- function(input, output, session) {
             list(list(role = "user", content = prepared_request))
           )
           # browser()
-          rand_seed(sample(1:999999,1))
+
+          # if(User Wants Specific Seed){
+          #   seed("Supplied Seed")
+          # }else{
+          #   seed(sample(1:999999,1))
+          # }
+
+          seed(sample(1:999999,1))
           response <- create_chat_completion_rtutor(  # chat model: gpt-3.5-turbo, gpt-4
             model = selected_model(),
             openai_api_key = api_key_session()$api_key,
             #max_tokens = 500,
             temperature = sample_temp(),
             messages = prompt_total,
-            seed = rand_seed()
+            seed = seed()
           )
 
           # to make the returned code at the same spot, as davinci model.
@@ -1034,6 +1044,7 @@ app_server <- function(input, output, session) {
           response = response,
           time = round(api_time, 0),
           error = error_api,
+          # seed = seed
           error_message = error_message
         )
       )
@@ -1100,6 +1111,7 @@ app_server <- function(input, output, session) {
     last_code = "", # last code for Rmarkdown
     language = "", # Python or R
     seed = 0,
+    system_fingerprint = "",
     code_history = list(), # keep all code chunks
 
   )
@@ -1114,7 +1126,8 @@ app_server <- function(input, output, session) {
     logs$raw <- gsub("^\n+", "", logs$raw)
     logs$last_code <- ""
     logs$language <- ifelse(input$use_python, "Python", "R")
-    logs$seed <- rand_seed()
+    logs$seed <- seed() #openAI_response()$seed
+    logs$system_fingerprint <- openAI_response()$response$system_fingerprint
 
     # A list holds current request
     current_code <- list(
@@ -1159,7 +1172,7 @@ app_server <- function(input, output, session) {
     logs$code <- logs$code_history[[id]]$code
     logs$raw <- logs$code_history[[id]]$raw
     logs$seed <- logs$code_history[[id]]$seed
-    rand_seed(logs$code_history[[id]]$seed)
+    # rand_seed(logs$code_history[[id]]$seed)
 
     #Switch to previous chunks
     if(id < length(logs$code_history)) {
@@ -1169,7 +1182,7 @@ app_server <- function(input, output, session) {
       run_env(list2env(logs$code_history[[id]]$env))
       current_data(run_env()$df) #Update current_data() with the df added on 8/21/2024. Alternative logs$code_history[[id]]$env$df
       current_data_2(run_env()$df2)
-      rand_seed(logs$code_history[[id]]$seed)
+      # rand_seed(logs$code_history[[id]]$seed)
 
       # enable re-calculation of the code
       reverted(reverted() + 1)
@@ -3177,20 +3190,20 @@ output$RTutor_version <- renderUI({
   observeEvent(input$submit_button, {
     req(openAI_prompt())
     req(logs$code)
-    browser()
 
     if(contribute_data()) {
       # remove user data, only keep column names and data type
       txt <- capture.output(str(current_data(), vec.len = 0))
       txt <- gsub(" levels .*$", " levels", txt)
       try(
-        save_data(
+        save_data_azure(
           date = Sys.Date(),
           time = format(Sys.time(), "%H:%M:%S"),
           request = openAI_prompt(),
           code = logs$code,
-          seed = logs$seed,
           error_status = code_error(),  # 1 --> error!  0 --> no error, success!!
+          seed = logs$seed,
+          system_fingerprint = logs$system_fingerprint,
           data_str = paste(txt, collapse = "\n"),
           dataset = input$select_data,
           session = session$token,

@@ -37,13 +37,24 @@ max_levels_factor_conversion <- 5 # Numeric columns will be converted to factor 
 # if a column is numeric but only have a few unique values, treat as categorical
 unique_ratio <- 0.05   # number of unique values / total # of rows
 sqlitePath <- "../../data/usage_data.db" # folder to store the user queries, generated R code, and running results
-sqltable <- "usage"
+sqltable <- "usage_dev" #usage
 system_role <- "Act as a experienced data scientist and statistician. You will write code following instructions. Do not provide explanation. 
 If the goal can be achieved by showing quantitative results, do not produce a plot. When a plot is required, ggplot2 is preferred. 
 If multiple plots are generated, try to combine them into one."
 system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. 
 You will respond like answering questions by students. If the question is in languages other than English, respond in that language. 
 If the question is not remotely related to your expertise, respond with 'No comment'."
+  #Connect to SQL Database upon startup
+con <- DBI::dbConnect(odbc::odbc(),
+                Driver   = "ODBC Driver 18 for SQL Server",  # Use an appropriate driver
+                Server   = Sys.getenv("sql_server"),  # Azure SQL Server name
+                Database = Sys.getenv("sql_database"),  # Your database name
+                UID      = Sys.getenv("sql_uid"),  # SQL Server username
+                PWD      = Sys.getenv("sql_pwd"),  # SQL Server password
+                Port     = 1433,  # Default port for SQL Server
+                Encrypt  = "yes",  # Use encryption for secure connection
+                TrustServerCertificate = "no")  # Trust certificate
+
 # voice input parameters
 wake_word <- "Tutor" #Tutor, Emma, Note that "Hey Cox" does not work very well.
 # this triggers the submit button
@@ -709,8 +720,9 @@ save_data <- function(
   time,
   request,
   code,
-  seed,
   error_status,
+  seed,
+  system_fingerprint,
   data_str,
   dataset,
   session,
@@ -729,15 +741,16 @@ save_data <- function(
     txt <- sprintf(
       "INSERT INTO %s (%s) VALUES ('%s')",
       sqltable,
-      "date, time, request, code, error, seed, data_str, dataset, session, filename, filesize, chunk, api_time, tokens, language",
+      "date, time, request, code, error, seed, system_fingerprint, data_str, dataset, session, filename, filesize, chunk, api_time, tokens, language",
       paste(
         c(
           as.character(date),
           as.character(time),
           clean_txt(request),
           clean_txt(code),
-          seed,
           as.integer(error_status),
+          seed,
+          system_fingerprint,
           clean_txt(data_str),
           dataset,
           session,
@@ -758,6 +771,75 @@ save_data <- function(
     RSQLite::dbDisconnect(db)
   }
 }
+
+
+#' Saves user queries, code, and error status
+#' 
+#'
+#' @param date Date in the format of "2023-01-04"
+#' @param time Time "13:05:12"
+#' @param request, user request
+#' @param code AI generated code
+#' @param error status, TRUE, error
+#' @param chunk, id, from 1, 2, ...
+#' @param api_time  time in seconds for API response
+#' @param tokens  total completion tokens
+#' @param filename name of the uploaded file
+#' @param filesize size
+#' 
+#' @return nothing
+save_data_azure <- function(
+  date,
+  time,
+  request,
+  code,
+  error_status,
+  seed,
+  system_fingerprint,
+  data_str,
+  dataset,
+  session,
+  filename,
+  filesize,
+  chunk,
+  api_time,
+  tokens,
+  language
+) {
+    txt <- sprintf(
+      "INSERT INTO %s (%s) VALUES ('%s')",
+      sqltable,
+      "date, time, request, code, error, seed, system_fingerprint, data_str, dataset, session, filename, filesize, chunk, api_time, tokens, language",
+      paste(
+        c(
+          as.character(date),
+          as.character(time),
+          clean_txt(request),
+          clean_txt(code),
+          as.integer(error_status),
+          seed,
+          system_fingerprint,
+          clean_txt(data_str),
+          dataset,
+          session,
+          filename,
+          filesize,
+          chunk,
+          api_time,
+          tokens,
+          language
+        ),
+        collapse = "', '"
+      )
+    )
+    # Submit the update query and disconnect
+    try(
+      RSQLite::dbExecute(con, txt)
+    )
+    # RSQLite::dbDisconnect(con)
+
+}
+
 
 #' Clean up text strings for inserting into SQL
 #' 

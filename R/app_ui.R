@@ -245,6 +245,7 @@ app_ui <- function(request) {
           mainPanel(
             shinyjs::useShinyjs(),
             textOutput(outputId = "seed"),
+            textOutput(outputId = "fingerprint"),
 
             conditionalPanel(
               condition = "output.file_uploaded == 0 && input.submit_button == 0",
