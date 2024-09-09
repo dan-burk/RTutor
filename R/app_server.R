@@ -29,6 +29,20 @@ app_server <- function(input, output, session) {
     pdf(NULL) #otherwise, base R plots sometimes do not show.
   }
 
+  #Connect to SQL Database upon startup
+  con <- DBI::dbConnect(odbc::odbc(),
+                  Driver   = "ODBC Driver 18 for SQL Server",  # Use an appropriate driver
+                  Server   = Sys.getenv("sql_server"),  # Azure SQL Server name
+                  Database = Sys.getenv("sql_database"),  # Your database name
+                  UID      = Sys.getenv("sql_uid"),  # SQL Server username
+                  PWD      = Sys.getenv("sql_pwd"),  # SQL Server password
+                  Port     = 1433,  # Default port for SQL Server
+                  Encrypt  = "yes",  # Use encryption for secure connection
+                  TrustServerCertificate = "no")  # Trust certificate
+
+  # if (!DBI::dbIsValid(con)) {
+  #   stop("Failed to connect to the database.")
+  # }
 
   # Ensure all devices are closed when the session ends
   session$onSessionEnded(function() {
@@ -3192,11 +3206,16 @@ output$RTutor_version <- renderUI({
     req(logs$code)
 
     if(contribute_data()) {
+
+      if (!DBI::dbIsValid(con)) {
+        stop("The database connection is no longer valid.")
+      }
       # remove user data, only keep column names and data type
       txt <- capture.output(str(current_data(), vec.len = 0))
       txt <- gsub(" levels .*$", " levels", txt)
       t = try(
         save_data_azure(
+          con = con,
           date = Sys.Date(),
           time = format(Sys.time(), "%H:%M:%S"),
           request = openAI_prompt(),

@@ -5,6 +5,7 @@
 \title{Saves user queries, code, and error status}
 \usage{
 save_data_azure(
+  con,
   date,
   time,
   request,

@@ -44,16 +44,16 @@ If multiple plots are generated, try to combine them into one."
 system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. 
 You will respond like answering questions by students. If the question is in languages other than English, respond in that language. 
 If the question is not remotely related to your expertise, respond with 'No comment'."
-  #Connect to SQL Database upon startup
-con <- DBI::dbConnect(odbc::odbc(),
-                Driver   = "ODBC Driver 18 for SQL Server",  # Use an appropriate driver
-                Server   = Sys.getenv("sql_server"),  # Azure SQL Server name
-                Database = Sys.getenv("sql_database"),  # Your database name
-                UID      = Sys.getenv("sql_uid"),  # SQL Server username
-                PWD      = Sys.getenv("sql_pwd"),  # SQL Server password
-                Port     = 1433,  # Default port for SQL Server
-                Encrypt  = "yes",  # Use encryption for secure connection
-                TrustServerCertificate = "no")  # Trust certificate
+#   #Connect to SQL Database upon startup
+# con <- DBI::dbConnect(odbc::odbc(),
+#                 Driver   = "ODBC Driver 18 for SQL Server",  # Use an appropriate driver
+#                 Server   = Sys.getenv("sql_server"),  # Azure SQL Server name
+#                 Database = Sys.getenv("sql_database"),  # Your database name
+#                 UID      = Sys.getenv("sql_uid"),  # SQL Server username
+#                 PWD      = Sys.getenv("sql_pwd"),  # SQL Server password
+#                 Port     = 1433,  # Default port for SQL Server
+#                 Encrypt  = "yes",  # Use encryption for secure connection
+#                 TrustServerCertificate = "no")  # Trust certificate
 
 # voice input parameters
 wake_word <- "Tutor" #Tutor, Emma, Note that "Hey Cox" does not work very well.
@@ -789,6 +789,7 @@ save_data <- function(
 #' 
 #' @return nothing
 save_data_azure <- function(
+  con,
   date,
   time,
   request,
