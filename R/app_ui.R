@@ -15,37 +15,11 @@
 app_ui <- function(request) {
   tagList(
     golem_add_external_resources(),
-
-    ## Add color to UI
-    tags$head(
-      tags$style(HTML("
-        /* navbar */
-        .navbar {
-          background-color: #C1E2BE;border-color: #90BD8C; color: #181818;font-weight: bold;
-        }
-
-        /* tabs */
-        .navbar-default .navbar-nav > li > a {
-          background-color: #C1E2BE;border-color: #9AC596;color: #181818;
-        }
-
-        /* active tab */
-        .navbar-default .navbar-nav > .active > a, 
-        .navbar-default .navbar-nav > .active > a:focus, 
-        .navbar-default .navbar-nav > .active > a:hover {
-          background-color: #A0BB9E;color: #181818;font-weight: bold;
-        }
-
-        /* sidebar panel */
-        .well {
-          background-color: #C1E2BE;border-color: #90BD8C;
-      "))
-    ),
+    
+    mod_01_style_ui("mod_01_style_ui.R"),  # Include the style module
 
     navbarPage(
       HTML('<span style="color: black;">HMCL</span>'),
-       #  windowTitle = "RTutor",
-       # theme = bslib::bs_theme(bootswatch = "darkly"),
       id = "tabs",
       tabPanel(
         title = "Home",
