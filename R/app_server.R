@@ -1296,6 +1296,14 @@ app_server <- function(input, output, session) {
     }
   })
 
+  # data frame summary
+  output$dfSummary <- renderText({
+    req(current_data())
+    res <- capture.output(summarytools::dfSummary(current_data()))
+    res <- paste(res, collapse = "\n")
+    return(res)
+  })
+
   observe({
     if(input$select_data != no_data && !is.null(data_afterwards())) {
     shinyjs::show(id = "first_file")
@@ -1963,234 +1971,7 @@ app_server <- function(input, output, session) {
   })
 
 
-#                                  8.
-#______________________________________________________________________________
-#
-#  Q and A
-#______________________________________________________________________________
-
-  # JavaScript to trigger the send button when Enter key is pressed
-  shinyjs::runjs("
-      $('#ask_question').on('keyup', function (e) {
-          if (e.keyCode === 13) {
-              setTimeout(function(){
-                  $('#ask_button').click();
-              }, 500);  // Delay of 100 milliseconds
-          }
-      });
-  ")
-
-
-#                                      9.
-#______________________________________________________________________________
-#
-#  Exploratory Data Analysis
-#______________________________________________________________________________
-
-  output$dfSummary <- renderText({
-    req(current_data())
-    res <- capture.output(summarytools::dfSummary(current_data()))
-    res <- paste(res, collapse = "\n")
-    return(res)
-  })
-
-  output$table1_inputs <- renderUI({
-    req(ggpairs_data())
-    df <- ggpairs_data()
-    selectInput(
-      inputId = "table1_strata",
-      label = "Select a category for strata",
-      choices = colnames(df)[!sapply(df, is.numeric)],
-      multiple = FALSE
-    )
-  })
-
-  output$table1 <- renderText({
-    req(ggpairs_data())
-    df <- ggpairs_data()
-
-    # if more than 5000 rows, sample
-    if (nrow(df) > 5000) {
-      df <- df[sample(1:nrow(df), 5000), ]
-    }
-    req(input$table1_strata)
-    options(width = 3000)
-    withProgress(message = "Calculating table1 ...", {
-      incProgress(0.3)
-      ix <- match(input$table1_strata, colnames(df))
-      res <- capture.output(
-        tableone::CreateTableOne(
-          vars = colnames(df)[-ix],
-          data = df,
-          strata = input$table1_strata
-        )
-      )
-      res <- paste(res, collapse = "\n")
-    })
-    return(res)
-  })
-
-  output$distribution_category <- renderPlot({
-    withProgress(message = "Barplots of categorical variables ...", {
-      incProgress(0.3)
-      DataExplorer::plot_bar(current_data())
-    })
-  },
-  width = 800,
-  height = 800
-  )
-
-  output$distribution_numeric <- renderPlot({
-    withProgress(message = "Creating histograms ...", {
-      incProgress(0.3)
-      DataExplorer::plot_histogram(current_data())
-    })
-  })
-
-  output$qq_numeric <- renderPlot({
-    withProgress(message = "Generating QQ plots ...", {
-      incProgress(0.3)
-      DataExplorer::plot_qq(current_data())
-    })
-  })
-
-  output$corr_map <- renderPlot({
-    withProgress(message = "Generating correlation map ...", {
-      incProgress(0.3)
-      # GGally::ggpairs(current_data())
-      df <- current_data()
-      df <- df[, sapply(df, is.numeric)]
-      df <- na.omit(df) # remove missing values
-      M <- cor(df)
-      testRes <- corrplot::cor.mtest(df, conf.level = 0.95)
-      corrplot::corrplot(
-        M,
-        p.mat = testRes$p,
-        method = 'circle',
-        type = 'lower',
-        insig = 'blank',
-        addCoef.col = 'black',
-        number.cex = 0.8,
-        order = 'AOE',
-        diag = FALSE
-      )
-    })
-  })
-
-  # data used for EDA
-  ggpairs_data <- reactive({
-    df <- current_data()
-    # if analyses are run, use the original data
-    if(length(logs$code_history) > 0) {
-      df <- logs$code_history[[1]]$env$df
-    }
-    # df <- na.omit(df) # remove missing values
-    cat_variables <- colnames(df)[!sapply(df, is.numeric)]
-    # ggpairs does not tolerate variables with too many levels
-    for (v in cat_variables) {
-      counts <- sort(table(df[, v]), decreasing = TRUE)
-      # more than 12 levels?
-      if (length(counts) > max_eda_levels) {
-        # if the top 12 levels represent more than 30% of the observations
-        if (sum(counts[1:max_eda_levels]) / dim(df)[1] > 0.30) {
-
-          df[, v] <- unlist(
-            sapply(
-              1:dim(df)[1],
-              function(x) {
-                if (df[x, v] %in% names(counts)[1:max_eda_levels]) {
-                  return(df[x, v])
-                } else {
-                  return("Other")
-                }
-              }
-            )
-          )
-        } else {
-          # too many levels, remove this column. Likely names
-          df <- df[, !(colnames(df) %in% v)]
-        }
-      }
-    }
-    return(df)
-  })
-
-  output$ggpairs_inputs <- renderUI({
-    req(ggpairs_data())
-    df <- ggpairs_data()
-    selected <- colnames(df)
-    if(length(selected) > 3) {
-      selected <- sample(selected, 3)
-    }
-    tagList(
-      fluidRow(
-        column(
-          width = 4,
-          selectInput(
-            inputId = "ggpairs_variables",
-            label = "Select variables",
-            choices = colnames(df),
-            multiple = TRUE,
-            selected = selected
-          )
-        ),
-        column(
-          width = 3,
-          selectInput(
-            inputId = "ggpairs_variables_color",
-            label = "Select a category for coloring",
-            choices = colnames(df)[!sapply(df, is.numeric)],
-            multiple = FALSE
-          )
-        ),
-        # add a submit button to refresh the plot
-        column(
-          width = 3,
-          actionButton(
-            inputId = "ggpairs_submit",
-            label = strong("Submit"),
-            style = "margin-top: 15px;"
-          )
-        )
-      )
-    )
-
-  })
-
-  output$ggpairs <- renderPlot({
-    req(ggpairs_data())
-    req(input$ggpairs_submit)
-    isolate({
-      req(input$ggpairs_variables)
-      # req(input$ggpairs_variables_color)
-      req(length(input$ggpairs_variables) > 0)
-
-      withProgress(message = "Running ggpairs ...", {
-        incProgress(0.3)
-        df <- as.data.frame(ggpairs_data())
-        if(input$ggpairs_variables_color != "") {
-          GGally::ggpairs(
-            df[, input$ggpairs_variables],
-            mapping = aes(
-              color = df[, input$ggpairs_variables_color],
-              alpha = 0.5
-            )
-          )
-
-        } else {  # no color
-          GGally::ggpairs(
-            df[, input$ggpairs_variables]
-          )
-        }
-      })
-   })
-  },
-  width = 1200,
-  height = 1200)
-
-
-
-#                                      10.
+#                                      8.
 #______________________________________________________________________________
 #
 #  Miscellaneous
@@ -2288,12 +2069,7 @@ app_server <- function(input, output, session) {
     tagList(faq_items)
   })
 
-  # 'About' tab Site Updates table
-  output$site_updates_table <- renderTable({
-    site_updates_df
-  }, striped = TRUE)
-
-#  Python
+  #  Python
   output$python_markdown <- renderUI({
     req(openAI_response()$cmd)
     req(input$use_python)
@@ -2309,7 +2085,7 @@ app_server <- function(input, output, session) {
     }
   })
 
-  # file is renderred and stored in the html_file variable in logs$code_history
+  # file is rendered and stored in the html_file variable in logs$code_history
   python_to_html <- reactive({
     req(input$submit_button)
     req(logs$language == "Python")
@@ -2322,155 +2098,6 @@ app_server <- function(input, output, session) {
         current_data = current_data()
       )
     })
-
-  })
-
-#                                      11.
-#______________________________________________________________________________
-#
-#  Data Editing
-#______________________________________________________________________________
-
-  show_pop_up <- function() {
-    showModal(
-      modalDialog(
-        title = "Verify data types (important!)",
-        # Custom CSS to make the chat area scrollable
-        tags$head(
-            tags$style(HTML("
-                #data_type_window {
-                    height: 400px;  /* Adjust the height as needed */
-                    overflow-y: auto;  /* Enables vertical scrolling */
-                    padding: 10px;
-                    border-radius: 5px;
-                }
-            "))
-        ),
-        div( id = "data_type_window", uiOutput("column_type_ui")),
-        h4("If a column represents categories, choose 'Factor', even if
-        it contains numbers. For columns that are numbers, but with few unique values, RTutor
-        automatically convert them to factors. See Settings.",
-        style = "color: blue"),
-        br(),
-        footer = actionButton("dismiss_modal",label = "Dismiss"),
-        size = "l",
-        easyClose = TRUE
-      )
-    )
-  }
-
-  modal_closed <- reactiveVal(FALSE)
-
-  observeEvent(input$dismiss_modal,{
-    modal_closed(TRUE)
-    shiny::removeModal()
-  })
-
-  # The notification is shown when the pop-up is closed
-  observeEvent(modal_closed(), {
-    req(modal_closed())
-    shiny::showNotification(
-      "Know thy enemy. Exploratory your data at the EDA tab first.",
-      duration = 10
-    )
-  })
-
-  # Trigger the pop-up when a file is uploaded
-  observeEvent(input$data_edit_modal, {
-    show_pop_up()
-  })
-
-  output$column_type_ui <- renderUI({
-    req(current_data())
-    req(input$select_data)
-    column_names <- names(current_data())
-    examples <- capture.output(str(current_data()))
-    examples <- examples[-1]
-    examples <- gsub(" \\$ ", "", examples)
-    withProgress(message = "Verifying data types ...", {
-      incProgress(0.3)
-      lapply(seq_along(column_names), function(i) {
-        column_name <- column_names[i]
-        fluidRow(
-          column(
-            width = 3,
-            selectInput(
-              inputId = paste0("column_type_", i),
-              label = NULL,
-              choices = c("Character" = "character",
-                          "Numeric" = "numeric",
-                          "Integer" = "integer",
-                          "Date" = "Date",
-                          "Factor" = "factor"),
-              selected = class(current_data()[[i]])
-            )
-          ),
-          column(
-            width = 9,
-            align = "left",
-            style = "margin-top: -5px;",
-            h5(examples[i])
-          )
-        )
-
-      })
-    })
-  })
-
-  observe({
-    req(current_data())
-    for (i in seq_along(current_data())) {
-      col_type <- input[[paste0("column_type_", i)]]
-      if (!is.null(col_type)) {
-        updated_data <- isolate(current_data())
-
-        # when converting to factor the as function gives an error
-        if(col_type == "factor") {
-          updated_data[[i]] <- as.factor(updated_data[[i]])
-        } else if (col_type == "Date") {
-          updated_data[[i]] <- lubridate::parse_date_time(
-            updated_data[[i]],
-            orders = c("mdy", "dmy", "ymd")
-          )
-          updated_data[[i]] <- as.Date(updated_data[[i]])
-        } else {
-          updated_data[[i]] <- as(updated_data[[i]], col_type)
-        }
-        current_data(updated_data)
-      }
-    }
-  })
-
-
-  output$data_description <- renderText({
-    req(current_data())
-    try(describe_data(current_data()))
-  })
-
-  observeEvent(input$data_desc_modal, {
-    showModal(
-      modalDialog(
-        title = "Data description",
-        # Custom CSS to make the chat area scrollable
-        tags$head(
-            tags$style(HTML("
-                #description_window {
-                    height: 400px;  /* Adjust the height as needed */
-                    overflow-y: auto;  /* Enables vertical scrolling */
-                    padding: 10px;
-                    border-radius: 5px;
-                }
-            "))
-        ),
-        div( id = "description_window", textOutput("data_description")),
-        tags$style(type="text/css", "#data_description {white-space: pre-wrap;}"),
-        footer = tagList(
-          modalButton("Close")
-        ),
-        size = "m",
-        easyClose = TRUE
-      )
-    )
   })
 
 }

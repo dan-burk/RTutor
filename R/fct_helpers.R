@@ -491,156 +491,6 @@ numeric_to_factor <- function(df, max_levels_factor, max_proptortion_factor) {
 }
 
 
-#' Creates a SQLite database file for collecting user data
-#' 
-#' The data file should be stored in the ../../data folder inside 
-#' the container. From outside in the RTutor_server folder, 
-#' it is in data folder.
-#'  Only works on local machines. Not on linux.
-#' @return nothing
-create_usage_db <- function() {
-  # if db does not exist, create one
-  if(!file.exists(sqlitePath)) {
-    db <- RSQLite::dbConnect(RSQLite::SQLite(), gsub(".*/", "", sqlitePath))
-    txt <- sprintf(
-      paste0(
-      "CREATE TABLE ",
-        sqltable,
-        "(\n",
-        "date DATE NOT NULL,
-        time TIME NOT NULL,
-        request varchar(5000),
-        code varchar(5000),
-        error int ,
-        data_str varchar(5000))"
-      )
-    )
-      # Submit the update query and disconnect
-      RSQLite::dbExecute(db, txt)
-      RSQLite::dbDisconnect(db)
-  }
-}
-
-
-#' Saves user queries, code, and error status
-#' 
-#'
-#' @param date Date in the format of "2023-01-04"
-#' @param time Time "13:05:12"
-#' @param request, user request
-#' @param code AI generated code
-#' @param error status, TRUE, error
-#' @param chunk, id, from 1, 2, ...
-#' @param api_time  time in seconds for API response
-#' @param tokens  total completion tokens
-#' @param filename name of the uploaded file
-#' @param filesize size
-#' 
-#' @return nothing
-  save_data <- function(
-    date,
-    time,
-    request,
-    code,
-    error_status,
-    data_str,
-    dataset,
-    session,
-    filename,
-    filesize,
-    chunk,
-    api_time,
-    tokens,
-    language
-  ) {
-    # if db does not exist, create one
-    if (file.exists(sqlitePath)) {
-      # Connect to the database
-      db <- RSQLite::dbConnect(RSQLite::SQLite(), sqlitePath, flags = RSQLite::SQLITE_RW)
-      # Construct the update query by looping over the data fields
-      txt <- sprintf(
-        "INSERT INTO %s (%s) VALUES ('%s')",
-        sqltable,
-        "date, time, request, code, error, data_str, dataset, session, filename, filesize, chunk, api_time, tokens, language",
-        paste(
-          c(
-            as.character(date),
-            as.character(time),
-            clean_txt(request),
-            clean_txt(code),
-            as.integer(error_status),
-            clean_txt(data_str),
-            dataset,
-            session,
-            filename,
-            filesize,
-            chunk,
-            api_time,
-            tokens,
-            language
-          ),
-          collapse = "', '"
-        )
-      )
-      # Submit the update query and disconnect
-      try(
-        RSQLite::dbExecute(db, txt)
-      )
-      RSQLite::dbDisconnect(db)
-    }
-  }
-
-#' Clean up text strings for inserting into SQL
-#' 
-#'
-#' @param x a string that can contain ' or "
-#'
-#' @return nothing
-  clean_txt <- function(x) {
-    return(gsub("\'|\"", "", x))
-  }
-
-
-#' Save user feedback
-#' 
-#'
-#' @param date Date in the format of "2023-01-04"
-#' @param time Time "13:05:12"
-#' @param comments, user request
-#' @param helpfulness rating
-#' @param experience  R experience
-#'
-#' @return nothing
-  save_comments <- function(date, time, comments, helpfulness, experience) {
-    # if db does not exist, create one
-    if (file.exists(sqlitePath)) {
-      # Connect to the database
-      db <- RSQLite::dbConnect(RSQLite::SQLite(), sqlitePath, flags = RSQLite::SQLITE_RW)
-      # Construct the update query by looping over the data fields
-      txt <- sprintf(
-        "INSERT INTO %s (%s) VALUES ('%s')",
-        "feedback",
-        "date, time, comments, helpfulness, experience",
-        paste(
-          c(
-            as.character(date),
-            as.character(time),
-            clean_txt(comments),
-            helpfulness,
-            experience
-          ),
-          collapse = "', '"
-        )
-      )
-      # Submit the update query and disconnect
-      try(
-        RSQLite::dbExecute(db, txt)
-      )
-      RSQLite::dbDisconnect(db)
-    }
-  }
-
-
 #' Generate html file from Python code
 #' 
 #'
@@ -700,126 +550,6 @@ python_html <- function(python_code, select_data, current_data) {
     } else {
       return(-1)
     }
-}
-
-#' Describes the distribution of a column in a data frame, or a vector.
-#' 
-#'
-#' @param x a vector
-#'
-#' @return a text string
-#' 
-distribution_description <- function(x) {
-
-  if (is.numeric(x)) {
-    desc <- paste0(" has a ",
-                   " mean of ", round(mean(x, na.rm = TRUE), 2),
-                   " and standard Deviation of ", round(sd(x, na.rm = TRUE), 2), ". ")
-    
-    skewness <- moments::skewness(x, na.rm = TRUE)
-    if (abs(skewness) < 0.5) {
-      desc <- paste0(desc, "The distribution is approximately symmetric.")
-    } else {
-      if (skewness > 0) {
-        if (skewness > 1) {
-          desc <- paste0(desc, "The distribution is highly right-skewed.")
-        } else {
-          desc <- paste0(desc, "The distribution is moderately right-skewed.")
-        }
-      } else {
-        if (skewness < -1) {
-          desc <- paste0(desc, "The distribution is highly left-skewed.")
-        } else {
-          desc <- paste0(desc, "The distribution is moderately left-skewed.")
-        }
-      }
-    }
-  } else if (is.factor(x)) {
-    desc <- paste0(" has ")
-    freq_table <- as.data.frame(table(x))
-    top_levels <- freq_table %>% arrange(desc(Freq))
-    if(nrow(top_levels) > 3) {
-      top_levels <- top_levels[1:2,]
-    }
-    desc <- paste0(desc, " levels:")
-    for (j in 1:nrow(top_levels)) {
-      desc <- paste0(desc, " '", top_levels$x[j], "' (", round(100 * top_levels$Freq[j] / sum(freq_table$Freq), 0), "%), ")
-    }
-  } else if (is.character(x)) {
-    desc <- ""
-  } else {
-    desc <- ""
-  }
-    
-  desc <- gsub(",\\s*$", ".", desc)
-  return(desc)
-}
-
-
-
-#' Generate a plain text about the distribution and correlations.
-#' 
-#'
-#' @param df a data frame.
-#'
-#' @return a text string
-#' 
-describe_data <- function(df) {
-  p_val_cutoff <- 1e-3
-  R_cutoff <- 0.5
-  numeric_vars <- sapply(df, is.numeric)
-  character_vars <- sapply(df, is.character)
-
-  # Convert character columns to factors if number of unique values is much less than total rows
-  df[character_vars] <- lapply(df[character_vars], function(x) {
-    if (length(unique(x)) / nrow(df) < 0.1) {
-      factor(x)
-    } else {
-      x
-    }
-  })
-
-  factor_vars <- sapply(df, is.factor)
-
-  a <- ""
-
-  for (i in 1:(ncol(df))) {
-    b <- ""
-    for (j in 1:ncol(df)) {
-      if (i == j) {
-        next
-      }
-      if (numeric_vars[i] && numeric_vars[j]) {
-        cor_test <- cor.test(df[[i]], df[[j]])
-        if (cor_test$p.value < p_val_cutoff & abs(cor_test$estimate) > R_cutoff) {
-          b <- paste0(b, ", ", colnames(df)[j], " (R=", round(cor_test$estimate, 2), ")")
-        }
-      } else if (factor_vars[i] && factor_vars[j] && nlevels(df[[i]]) > 1 && nlevels(df[[j]]) > 1) {
-        chi_test <- chisq.test(table(df[[i]], df[[j]]))
-        if (!is.na(chi_test$p.value) && chi_test$p.value < p_val_cutoff) {
-          b <- paste0(b, ", ", colnames(df)[j], " (P=", formatC(chi_test$p.value, format = "e", digits = 1), ")")
-        }
-      } else if (numeric_vars[i] && factor_vars[j] && nlevels(df[[j]]) > 1) {
-        anova_test <- aov(df[[i]] ~ df[[j]])
-        anova_p_value <- summary(anova_test)[[1]][["Pr(>F)"]][1]
-        if (anova_p_value < p_val_cutoff) {
-          b <- paste0(b, ", ", colnames(df)[j], " (P=", formatC(anova_p_value, format = "e", digits = 1), ")")
-        }
-      } else if (factor_vars[i] && numeric_vars[j] && nlevels(df[[i]]) > 1) {
-        anova_test <- aov(df[[j]] ~ df[[i]])
-        anova_p_value <- summary(anova_test)[[1]][["Pr(>F)"]][1]
-        if (anova_p_value < p_val_cutoff) {
-          b <- paste0(b, ", ", colnames(df)[j], " (P=", formatC(anova_p_value, format = "e", digits = 1), ")")
-        }
-      }
-    }
-
-    if (nchar(b) > 0) {
-      a <- paste0(a, "The column \'", colnames(df)[i], "\'", distribution_description(df[[i]]), " It has significant correlation with:", b, ".\n\n")
-    }
-  }
-  a <- gsub(":,", ": ", a)
-  return(a)
 }
 
 
@@ -908,6 +638,7 @@ missing_values_plot <- function(df) {
   }
 }
 
+
 # Create list of available datasets to print on sidebar
 available_datasets <- list(
   "Select a dataset:" = NULL,
@@ -922,83 +653,25 @@ faqs <- data.frame(
   question = c(
     "What is RTutor.ai?",
     "How does RTutor.ai work?",
-    #"Is my data uploaded to OpenAI?",
     "Who is it for?",
     "How do you make sure the results are correct?",
-    #"Can you use RTutor to do R coding homework?",
-    #"Can private companies use RTutor?",
-    #"Can you run RTutor locally?",
     "Why do I get different results with the same request?",
     "Can people without R coding experience use RTutor for statistical analysis?",
     "Can this replace statisticians or data scientists?",
     "How do I write my request effectively?",
-    "Can I install R packages in the AI generated code?"#,
-    #"Can I upload big files to the site?",
-    #"Voice input does not work!",
-    #"Is that your photo?"
+    "Can I install R packages in the AI generated code?"
   ),
   answer = c(
     "RTutor.ai is an artificial intelligence (AI)-based app that enables users to interact with their data via natural language. Users ask questions about or request analyses in English. The app generates and runs R code to answer that question with plots and numeric results.",  #After uploading a dataset, users ask questions about or request analyses in English. The app generates and runs R code to answer that question with plots and numeric results.",
     "The requests are structured and sent to OpenAI’s AI system, which returns R code. The R code is cleaned up and executed in a Shiny environment, showing results or error messages. Multiple requests are logged to produce an R Markdown file, which can be knitted into an HTML report. This enables record keeping and reproducibility.",
-    #"No. The column names of your data, not the data itself, are sent to OpenAI as a prompt to generate R code. Your data is not stored on our server after the session.",
     "The primary goal is to help people with some R experience to learn R or be more productive. RTutor can be used to quickly speed up the coding process using R. It gives you a draft code to test and refine. Be wary of bugs and errors.",
     "Try to word your question differently and try the same request several times. Then users can double-check to see if they get the same results from different runs.",  #A higher temperature parameter will give diverse choices. Then users can double-check to see if they get the same results from different runs.",
-    #"No. That would defeat the purpose. You need to learn R coding properly to be able to tell if the generated R coding is correct.",
-    #"No. It can be tried as a demo. RTutor website and source code are freely available for non-profit organizations only and distributed using the CC NC 3.0 license.",
-    #"Yes. Download the R package and install it locally. Then you need to obtain an API key from OpenAI.",
     "OpenAI’s language model has a certain degree of randomness when giving results, controlled by a 'temperature' parameter. Though this is set low, the app still may produce varying results.", #"OpenAI’s language model has a certain degree of randomness that could be adjusted by parameters called 'temperature'. Set this in Settings.",
     "Not entirely. This is because the generated code can be wrong. However, it could be used to quickly conduct data visualization and exploratory data analysis (EDA). Just be mindful of this experimental technology.",
     "No. But RTutor can make them more efficient.",
     "Imagine you have a summer intern, a college student who took one semester of statistics and R. You send the intern emails with instructions, and he/she sends back code and results. The intern is not experienced, thus error-prone, but is hard-working. Thanks to AI, this intern is lightning-fast and nearly free.",
     "No. But we are working to pre-install all the top 5000 most frequently used R packages on the server. Chances are that your favorite package is already installed."#,
-    #"Not if it is more than 10MB. Try to get a small portion of your data. Upload it to the site to get the code, which can be run locally on your laptop. Alternatively, download the RTutor R package and use it from your computer.",
-    #"One of the main reasons is that your browser blocks the website from accessing the microphone. Make sure you access the site using https://RTutor.ai. With http, microphone access is automatically blocked in Chrome. Speak closer to the mic. Make sure there is only one browser tab using the mic.",
-    #"No. I am an old guy. The photo was synthesized by AI. Using prompts 'statistics tutor', the image was generated by Stable Diffusion 2.0. If you look carefully, you can see that her fingers are messed up."
   ),
   stringsAsFactors = FALSE
 )
 
-# Create a data frame with update versions and descriptions
-# Used in site_updates_table component
-site_updates_df <- data.frame(
-  Version_Date = c(
-    "V0.98.3  11/1/2023", "V0.98.2  11/1/2023", "V0.98  10/28/2023",
-    "V0.97  10/23/2023", "V0.96  9/26/2023", "V0.95  6/11/2023",
-    "V0.94  4/21/2023", "V0.93  3/26/2023", "V0.92  3/8/2023",
-    "V0.91  2/6/2023", "V0.90  1/15/2023", "V0.8.6  1/8/2023",
-    "V0.8.5  1/6/2023", "V0.8.4  1/5/2023", "V0.8.3  1/5/2023",
-    "V0.8.2  1/4/2023", "V0.8.1  1/3/2023", "V0.8.0  1/3/2023",
-    "V0.7.6  12/31/2022", "V0.7.5  12/31/2022", "V0.7  12/27/2022",
-    "V0.6  12/27/2022", "V0.5  12/24/2022", "V0.4  12/23/2022",
-    "V0.3  12/20/2022", "V0.2  12/16/2022", "V0.1  12/11/2022"
-  ),
-  Description = c(
-    "Fix issue with EDA report when the target variable is categorical or not specified.",
-    "Comprehensive EDA report!",
-    "Ask questions about code, error. Second data file upload.",
-    "GPT-4 becomes the default. Make ggplot2 a preferred method for plotting. Use R environment to enable successive data manipulation.",
-    "Include column names in all requests. GPT-4 is available.",
-    "ChatGPT(gpt-3.5-turbo) becomes default model.",
-    "Interactive plots using CanvasXpress.",
-    "Change data types. Add data description. Improve voice input.",
-    "Includes description of data structure in prompt.",
-    "Voice input is improved. Just enable microphone and say Tutor...",
-    "Generates and runs Python code in addition to R!",
-    "Add description of the levels in factors.",
-    "Demo in many foreign languages.",
-    "Collect user feedback.",
-    "Collect some user data for improvement.",
-    "Auto-convert first column as row names.",
-    "Option to convert some numeric columns with few unique levels to factors.",
-    "Add description of columns (numeric vs. categorical).",
-    "Add RNA-seq data and example requests.",
-    "Redesigned UI.",
-    "Add EDA tab.",
-    "Keeps record of all code chunks for reuse and report.",
-    "Keep current code and continue.",
-    "Interactive plot. Voice input optional.",
-    "Add voice recognition.",
-    "Add temperature control. Server reboot reminder.",
-    "Initial launch"
-  )
-)
