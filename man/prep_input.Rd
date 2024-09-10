@@ -4,16 +4,7 @@
 \alias{prep_input}
 \title{Prepare User input.}
 \usage{
-prep_input(
-  txt,
-  selected_data,
-  df,
-  use_python,
-  chunk_id,
-  selected_model,
-  df2 = NULL,
-  df2_name = NULL
-)
+prep_input(txt, selected_data, df, use_python, chunk_id, selected_model)
 }
 \arguments{
 \item{txt}{A string that stores the user input.}

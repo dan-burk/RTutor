@@ -19,7 +19,6 @@ rna_seq <- "rna_seq"  # RNA-Seq read counts
 names(rna_seq) <- "RNA-Seq"
 min_query_length <- 6  # minimum # of characters
 max_query_length <- 2000 # max # of characters
-#language_model <- "code-davinci-002	"# "text-davinci-003"
 language_models <- c("gpt-4-turbo", "gpt-4o", "gpt-4-1106-preview", "gpt-3.5-turbo", "gpt-3.5-turbo-16k", "gpt-3.5-turbo-0301", "gpt-4", "gpt-4-0314", "text-davinci-003")
 names(language_models) <- c("GPT-4 Turbo", "GPT-4o", "GPT-4 Turbo (11/23)", "ChatGPT", "ChatGPT 16k", "ChatGPT (03/23)", "GPT-4", "GPT-4 (03/23)", "Davinci")
 default_model <- "GPT-4 Turbo" #"GPT-4 Turbo (11/23)" # "GPT-4o"  # "ChatGPT" #   "GPT-4 (03/23)"
@@ -85,7 +84,7 @@ action_verbs <- c(
 )
 
 #RMarkdown file's Header for knit python chunks
-Rmd_script_python <- 
+Rmd_script_python <-
 "---
 output: html_fragment
 params:
@@ -135,12 +134,6 @@ meta_data_csv <- function() {
   read.csv(paste0(data_path, "hmcl_metadata.csv"))
 }
 
-# data_path <- "../../data/datasets/"
-# meta_data <- readr::read_file("C:/work/RTutor/inst/app/www/metadata.json")
-
-# load meta data, from CSV file
-#meta_data <- readr::read_file(app_sys("app", "www", "metadata_reduced_notes.csv"))
-
 
 #' Move an element to the front of a vector
 #'
@@ -173,7 +166,7 @@ move_front <- function(v, e){
 #' @param chunk_id  first or not? First chunk add data description
 #'
 #' @return Returns a cleaned up version, so that it could be sent to GPT.
-prep_input <- function(txt, selected_data, df, use_python, chunk_id, selected_model, df2 = NULL, df2_name = NULL) {
+prep_input <- function(txt, selected_data, df, use_python, chunk_id, selected_model) {
 
   if(is.null(txt) || is.null(selected_data)) {
     return(NULL)
@@ -213,50 +206,8 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, selected_mo
       )
       relevant_var <- names(relevant_var)[relevant_var]
 
-      # data_info <- describe_df(
-      #   df, 
-      #   list_levels = TRUE, 
-      #   relevant_var = relevant_var,
-      #   head = TRUE
-      # )
       # Always add 'use the df data frame.'
       txt <- paste(txt, after_text)
-
-      # n_words <- tokens(data_info)
-      #if it is the first chunk;  always do this when Davinci model; or if data description is short
-      # more_info <- chunk_id <= 1 || selected_model == "text-davinci-003" || n_words < 200
-
-      # in a session, sometimes the first chunk has the id of 0. sometimes 1?????
-
-      # add data descrdiption
-      # if it is not the first chunk and data description is long, do not add.
-      # if (more_info && !(chunk_id > 1 && n_words > 600)) {
-      #   txt <- paste(txt, data_info)
-      # }
-      
-      # if there is a second data frame, add that too.
-      if(!is.null(df2)) {
-        if(is.null(df2_name)) {
-          df2_name <- "df2"
-        } 
-
-        # 2nd data must be specificall called
-        if(grepl(df2_name, txt)) {
-          data_info_2 <- describe_df(
-            df2, 
-            list_levels = TRUE, 
-            relevant_var = relevant_var,
-            head = TRUE
-          )
-          data_info_2 <- gsub("df data frame", paste0(df2_name, " data frame"), data_info_2)
-
-          n_words <- tokens(data_info_2)
-          if (more_info && !(chunk_id > 1 && n_words > 600)) {
-            txt <- paste(txt, data_info_2)
-          }
-        }
-      }
-
 
     }
   }
@@ -272,244 +223,8 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, selected_mo
 
   # replace newline with space.
   txt <- gsub("\n", " ", txt)
-  #cat("\n", txt)
   return(txt)
 }
-
-
-#' Search User input.
-#'
-#' Add additional info to prompt for certain user inputs.
-#'
-#' @param prepared_request A string that stores the user input.
-#'
-#' @return Returns specified instructions to be sent to GPT.
-# input_search <- function(prepared_request) {
-#   # define return vector
-#   final_instructions <- character(0)
-
-#   # place specific instructions into vector
-#   # name them the keyword to search for
-#   keyword_instructions <- c(
-#     "growth" = growth_instruct,
-#     "declin" = decline_instruct,
-#     "forecast" = forecast_instruct,
-#     "compar" = compare_instruct,
-#     "trend" = trend_instruct,
-#     "performance" = performance_instruct,
-#     "month over month" = m_over_m_instruct,
-#     "year over year" = y_over_y_instruct
-#   )
-
-#   ####################################
-#   ########  Not working as is ########
-#   # # prompt for ChatGPT
-#   # prompt <- list(list(
-#   #   role = "user",
-#   #   content = paste(
-#   #     "Based on the user's input:", prepared_request,
-#   #     ", decide if it uses OR IMPLIES any of the following keywords:",
-#   #     paste(names(keyword_instructions), collapse = ", "),
-#   #     ". Your response should only be: 'c(...)'. Which will be filled with a series of 'TRUE' or 'FALSE' 
-#   #     corresponding with each keyword with 'TRUE'=yes the keyword is in or is implied in the user's input."
-#   #   )
-#   # ))
-
-#   # # store response from ChatGPT
-#   # response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-#   #               model = "gpt-4",
-#   #               openai_api_key = api_key_global,
-#   #               #max_tokens = 500,
-#   #               temperature = 0.2,
-#   #               messages = prompt
-#   #             )
-#   # detected_keywords <- response$choices$message.content
-#   # print(detected_keywords)
-
-#   # detected_keywords <- as.logical(parse(text = detected_keywords))
-
-#   # # get matching instructions for any detected keywords
-#   # matching_keywords <- names(keyword_instructions)[detected_keywords]
-#   # print(matching_keywords)
-
-#   # # create final instructions based on detected keywords
-#   # if (length(matching_keywords) > 0) {
-#   #   final_instructions <- paste(keyword_instructions[matching_keywords], collapse = " ")
-#   # }
-
-#   # check for any keywords in user's input
-#   detected_keywords <- sapply(names(keyword_instructions), function(kw) {
-#     grepl(kw, prepared_request, ignore.case = TRUE)
-#   })
-
-#   # get matching instructions for any detected keywords
-#   all_instructions <- keyword_instructions[detected_keywords]
-
-#   # if any keyword exists, append appropriate instructions to prompt
-#   # else, no keywords exist, append nothing
-#   if (any(detected_keywords)) {
-#     # combine into a single string
-#     final_instructions <- paste(all_instructions, collapse = " ")
-#   }
-
-#   return(final_instructions)
-# }
-
-
-
-#' Describe data frame
-#'
-#' Returns information on data frame describing columns.
-#'
-#' @param df a data frame
-#' @param list_levels whether to list levels for factors
-#' @param relevant_var  a list of variables mentioned by the user
-#' @param head whether to list the first few rows
-#' @return Returns a cleaned up version, so that it could be executed as R command.
-# describe_df <- function(df, list_levels = FALSE, relevant_var = NULL, head = FALSE) {
-
-#       data_info <- ""
-#       numeric_index <- sapply(
-#         df,
-#         function(x) {
-#           if (is.numeric(x)) {
-#             return(TRUE)
-#           } else {
-#             return(FALSE)
-#           }
-#         }
-#       )
-
-#       numeric_var <- colnames(df)[numeric_index]
-#       cat_var <- colnames(df)[!numeric_index]
-
-#       # calculate total number of unique levels
-#       total_levels <- sapply(cat_var, function(x) {length(unique(df[, x]))})
-#       # remove columns that are names, strings, etc
-#       cat_var <- cat_var[total_levels < nrow(df) * 0.8]
-
-#      # numeric variables
-#       if (length(numeric_var) == 1) {
-#         data_info <- paste0(
-#           data_info,
-#           "The df data frame has a column ",
-#           numeric_var,
-#           " that contains a numeric variable. "
-#         )
-#       } else if (length(numeric_var) > 1) {
-#         data_info <- paste0(
-#           data_info,
-#           "The df data frame contains these numeric variables: ",
-#           paste0(
-#             numeric_var[1:(length(numeric_var) - 1)],
-#             collapse = ", "
-#           ),
-#           ", and ",
-#           numeric_var[length(numeric_var)],
-#           ". "
-#         )
-#       }
-#       # Categorical variables-----------------------------
-#      # numeric variables
-#       if (length(cat_var) == 1) {
-#         data_info <- paste0(
-#           data_info,
-#           "The df data frame has a column ",
-#           cat_var,
-#           " that contains a categorical variable. "
-#         )
-#       } else if (length(cat_var) > 1) {
-#         data_info <- paste0(
-#           data_info,
-#           "The df data frame contains these categorical variables: ",
-#           paste0(
-#             cat_var[1:(length(cat_var) - 1)],
-#             collapse = ", "
-#           ),
-#           ", and ",
-#           cat_var[length(cat_var)],
-#           ". "
-#         )
-#       }
-      
-#       if(list_levels & length(relevant_var) > 0) {
-
-#         # only list for categorical variables specified in user prompt
-#         relevant_cat_var <- intersect(relevant_var, cat_var)
-#         # describe the levels in categorical variable
-#         for (var in relevant_cat_var) {
-#           max_lelvels_description <- 4
-#           ix <- match(var, colnames(df))
-#           factor_levels <- sort(table(df[, ix]), decreasing = TRUE)
-#           factor_levels <- names(factor_levels)
-
-#           # have more than 6 levels?
-#           many_levels <- FALSE
-
-#           if (length(factor_levels) > max_lelvels_description) {
-#             many_levels <- TRUE
-#             factor_levels <- factor_levels[1:max_lelvels_description]
-#           }
-
-#           last_level <- factor_levels[length(factor_levels)]
-#           factor_levels <- factor_levels[-1 * length(factor_levels)]
-#           tem <- paste0(
-#             factor_levels,
-#             collapse = "', '"
-#           )
-#           if (!many_levels) { # less than 6 levels
-#             factor_levels <- paste0("'", tem, "', and '", last_level, "'")
-#           } else { # more than 6 levels
-#             factor_levels <- paste0(
-#               "'",
-#               tem,
-#               "', '",
-#               last_level,
-#               "', etc"
-#             )
-#           }
-#           data_info <- paste0(
-#             data_info,
-#             "The categorical variable ",
-#             var,
-#             " has these levels: ",
-#             factor_levels,
-#             ". "
-#           )
-#         }
-#       }
-
-#       if(head) {
-#         #randomly select 5 rows, print out, convert to string
-#         sample_rows <- paste0(
-#           capture.output(head(df[sample(nrow(df), 5),])), 
-#           collapse = "\n"
-#         )
-#         # if too long, use only 2 rows
-#         if(nchar(sample_rows) > 2000) {
-#           sample_rows <- paste0(
-#             capture.output(head(df[sample(nrow(df), 2),])), 
-#             collapse = "\n"
-#           )
-#         }
-#         sample_rows <- paste(
-#           "The df data frame looks like this: \n",
-#           sample_rows
-#         )
-        
-#         # if still too long, skip
-#         if(nchar(sample_rows) > 3000) {
-#           sample_rows <- ""
-#         }
-
-#         data_info <- paste0(
-#           data_info,
-#           sample_rows    
-#         )
-#       }
-      
-#       return(data_info)
-# }
 
 
 #' Clean up R commands generated by GTP
@@ -806,26 +521,6 @@ create_usage_db <- function() {
   }
 }
 
-# To create a database under Ubuntu
-# sudo apt update
-# sudo apt install sqlite3
-# cd ~/Rtutor_server/data
-# sudo  sqlite3 usage_data.db
-
-
-# CREATE TABLE usage (
-#        date DATE NOT NULL,
-#        time TIME NOT NULL,
-#        request varchar(5000),
-#        code varchar(5000),
-#        error int,
-#        data_str varchar(5000),
-#       dataset varchar(100));
-
-# sudo chmod a+w usage_data.db
-
-# note that error column, 1 means error, 0 means no error, success.
-
 
 #' Saves user queries, code, and error status
 #' 
@@ -906,17 +601,6 @@ create_usage_db <- function() {
   }
 
 
-
-# SQLite command to create feedbck table
-
-# "CREATE TABLE feedback (
-#        date DATE NOT NULL,
-#        time TIME NOT NULL,
-#        helpfulness varchar(50),
-#        experience varchar(50),
-#        comments varchar(5000)); "
-
-
 #' Save user feedback
 #' 
 #'
@@ -955,7 +639,6 @@ create_usage_db <- function() {
       RSQLite::dbDisconnect(db)
     }
   }
-
 
 
 #' Generate html file from Python code
@@ -1010,10 +693,8 @@ python_html <- function(python_code, select_data, current_data) {
         envir = new.env(parent = globalenv())
       )
     )
-
   })  # progress bar
     
-
     if(file.exists(html_file)) {
       return(html_file)       
     } else {
@@ -1228,11 +909,6 @@ missing_values_plot <- function(df) {
 }
 
 # Create list of available datasets to print on sidebar
-# available_datasets <- c(
-#   "Historical Sales Information",
-#   "Registered Vehicles",
-#   "Historical Dispatch Information"
-# )
 available_datasets <- list(
   "Select a dataset:" = NULL,
   "Sales Data" = "Sales_Masked_Rtutor.rds",
@@ -1326,4 +1002,3 @@ site_updates_df <- data.frame(
     "Initial launch"
   )
 )
-

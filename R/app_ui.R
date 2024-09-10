@@ -74,17 +74,12 @@ app_ui <- function(request) {
             bottom: 0;
           }
         "),
-        # tags$li(
-        #   class = "navbar-text",
-        #   tags$img(src = "www/logo.png", height = "30px", style = "margin-top: 5px;")
-        # ),
 
   ##########################################################
   ####### Sidebar
   ##########################################################
         sidebarLayout(
           sidebarPanel(
-            #uiOutput("timer_ui"),
 
             # Select a Dataset
             tags$head(tags$style(
@@ -96,11 +91,11 @@ app_ui <- function(request) {
             conditionalPanel(
               condition = "input.submit_button == 0 || input.user_selected_dataset === 'Select a dataset:'",
               selectInput(inputId = 'user_selected_dataset',
-                label = NULL, #HTML('<span style="color: black;">Select a Dataset for Analysis</span>'),
+                label = NULL,
                 choices = names(available_datasets),
-                multiple=FALSE,
-                selectize=FALSE,
-            )
+                multiple = FALSE,
+                selectize = FALSE,
+              )
             ),
             # Show selected dataset
             conditionalPanel(
@@ -112,11 +107,6 @@ app_ui <- function(request) {
                 )
               )
             ),
-            #   # Reset Button
-            #   column(
-            #     width = 6
-            #   )
-            # ),
 
             conditionalPanel(
               condition = "0",
@@ -128,7 +118,6 @@ app_ui <- function(request) {
                 column(
                   width = 6,
                   uiOutput("data_upload_ui")
-                  ,uiOutput("data_upload_ui_2")
                 )
               )
             ),
@@ -154,7 +143,7 @@ app_ui <- function(request) {
 
             # Horizontal Line
             tags$style(HTML("hr{border-top: 1px solid #90BD8C;}")),
-                hr(),
+            hr(),
 
             fluidRow(
               column(
@@ -209,40 +198,6 @@ app_ui <- function(request) {
               )
             ),
 
-            # # Show available datasets
-            # tags$div(
-            #   style = "border: 1px solid #ccc; padding: 0px 10px 4px 10px;",
-            #   tags$h5(style = "font-weight: bold;", "Available Datasets"),
-            #   tags$textarea(
-            #     paste(names(available_datasets)[-1], collapse = "\n"),
-            #     style = "width: 100%; resize: none;",
-            #     rows = 12,
-            #     readonly = TRUE
-            #   )
-            # ),
-
-            # User FYI
-            conditionalPanel( #hide
-              condition = "0",
-              br(),
-              textInput(
-                inputId = "ask_question",
-                label = NULL,
-                placeholder = "Q&A: Ask about the code, result, error, or statistics in general.",
-                value = ""
-              ),
-
-              tippy::tippy_this(
-                "ask_question",
-                "Walk me through this code. What does this result mean? 
-                What is this error about? Explain logistic regression. 
-                List R packages for time series analysis. 
-                Hit Enter to send the request.",
-                theme = "light-border"
-              ),
-              shinyjs::hidden(actionButton("ask_button", strong("Ask RTutor")))
-            ),
-
             # Data options
             conditionalPanel( #hide
               condition = "0",
@@ -278,8 +233,6 @@ app_ui <- function(request) {
               textOutput("usage"),
               textOutput("total_cost"),
               textOutput("temperature"),
-              #uiOutput("slava_ukraini"),
-              #br(),
               textOutput("retry_on_error"),
               checkboxInput("Comments", "Comments & questions"),
               tags$style(type = "text/css", "textarea {width:100%}"),
@@ -324,7 +277,8 @@ app_ui <- function(request) {
                   width = 9,
                   h3(style = "font-weight: bold;", "Hero MotoCorp Data Portal (v0.01)"),
                   h4("Based on the RTutor platform. Work in progress in proof of concept stage. Feedbacks welcome."),
-                  br(),br(),
+                  br(),
+                  br(),
                   h4("Be aware of the limitations of the generative AI."),
                   br(),
                   h4(
@@ -344,10 +298,10 @@ app_ui <- function(request) {
                     width = "155",
                     height = "77"
                   ),
-                  align = 'left'
+                  align = "left"
                 )
               ),
-            
+
             ),
 
             conditionalPanel(
@@ -375,7 +329,7 @@ app_ui <- function(request) {
                     value = FALSE
                   ),
                   align = "right"
-                )                
+                )
               ),
 
               # show code based on the checkbox
@@ -388,8 +342,6 @@ app_ui <- function(request) {
                 condition = "input.use_python == 0",
 
                 uiOutput("error_message"),
-                #uiOutput("send_error_message"),
-                #strong("Results:"),
 
                 # shows error message in local machine, but not on the server
                 verbatimTextOutput("console_output"),
@@ -444,18 +396,7 @@ app_ui <- function(request) {
             textOutput("data_size"),
             DT::dataTableOutput("data_table_DT")
           )
-        ),
-        shinyjs::hidden(
-          div(
-            id = "second_file",
-            hr(),
-            h4("2nd dataset: df2     (Must specify, e.g. 'create a piechart of X in df2.')"),
-            textOutput("data_size_2"),
-            DT::dataTableOutput("data_table_DT_2")
-
-          )
         )
-        #,tableOutput("data_table"),
       ),
 
       #############################
@@ -494,8 +435,7 @@ app_ui <- function(request) {
             )
           )
         ),
-        br(),
-        #verbatimTextOutput("rmd_chunk_output")
+        br()
       ),
 
       #############################
@@ -516,19 +456,7 @@ app_ui <- function(request) {
             hr(),
             h4("Data summary: df"),
             verbatimTextOutput("data_summary"),
-            plotly::plotlyOutput("missing_values", width = "60%"),
-            shinyjs::hidden(
-              div(
-                id = "second_file_summary",
-                br(),hr(),
-                h4("Data structure: df2"),
-                verbatimTextOutput("data_structure_2"),
-                br(),hr(),
-                h4("Data summary: df2"),
-                verbatimTextOutput("data_summary_2"),
-                plotly::plotlyOutput("missing_values_2", width = "60%")
-              )
-            )
+            plotly::plotlyOutput("missing_values", width = "60%")
           ),
           tabPanel(
             title = "Summary",
@@ -631,33 +559,8 @@ app_ui <- function(request) {
       tabPanel(
         title = "About",
         value = "About",
-        #uiOutput("RTutor_version"),
         hr(),
-        p(" Developed by ",
-          # a(
-          #   "(Twitter, ",
-          #   href = "https://twitter.com/StevenXGe",
-          #   target = "_blank"
-          # ),
-          # a(
-          #   "LinkedIn),",
-          #   href = "https://www.linkedin.com/in/steven-ge-ab016947/",
-          #   target = "_blank"
-          # ),       
-          " RTutor LLC for HeroMotor Corp." #"For feedback, please email",
-          # a(
-          #   "gexijin@gmail.com.",
-          #   href = "mailto:gexijin@gmail.com?Subject=RTutor"
-          # ),
-          # " Source code at ",
-          # a(
-          #   "GitHub,",
-          #   href = "https://github.com/gexijin/RTutor"
-          # ),
-          # " from where you can also find 
-          # instruction to install RTutor as an R package. 
-          # The RTutor website and the source code is free for non-profit organizations ONLY. Licensing is required for commercial use."
-        ),
+        p("Developed by RTutor LLC for HeroMotor Corp."),
         p("RTutor uses ",
           a(
             "OpenAI's",
@@ -666,48 +569,14 @@ app_ui <- function(request) {
           ),
           " powerful large language models",
           " to translate natural language into R code, which is then excuted.",
-          "You can request your analysis,
-          just like asking a real person.",
-          # "Upload a data file (CSV, TSV/tab-delimited text files, and Excel) 
-          # and just analyze it in plain English.",
+          "You can request your analysis, just like asking a real person.",
           "Your results can be downloaded as an HTML report or RMarkdown file in minutes!"
         ),
         p("NO WARRANTY! Some of the scripts run but may yield incorrect result. 
         Please use the auto-generated code as a starting 
         point for further refinement and validation."
         ),
-
-        # hr(),
-
-        # h4("For businesses, RTutor can be customized and locally installed to  
-        # easily gain insights from your data (files, SQL databases, or APIs) at a low cost. We will be happy to discuss."),
-
         hr(),
-        # p("RTutor went viral on ", 
-        #     a(
-        #       "LinkedIn, ",
-        #       href = "https://www.linkedin.com/feed/update/urn:li:activity:7008179918844956672/"
-        #     ), 
-        #     a(
-        #       "Twitter, ",
-        #       href = "https://twitter.com/StevenXGe/status/1604861481526386690"
-        #     ),
-        #     a(
-        #       "Twitter(Physacourses),",
-        #       href = "https://twitter.com/Physacourses/status/1602730176688832513?s=20&t=z4fA3IPNuXylm3Vj8NJM1A"
-        #     ),
-        #     " and ",
-        #     a(
-        #       "Facebook (Carlo Pecoraro).",
-        #       href = "https://www.facebook.com/physalia.courses.7/posts/1510757046071330"
-        #     )
-        # ),
-
-        # hr(),
-
-        # uiOutput("package_list"),
-
-        # hr(),
 
         # FAQ drop down component
         fluidRow(
@@ -738,34 +607,10 @@ app_ui <- function(request) {
                 }
               });
             '))
-          )#,
-
-          # # Site Update Log component
-          # column(
-          #   width = 6,
-          #   h4(style = "font-weight: bold;", "Site Updates Log"),
-          #   tableOutput("site_updates_table")
-          # )
+          )
         ),
-
-        hr(),
-
-        # # Session Info Section
-        # fluidRow(
-        #   column(
-        #     width = 12,
-        #     uiOutput("session_info")
-        #   )
-        # ),
-      ),
-
-#      tabPanel(
-#        title = "Disqus",
-#        value = "Disqus",
-#        div(
-#        tags$head(includeHTML(app_sys("app", "www", "disqus.html")))
-#        )
-#      )
+        hr()
+      )
     ),
 
     tags$head(includeHTML(app_sys("app", "www", "ga.html")))
