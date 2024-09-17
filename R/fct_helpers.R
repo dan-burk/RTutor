@@ -15,8 +15,6 @@ release <- "0.98" # RTutor
 uploaded_data <- "User Upload" # used for drop down
 no_data <- "no_data" # no data is uploaded or selected
 names(no_data) <- "No data (examples)"
-rna_seq <- "rna_seq"  # RNA-Seq read counts
-names(rna_seq) <- "RNA-Seq"
 min_query_length <- 6  # minimum # of characters
 max_query_length <- 2000 # max # of characters
 language_models <- c("gpt-4-turbo", "gpt-4o", "gpt-4-1106-preview", "gpt-3.5-turbo", "gpt-3.5-turbo-16k", "gpt-3.5-turbo-0301", "gpt-4", "gpt-4-0314", "text-davinci-003")
@@ -351,11 +349,6 @@ datasets <- c(datasets, uploaded_data)
 datasets <- move_front(datasets, uploaded_data)
 
 # append a dummy value, used when user do not use any data
-datasets <- c(datasets, rna_seq)
-# move it to 2nd place
-datasets <- move_front(datasets, rna_seq)
-
-# append a dummy value, used when user do not use any data
 datasets <- c(datasets, no_data)
 # move it to 2nd place
 datasets <- move_front(datasets, no_data)
@@ -368,7 +361,6 @@ datasets <- setNames(datasets, datasets)
 
 names(datasets)[match("mpg", datasets)] <- "mpg (examples)"
 names(datasets)[match("diamonds", datasets)] <- "diamonds (examples)"
-names(datasets)[match(rna_seq, datasets)] <- "RNA-Seq (examples)"
 
 colnames(mpg) <- c("maker", "model", "dis", "year", "cylinder", 
   "transmission", "drive", "city", "highway", "fuel", "type")
@@ -496,7 +488,7 @@ numeric_to_factor <- function(df, max_levels_factor, max_proptortion_factor) {
 #'
 #' @param python_code, a chunk of code 
 #' @param html_file file name for output
-#' @param select_data input$select data
+#' @param select_data selected_dataset_name
 #' @param current_data   current_data()
 #'
 #' @return -1 if failed. If success, the the designated html file is written

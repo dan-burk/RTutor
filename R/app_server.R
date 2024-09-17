@@ -13,197 +13,29 @@
 #' @noRd
 app_server <- function(input, output, session) {
 
-#                            1.
-#____________________________________________________________________________
-#  General UI, observers, etc.
-#____________________________________________________________________________
 
-  # limit max file size to 10MB, if it is running on server
-  if (file.exists(on_server)) { #server
-    options(shiny.maxRequestSize = 50 * 1024^2) # 50 MB
-  } else { # local
-    options(shiny.maxRequestSize = 10000 * 1024^2) # 10 GB
-  }
-
-  pdf(NULL) #otherwise, base R plots sometimes do not show.
-
-  # load demo data when clicked. I feel like this should be lower in the server code.
-  observeEvent(input$demo_prompt, {
-    req(input$select_data)
-    if (input$demo_prompt != demo$requests[1]) {
-      updateTextInput(
-        session,
-        "input_text",
-        value = input$demo_prompt
-      )
-    } else { # if not mpg data, reset
-      updateTextInput(
-        session,
-        "input_text",
-        value = "",
-        placeholder =
-"Hi! I am your AI assistant. Select a dataset first and ask questions. See examples below."
-      )
-    }
-  })
-
-  observe({
-    shinyjs::hideElement(id = "load_message")
-  })
-
-  observeEvent(input$reset_button, {
-    # reset session
-    session$reload()
-  })
-
-# Show notification when error
-  observeEvent(code_error(), {
-  # show notification message
-    if(code_error()) {
-      showNotification(
-        "Resubmit the same request to see if ChatGPT can resolve the error.
-        If that fails, change the request.",
-        duration = 10
-      )
-    }
-  })
-
-
-  #                             2.
+  #                             1.
   #____________________________________________________________________________
   #  Loading data
   #____________________________________________________________________________
 
-  selected_data_file <- reactiveVal("mpg")
-  # showing the current dataset. Warning if no is uploaded.
+  # 'Load Data' module
+  mod_02 <- mod_02_load_data_serv("load_data")
 
-  output$selected_dataset <- renderText({ #renderUI
-      req(input$submit_button)
-      req(!is.null(available_datasets[[input$user_selected_dataset]]))
+  # Rename the reactive values for easier use
+  input_text <- reactive({  mod_02$input_text() })
+  selected_dataset_name <- reactive({ mod_02$selected_dataset_name()  })
+  submit_button <- reactive({ mod_02$submit_button()  })
+  reset_button <- reactive({  mod_02$reset_button() })
+  use_python <- reactive({  FALSE })
 
-      txt <- paste0(input$user_selected_dataset, ".  Reset to switch.")
-      return(txt)
 
-  })
-
-  # 1st Drop down selection box, not shown in UI but running on Server!!
-  output$demo_data_ui <- renderUI({
-    # Hide this input box after the first run.
-    req(input$submit_button == 0)
-
-    selectInput(
-      inputId = "select_data",
-      label = "Data",
-      choices = datasets,
-      selected = "mpg",
-      multiple = FALSE,
-      selectize = FALSE
-    )
-  })
-
-  output$prompt_ui <- renderUI({
-    req(input$select_data)
-
-    if (input$user_selected_dataset == "Select a dataset:") {
-      # subset based on dataset
-      demo_related <- subset(
-        demo,
-        data == input$user_selected_dataset
-      )
-
-    } else if (input$user_selected_dataset == "Sales Data") {
-      # subset based on dataset
-      demo_related <- subset(
-        demo,
-        data == input$user_selected_dataset
-      )
-    } else if (input$user_selected_dataset== "Registration Data") {
-      # subset based on dataset
-      demo_related <- subset(
-        demo,
-        data == input$user_selected_dataset
-      )
-    } else if (input$user_selected_dataset == "Dispatch Data") {
-      # subset based on dataset
-      demo_related <- subset(
-        demo,
-        data == input$user_selected_dataset
-      )
-    }
-
-    # subset based on R or Python
-    if (input$use_python) {
-      demo_related <- subset(
-        demo_related,
-        Python == 1
-      )
-    } else {
-      demo_related <- subset(
-        demo_related,
-        R == 1
-      )
-    }
-
-    choices <- demo_related$requests
-    names(choices) <- demo_related$name
-
-    if (input$select_data %in% c("mpg", no_data, "diamonds", rna_seq)) { #Default is select_data == "mpg"
-      return(
-        tagList(
-          tags$head(
-            tags$style(HTML("
-              .vertical-padding {
-                padding-top: 10px;  /* Adjust this value based on your specific UI */
-                padding-bottom: 10px;  /* Adjust this value based on your specific UI */
-              }
-            "))
-          ),
-          fluidRow(
-            column(
-              width = 3,
-              div(
-                "Examples:",
-                class = "vertical-padding"
-              )
-            ),
-            column(
-              width = 9,
-              align = "left",
-              selectInput(
-                inputId = "demo_prompt",
-                choices = choices,
-                label = NULL
-              )
-            )
-          ),
-
-          tags$style(
-            HTML(
-              "
-              #demo_prompt+div .selectize-input {
-                background-color: #F6FFF5 !important;
-                border-color: #90BD8C !important;
-                color: #000 !important;
-              }
-              #demo_prompt+div .selectize-dropdown {
-                background-color: #F6FFF5 !important;
-                border-color: #90BD8C !important;
-                color: #000 !important;
-              }
-              "
-            )
-          )
-        )
-      )
-    }
-  })
-
-  #                             3.
+  #                             2.
   #____________________________________________________________________________
   # API key management
   #____________________________________________________________________________
   
-  # api key for the session
+  # Api key for the session
   api_key_session <- reactive({
 
     api_key <- api_key_global
@@ -234,9 +66,9 @@ app_server <- function(input, output, session) {
   })
 
   # only save key, if app is running locally.
-  observeEvent(input$submit_button, {
+  observeEvent(submit_button(), {
     # if too short, do not send.
-    if (nchar(input$input_text) < min_query_length) {
+    if (nchar(input_text()) < min_query_length) {
       showNotification(
         paste(
           "Request too short! Should be more than ",
@@ -247,7 +79,7 @@ app_server <- function(input, output, session) {
       )
     }
     # if too long, do not send.
-    if (nchar(input$input_text) > max_query_length) {
+    if (nchar(input_text()) > max_query_length) {
       showNotification(
         paste(
           "Request too long! Should be less than ",
@@ -258,7 +90,7 @@ app_server <- function(input, output, session) {
       )
     }
     # if no file is selected, do not send.
-    if (is.null(available_datasets[[input$user_selected_dataset]])) {
+    if (is.null(available_datasets[[selected_dataset_name()]])) {
       showNotification(
         paste("No file found. Please select a dataset and try again."),
         duration = 10
@@ -267,7 +99,7 @@ app_server <- function(input, output, session) {
  })
 
 
-  #                             4.
+  #                             3.
   #____________________________________________________________________________
   # Send API Request, handle API errors
   #____________________________________________________________________________
@@ -291,11 +123,11 @@ app_server <- function(input, output, session) {
   })
 
   openAI_prompt <- reactive({
-    req(input$submit_button)
-    req(input$select_data)
-    req(input$input_text)
+    req(submit_button())
+    req(available_datasets[[selected_dataset_name()]])
+    req(input_text())
     isolate({ # so that it does not do it twice with each submit
-      prep_input(input$input_text, input$select_data, current_data(), input$use_python, logs$id, selected_model())
+      prep_input(input_text(), selected_dataset_name(), current_data(), use_python(), logs$id, selected_model())
     })
 
   })
@@ -305,16 +137,16 @@ app_server <- function(input, output, session) {
   meta_data_csv_res <- meta_data_csv()
 
   openAI_response <- reactive({
-    req(input$submit_button)
+    req(submit_button())
 
     isolate({  # so that it will not respond to text, until submitted
-      req(input$input_text)
+      req(input_text())
       prepared_request <- openAI_prompt()
       req(prepared_request)
-      req(available_datasets[[input$user_selected_dataset]])  # require user to select a dataset
+      req(available_datasets[[selected_dataset_name()]])  # require user to select a dataset
 
       # when submit is clicked, but no data is uploaded.
-      if(input$select_data == uploaded_data) {
+      if(selected_dataset_name() == uploaded_data) {
         req(user_data())
       }
 
@@ -358,7 +190,7 @@ app_server <- function(input, output, session) {
           if (length(logs$code_history) > 0) {
 
             # if there's history, identify and load dataset
-            df_name <- available_datasets[[input$user_selected_dataset]]
+            df_name <- available_datasets[[selected_dataset_name()]]
             selected_file_path <- paste0(data_path, df_name)
             df <- readRDS(selected_file_path)
             if (convert_to_factor()) {
@@ -438,7 +270,7 @@ app_server <- function(input, output, session) {
               role = "user",
               content = paste(
                 "Determine if the current prompt is relevant to any of the previous prompts. The prompt is relevant if it is a followup question for the analysis on the current dataset. If the prompt is a question about a different dataset it is not relevant. The prompt is also relevant if it is a modification for the visualizations. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
-                input$input_text,
+                input_text(),
                 "Current dataset: ",
                 sub_meta_data_json
               ) # AND relevant to the current dataset
@@ -463,14 +295,11 @@ app_server <- function(input, output, session) {
           } else {  # if first prompt,  identify and load dataset
 
             # user selected file
-            df_name <- available_datasets[[input$user_selected_dataset]]
+            df_name <- available_datasets[[selected_dataset_name()]]
 
-            tem1 <- gsub("\\..*", "", df_name)
-            tem2 <- gsub("_", " ", tem1)
-            selected_data_file(tem2)
             # show message for 10s with the fine name
             showNotification(
-              paste("Selected dataset: ", input$user_selected_dataset),
+              paste("Selected dataset: ", selected_dataset_name()),
               duration = 10
             )
 
@@ -515,7 +344,7 @@ app_server <- function(input, output, session) {
                 role = "user",
                 content = paste(
                 "Determine if the current prompt is relevant to the selected dataset. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
-                input$input_text,
+                input_text(),
                 "Current dataset: ",
                 sub_meta_data_json
               ) # AND relevant to the current dataset
@@ -538,7 +367,7 @@ app_server <- function(input, output, session) {
           } # end first user prompt
 
           if (relevancy_response()) {
-            prepared_request = prep_input(input$input_text, input$select_data, current_data(), input$use_python, logs$id, selected_model())
+            prepared_request = prep_input(input_text(), selected_dataset_name(), current_data(), use_python(), logs$id, selected_model())
 
             # Subsetting Meta Data csv file to send in with prompt
             sub_meta_data_csv <- meta_data_csv_res %>%
@@ -578,7 +407,7 @@ app_server <- function(input, output, session) {
               response$choices[1, 1] <- response$choices$message.content
 
 
-            } else{
+            } else {
               
               response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
                 model = selected_model(),
@@ -588,7 +417,7 @@ app_server <- function(input, output, session) {
                 messages = list(list(
                   role = "user",
                   content = paste("Return this exact statement:",
-                  "print('Please ask a question related to HMCL dataset",input$user_selected_dataset,"and try again. (Reset to select a different dataset)')")
+                  "print('Please ask a question related to HMCL dataset", selected_dataset_name(),"and try again. (Reset to select a different dataset)')")
                 ))
               )
 
@@ -597,7 +426,6 @@ app_server <- function(input, output, session) {
               relevancy_response(TRUE) # Reinitiate the relevancy to be TRUE
 
             } # end relevancy agent
-
 
         },
         error = function(e) {
@@ -693,7 +521,7 @@ app_server <- function(input, output, session) {
 
 
   # show a warning message when reached 10c, 20c, 30c ...
-  observeEvent(input$submit_button, {
+  observeEvent(submit_button(), {
     req(file.exists(on_server))
     req(!openAI_response()$error)
 
@@ -733,7 +561,7 @@ app_server <- function(input, output, session) {
 
   )
 
-  observeEvent(input$submit_button, {
+  observeEvent(submit_button(), {
 
     logs$id <- logs$id + 1
 
@@ -743,21 +571,21 @@ app_server <- function(input, output, session) {
     # remove one or more blank lines in the beginning.
     logs$raw <- gsub("^\n+", "", logs$raw)
     logs$last_code <- ""
-    logs$language <- ifelse(input$use_python, "Python", "R")
+    logs$language <- ifelse(use_python(), "Python", "R")
 
     # A list holds current request
     current_code <- list(
       id = logs$id,
       code = logs$code,
       raw = logs$raw, # for print
-      prompt = input$input_text,
+      prompt = input_text(),
       prompt_all = openAI_prompt(), # entire prompt, as sent to openAI
       error = code_error(),
       error_message = run_result()$error_message,
       rmd = Rmd_chunk(),
-      language = ifelse(input$use_python, "Python", "R"),
+      language = ifelse(use_python(), "Python", "R"),
       # saves the rendered file in the logs object.
-      html_file = ifelse(input$use_python, python_to_html(), -1),
+      html_file = ifelse(use_python(), python_to_html(), -1),
       prompt_tokens = openAI_response()$response$usage$prompt_tokens,
       output_tokens = openAI_response()$response$usage$completion_tokens,
       # save a copy of the data in the environment as a list.
@@ -813,7 +641,7 @@ app_server <- function(input, output, session) {
     )
 
     # change language
-    if(input$submit_button != 0) {
+    if(submit_button() != 0) {
       updateCheckboxInput(
         session = session,
         inputId = "use_python",
@@ -857,12 +685,12 @@ app_server <- function(input, output, session) {
 
   observeEvent(
     eventExpr = {
-      input$submit_button  # when submit is clicked
+      submit_button()  # when submit is clicked
       reverted()           # or when a previous code chunk is selected
       logs$code
     }, {
     req(logs$code != "")
-    req(!input$use_python)
+    req(!use_python())
     # req(relevancy_response())
     result <- NULL
     console_output <- NULL
@@ -876,7 +704,7 @@ app_server <- function(input, output, session) {
       result <- tryCatch({
         eval_result <- eval(
           #parse(text = "log('error')"),
-          parse(text = clean_cmd(logs$code, input$select_data, file.exists(on_server))),
+          parse(text = clean_cmd(logs$code, selected_dataset_name(), file.exists(on_server))),
           envir = run_env()
         )
         console_output <- capture.output(print(eval_result))
@@ -909,8 +737,8 @@ app_server <- function(input, output, session) {
   # Error when run the generated code?
   code_error <- reactive({
     error_status <- FALSE
-    req(input$submit_button != 0) #Require the submit button to be pushed
-    if(!input$use_python) { # R
+    req(submit_button() != 0) #Require the submit button to be pushed
+    if(!use_python()) { # R
       return(!is.null(run_result()$error_message) && run_result()$error_message != "")
     } else { # Python
       return(python_to_html() == -1)
@@ -945,7 +773,7 @@ app_server <- function(input, output, session) {
       tmp_env <- list2env(run_env_start())
       tryCatch({
         eval_result <- eval(
-          parse(text = clean_cmd(logs$code, input$select_data, file.exists(on_server))),
+          parse(text = clean_cmd(logs$code, selected_dataset_name(), file.exists(on_server))),
           envir = tmp_env
         )
       })
@@ -954,7 +782,7 @@ app_server <- function(input, output, session) {
 
   output$result_plotly <- plotly::renderPlotly({
     req(!code_error())
-    req(!input$use_python)
+    req(!use_python())
     req(
       is_interactive_plot() ||   # natively interactive
       turned_on(input$make_ggplot_interactive)
@@ -971,7 +799,7 @@ app_server <- function(input, output, session) {
 
   output$result_CanvasXpress <- canvasXpress::renderCanvasXpress({
     req(!code_error())
-    req(!input$use_python)
+    req(!use_python())
 
     g <- run_result()$result
     if (
@@ -1008,8 +836,8 @@ app_server <- function(input, output, session) {
 
 
   output$plot_ui <- renderUI({
-    req(input$submit_button)
-    req(!input$use_python)
+    req(submit_button())
+    req(!use_python())
     req(!code_error())
     req(logs$code)
     # req(relevancy_response())
@@ -1076,7 +904,7 @@ app_server <- function(input, output, session) {
 
   is_interactive_plot <- reactive({
     # only true if the plot is interactive, natively.
-    req(input$submit_button)
+    req(submit_button())
     req(logs$code)
     req(!code_error())
     if (inherits(run_result()$result, "plotly")) {
@@ -1087,7 +915,7 @@ app_server <- function(input, output, session) {
   })
 
   output$tips_interactive <- renderUI({
-    req(input$submit_button)
+    req(submit_button())
     req(openAI_response()$cmd)
     if(is_interactive_plot() ||   # natively interactive
       turned_on(input$make_ggplot_interactive)
@@ -1112,14 +940,6 @@ app_server <- function(input, output, session) {
       )
     }
   })
-
-  rna_seq_data <- reactive({ #Probably remove eventually
-    req(input$select_data == rna_seq)
-
-    df <- read.csv(app_sys("app", "www", "GSE37704.csv"))
-    return(df)
-  })
-
 
   # had to use this. Otherwise, the checkbox returns to false
   # when the popup is closed and openned again.
@@ -1164,19 +984,18 @@ app_server <- function(input, output, session) {
   current_data <- reactiveVal(NULL)
   selected_file <- reactiveVal(NULL)
 
-  observeEvent(input$select_data, {
-    req(input$select_data)
+  observeEvent(available_datasets[[selected_dataset_name()]], {
+    req(available_datasets[[selected_dataset_name()]])
 
-    if(input$select_data == uploaded_data) {
+    if(selected_dataset_name() == uploaded_data) {
       eval(parse(text = paste0("df <- user_data()$df")))
-    } else if(input$select_data == no_data){
+    } else if(selected_dataset_name() == no_data){
       df <- NULL # as.data.frame("No data selected or uploaded.")
-    } else if(input$select_data == rna_seq){
-      df <- rna_seq_data()
     } else {
       # otherwise built-in data is unavailable when running from R package.
       library(tidyverse)
-      eval(parse(text = paste0("df <- ", input$select_data)))
+      data <- current_data()
+      eval(parse(text = paste0("df <- data")))
     }
 
     if (convert_to_factor()) {
@@ -1210,40 +1029,10 @@ app_server <- function(input, output, session) {
     run_env_start(as.list(run_env()))
   })
 
-
-  # The data, after running the chunk
-  data_afterwards <- reactive({
-    req(input$select_data)
-    req(current_data())
-
-    if (input$submit_button == 0) {
-      return(current_data())
-    }
-
-    df <- current_data()
-    # This updates the data by running the entire code one more time.
-    if(input$submit_button != 0) {
-      if (code_error() == FALSE && !is.null(logs$code)) {
-        if(!input$use_python && logs$language == "R") { # not python
-          df <- run_env()$df
-        }
-      }
-    }
-
-    # sometimes no row is left after processing.
-    if (is.null(df)) { # no_data
-      return(NULL)
-    } else if (nrow(df) == 0) {
-      return(NULL)
-    } else { # there are data in the dataframe
-      return(df)
-    }
-  })
-
   output$data_table_DT <- DT::renderDataTable({
-    req(data_afterwards())
+    req(current_data())
     DT::datatable(
-      data_afterwards(),
+      current_data(),
       options = list(
         lengthMenu = c(5, 20, 50, 100),
         pageLength = 10,
@@ -1255,31 +1044,31 @@ app_server <- function(input, output, session) {
   })
 
   output$data_table <- renderTable({
-    req(data_afterwards())
+    req(current_data())
 
-    data_afterwards()[
-      1:min(20, nrow(data_afterwards())),
+    current_data()[
+      1:min(20, nrow(current_data())),
       ]
   })
 
   output$data_size <- renderText({
-    req(!is.null(data_afterwards()))
+    req(!is.null(current_data()))
     paste(
-      dim(data_afterwards())[1], "rows X ",
-      dim(data_afterwards())[2], "columns"
+      dim(current_data())[1], "rows X ",
+      dim(current_data())[2], "columns"
     )
   })
 
   output$data_structure <- renderPrint({
-    req(!is.null(data_afterwards()))
-    str(data_afterwards())
+    req(!is.null(current_data()))
+    str(current_data())
   })
 
   output$data_summary <- renderText({
-    req(!is.null(data_afterwards()))
+    req(!is.null(current_data()))
     paste(
       capture.output(
-        summary(data_afterwards())
+        summary(current_data())
       ),
       collapse = "\n"
     )
@@ -1287,8 +1076,8 @@ app_server <- function(input, output, session) {
 
   # plotting missing values
   output$missing_values <- plotly::renderPlotly({
-    req(!is.null(data_afterwards()))
-    p <- missing_values_plot(data_afterwards())
+    req(!is.null(current_data()))
+    p <- missing_values_plot(current_data())
     if(!is.null(p)) {
       plotly::ggplotly(p)
     } else {
@@ -1305,7 +1094,7 @@ app_server <- function(input, output, session) {
   })
 
   observe({
-    if(input$select_data != no_data && !is.null(data_afterwards())) {
+    if(selected_dataset_name() != no_data && !is.null(current_data())) {
     shinyjs::show(id = "first_file")
     } else {
       shinyjs::hide(id = "first_file")
@@ -1326,10 +1115,10 @@ app_server <- function(input, output, session) {
 
   #                                 6.
   #____________________________________________________________________________
-  # Logs and Reports
+  #  Reports
   #____________________________________________________________________________
 
-  observeEvent(input$submit_button, {
+  observeEvent(submit_button(), {
     choices <- 1:length(logs$code_history)
     names(choices) <- paste0("Chunk #", choices)
     updateSelectInput(
@@ -1366,7 +1155,7 @@ app_server <- function(input, output, session) {
 
   # if the first chunk & data is uploaded,
   # insert script for reading data
-  if (input$select_data == uploaded_data) {
+  if (selected_dataset_name() == uploaded_data) {
 
     # Read file
     file_name <- input$user_file$name
@@ -1432,7 +1221,6 @@ app_server <- function(input, output, session) {
   })
 
 
-
   # Markdown chunk for the current request
   Rmd_chunk <- reactive({
     req(openAI_response()$cmd)
@@ -1440,7 +1228,7 @@ app_server <- function(input, output, session) {
 
     Rmd_script <- ""
 
-    if(input$use_python) {
+    if(use_python()) {
       Rmd_script <- paste0(
         Rmd_script,
         "```{R}\n",
@@ -1484,7 +1272,7 @@ app_server <- function(input, output, session) {
     )
 
     # R Markdown code chunk----------------------
-    if(!input$use_python) {  # R code chunk
+    if(!use_python()) {  # R code chunk
       # if error when running the code, do not run
       if (code_error() == TRUE) {
         Rmd_script <- paste0(
@@ -1558,156 +1346,6 @@ app_server <- function(input, output, session) {
     Rmd_total()
   })
 
-  output$eda_report_ui <- renderUI({
-    req(input$select_data != no_data)
-    req(!input$use_python)
-    req(!is.null(current_data()))
-    df <- ggpairs_data()
-    tagList(
-      br(),
-      fluidRow(
-        column(
-          width = 3,
-          actionButton(
-            inputId = "render_eda_report_rtutor",
-            label = "Render Report"
-          )
-        )
-      ),
-      br(),
-      selectInput(
-        inputId = "eda_target_variable",
-        label = "Select a target variable (optional):",
-        choices = c("<None>", colnames(df)),
-        multiple = FALSE
-      ),
-      br(),
-      checkboxGroupInput(
-        inputId = "eda_variables",
-        label = "Select up to 20 variables:",
-        choices = colnames(df),
-        selected = colnames(df)
-      )
-    )
-
-  })
-
-  # if user selects more than 20 columns for the eda_variables, only the first 20 is selected by eda_variables. Show a warning.
-  observeEvent(c(input$eda_variables, input$eda_target_variable), {
-    req(!input$use_python)
-    req(!is.null(ggpairs_data()))
-
-    selected_var <- input$eda_variables
-    update_selection <- FALSE
-    # if the selected target variable is not included in the eda_variables, add it to the top of the list.
-    if (input$eda_target_variable != "<None>" && !(input$eda_target_variable %in% selected_var)) {
-      selected_var <- c(input$eda_target_variable, selected_var)
-      update_selection <- TRUE
-    }
-
-    if(length(selected_var) > max_eda_var) {
-      selected_var <- selected_var[1:max_eda_var]
-
-      showNotification(
-        ui = paste("Only the first 20 variables are selected for EDA.
-        Please deselect some variables to continue."),
-        id = "eda_variables_warning",
-        duration = 5,
-        type = "error"
-      )
-      update_selection <- TRUE
-    }
-
-    # if target variable is selected, add to it; if too many, only keep the first 20
-    if(update_selection){
-      updateCheckboxGroupInput(
-        session = session,
-        inputId = "eda_variables",
-        label = "Deselect variables to ignore(optional):",
-        choices = colnames(ggpairs_data()),
-        selected = selected_var
-      )
-    }
-  })
-
-  eda_file <- reactiveVal(NULL)
-
-  observeEvent(input$render_eda_report_rtutor, {
-    req(input$select_data != no_data)
-    req(!input$use_python)
-    req(!is.null(current_data()))
-
-
-    withProgress(message = "Generating Report (5 minutes)", {
-      incProgress(0.2)
-      # Copy the report file to a temporary directory before processing it, in
-      # case we don't have write permissions to the current working dir (which
-      # can happen when deployed).
-      tempReport <- file.path(tempdir(), "RTutor_EDA.Rmd")
-      # tempReport
-      tempReport <- gsub("\\", "/", tempReport, fixed = TRUE)
-      output_file <- gsub("Rmd$", "html", tempReport)
-      # This should retrieve the project location on your device:
-      # "C:/Users/bdere/Documents/GitHub/idepGolem"
-      # wd <- getwd()
-
-      markdown_location <- app_sys("app/www/eda.Rmd")
-      file.copy(from = markdown_location, to = tempReport, overwrite = TRUE)
-
-      # Set up parameters to pass to Rmd document
-      params <- list(
-        df = ggpairs_data()[, input$eda_variables],
-        target = input$eda_target_variable
-      )
-      req(params)
-      # Knit the document, passing in the `params` list, and eval it in a
-      # child of the global environment (this isolates the code in the document
-      # from the code in this app).
-      tryCatch({
-        rmarkdown::render(
-          input = tempReport, # markdown_location,
-          output_file = output_file,
-          params = params,
-          envir = new.env(parent = globalenv())
-        )
-      },
-        error = function(e) {
-          showNotification(
-            ui = paste("Error when generating the report. Please try again."),
-            id = "eda_report_error",
-            duration = 5,
-            type = "error"
-          )
-      },
-        finally = {
-          eda_file(output_file)
-          # show modal with download button
-          showModal(modalDialog(
-            title = "Successfully rendered the report!",
-            downloadButton(
-              outputId = "eda_report_rtutor",
-              label = "Download"
-            ),
-            easyClose = TRUE
-          ))
-        }
-      )
-    })
-  })
-
-
-  # Markdown report
-  output$eda_report_rtutor <- downloadHandler(
-    # For PDF output, change this to "report.pdf"
-    filename = "RTutor_EDA.html",
-    content = function(file) {
-      validate(
-        need(!is.null(eda_file()), "File not found.")
-      )
-      file.copy(from = eda_file(), to = file, overwrite = TRUE)
-    }
-  )
-
 
   # Markdown report
   output$Rmd_source <- downloadHandler(
@@ -1737,8 +1375,8 @@ app_server <- function(input, output, session) {
   report_file <- reactiveVal(NULL)
 
   observeEvent(input$report, {
-    req(input$select_data != no_data)
-    req(!input$use_python)
+    req(selected_dataset_name() != no_data)
+    req(!use_python())
     req(!is.null(current_data()))
 
 
@@ -1801,9 +1439,9 @@ app_server <- function(input, output, session) {
       # Set up parameters to pass to Rmd document
       params <- list(df = iris) # dummy
       # if uploaded, use that data
-      req(input$select_data)
+      req(available_datasets[[selected_dataset_name()]])
       df <- current_data()
-      if (input$select_data != no_data) {
+      if (selected_dataset_name() != no_data) {
         params <- list(
           df = df
         )
@@ -1911,8 +1549,8 @@ app_server <- function(input, output, session) {
         params <- list(df = iris) # dummy
 
         # if uploaded, use that data
-        req(input$select_data)
-        if (input$select_data != no_data) {
+        req(available_datasets[[selected_dataset_name()]])
+        if (selected_dataset_name() != no_data) {
           params <- list(
             df = current_data()
           )
@@ -1933,50 +1571,40 @@ app_server <- function(input, output, session) {
   )
 
 
-#                                  9.
+#                                      7.
 #______________________________________________________________________________
 #
-#  Server rebooting every 24 hours; this gives a warning
+#  General UI, observers, etc.
 #______________________________________________________________________________
 
-  # returns hour and minutes
-  time_var <- reactive({
-    input$submit_button
-    min <- format(Sys.time(), "%M")
-    hr <- format(Sys.time(), "%H")
-    return(list(
-      min = as.integer(min),
-      hr = as.integer(hr)
-    ))
+
+  # limit max file size to 10MB, if it is running on server
+  if (file.exists(on_server)) { #server
+    options(shiny.maxRequestSize = 50 * 1024^2) # 50 MB
+  } else { # local
+    options(shiny.maxRequestSize = 10000 * 1024^2) # 10 GB
+  }
+
+  pdf(NULL) # otherwise, base R plots sometimes do not show.
+
+  observeEvent(reset_button(), {
+    # reset session
+    session$reload()
   })
 
-
-  output$timer_ui <- renderUI({
-    # reboot at 7:56, 15:56, 23:56 ...
-    if (
-      time_var()$min >= 56 &&
-      time_var()$hr %% 24 == 23 &&  # time_var()$hr %% 8 == 7 &&
-      file.exists(on_server)
-      ) {
-      h4(
-        paste(
-          "Server rebooting in a few minutes. ",
-          " Download your files. Reload this site after being
-          disconnected at the top of the hour."
-        ),
-        style = "color:red"
+  # Show notification when error
+  observeEvent(code_error(), {
+    # show notification message
+    if(code_error()) {
+      showNotification(
+        "Resubmit the same request to see if ChatGPT can resolve the error.
+        If that fails, change the request.",
+        duration = 10
       )
-
     }
   })
 
-
-#                                      8.
-#______________________________________________________________________________
-#
-#  Miscellaneous
-#______________________________________________________________________________
-
+  # Display RTutor Version
   output$RTutor_version <- renderUI({
     h4(paste("RTutor Version", release))
   })
@@ -1985,70 +1613,6 @@ app_server <- function(input, output, session) {
     tagList(
       h3(paste("RTutor.ai ", release))
     )
-  })
-
- output$package_list <- renderUI({
-    all <- .packages(all.available = TRUE)
-    all <- sapply(
-      all,
-      function(x) paste(x, paste0(packageVersion(x), collapse = "."))
-    )
-    all <- unname(all)
-
-    selectInput(
-      inputId = "installed_packages",
-      label = paste0(
-        "Search for installed packages ( ",
-        length(all),
-        " total)"
-      ),
-      choices = all,
-      selected = NULL
-    )
-  })
-
-  output$session_info <- renderUI({
-    i <- c("<br><h4>R session info: </h4>")
-    i <- c(i, capture.output(sessionInfo()))
-    HTML(paste(i, collapse = "<br/>"))
-  })
-
-  contribute_data <- reactive({
-      save_info <- TRUE # default
-      if(!is.null(input$contribute_data)) {
-        save_info <- input$contribute_data
-      }
-      return(save_info)
-  })
-
-  # save user data when allowed
-  observeEvent(input$submit_button, {
-    req(openAI_prompt())
-    req(logs$code)
-
-    if(contribute_data()) {
-      # remove user data, only keep column names and data type
-      txt <- capture.output(str(current_data(), vec.len = 0))
-      txt <- gsub(" levels .*$", " levels", txt)
-      try(
-        save_data(
-          date = Sys.Date(),
-          time = format(Sys.time(), "%H:%M:%S"),
-          request = openAI_prompt(),
-          code = logs$code,
-          error_status = code_error(),  # 1 --> error!  0 --> no error, success!!
-          data_str = paste(txt, collapse = "\n"),
-          dataset = input$select_data,
-          session = session$token,
-          filename = ifelse(is.null(input$user_file[1, 1]), " ", input$user_file[1, 1]),
-          filesize = ifelse(is.null(input$user_file[1, 2]), " ", input$user_file[1, 2]),
-          chunk = counter$requests,
-          api_time = counter$time,
-          tokens = counter$tokens_current,
-          language = logs$language
-        )
-      )
-    }
   })
 
   # 'About' tab FAQ's and answers
@@ -2069,10 +1633,10 @@ app_server <- function(input, output, session) {
     tagList(faq_items)
   })
 
-  #  Python
+  # Python
   output$python_markdown <- renderUI({
     req(openAI_response()$cmd)
-    req(input$use_python)
+    req(use_python())
 
     id <- as.integer(input$selected_chunk)
     rendered <- logs$code_history[[id]]$html_file
@@ -2087,14 +1651,14 @@ app_server <- function(input, output, session) {
 
   # file is rendered and stored in the html_file variable in logs$code_history
   python_to_html <- reactive({
-    req(input$submit_button)
+    req(submit_button())
     req(logs$language == "Python")
-    req(input$use_python)
+    req(use_python())
 
     isolate({
       python_html(
         python_code = logs$code,
-        select_data = input$select_data,
+        select_data = available_datasets[[selected_dataset_name()]],
         current_data = current_data()
       )
     })

@@ -1,4 +1,4 @@
-# style_module.R
+# HTML Style Module File
 
 # Define a UI module for the HTML styles
 mod_01_style_ui <- function(id) {
@@ -26,6 +26,7 @@ mod_01_style_ui <- function(id) {
     /* sidebar panel */
     .well {
         background-color: #C1E2BE;border-color: #90BD8C;
+    }
   ")))
   
 }

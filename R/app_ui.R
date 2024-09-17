@@ -23,10 +23,6 @@ app_ui <- function(request) {
       id = "tabs",
       tabPanel(
         title = "Home",
-        div(
-          id = "load_message",
-          h2("Chat with your data via AI ..."),
-        ),
         # move notifications and progress bar to the center of screen
         tags$head(
           tags$style(
@@ -53,123 +49,7 @@ app_ui <- function(request) {
         ##########################################################
         sidebarLayout(
           sidebarPanel(
-
-            # Select a Dataset
-            tags$head(tags$style(
-              "#user_selected_dataset{background-color: #F6FFF5;border-color: #90BD8C;color: #000;}"
-            )),
-            tags$head(tags$style(
-              "#user_selected_dataset-label { font-weight: normal; }"
-            )),
-            conditionalPanel(
-              condition = "input.submit_button == 0 || input.user_selected_dataset === 'Select a dataset:'",
-              selectInput(inputId = 'user_selected_dataset',
-                label = NULL,
-                choices = names(available_datasets),
-                multiple = FALSE,
-                selectize = FALSE,
-              )
-            ),
-            # Show selected dataset
-            conditionalPanel(
-              condition = "input.submit_button >= 1",
-              fluidRow(
-                column(
-                  width = 12,
-                  textOutput("selected_dataset")
-                )
-              )
-            ),
-
-            conditionalPanel(
-              condition = "0",
-              fluidRow(
-                column(
-                  width = 12,
-                  uiOutput("demo_data_ui")
-                ),
-                column(
-                  width = 6,
-                  uiOutput("data_upload_ui")
-                )
-              )
-            ),
-
-            # Horizontal Line
-            tags$style(HTML("hr{border-top: 1px solid #90BD8C;}")),
-            hr(),
-            # User Input Text Box
-            tags$style(HTML("
-              textarea {
-                width: 100%;
-                background-color: #F6FFF5;
-                border-color: #90BD8C;
-              }
-            ")),
-            tags$textarea(
-              id = "input_text",
-              placeholder = NULL,
-              rows = 8, ""
-            ),
-            # Example Prompts
-            uiOutput("prompt_ui"),
-
-            # Horizontal Line
-            tags$style(HTML("hr{border-top: 1px solid #90BD8C;}")),
-            hr(),
-
-            fluidRow(
-              column(
-                width = 12,
-                div(
-                  style = "display: flex; justify-content: space-between;",
-                  div(
-                    # Submit Button
-                    actionButton("submit_button", strong("Submit")),
-                    tags$head(tags$style(
-                      "#submit_button{font-size: 16px;color: blue;background-color: #F6FFF5;border-color: #90BD8C;}"
-                    )),
-                    tippy::tippy_this(
-                      "submit_button",
-                      "ChatGPT can return different results for the same request.",
-                      theme = "light-border"
-                    )
-                  ),
-                  div(
-                    # Reset Button
-                    actionButton(inputId = "reset_button", label = strong("Reset")),
-                    tags$head(tags$style(
-                      "#reset_button{font-size: 16px;color: red;background-color: #F6FFF5;border-color: #90BD8C;}"
-                    )),
-                    tippy::tippy_this(
-                      "reset_button",
-                      "Reset before asking a new question. Clears data objects, chat history, & code chunks.",
-                      theme = "light-border"
-                    )
-                  )
-                )
-              ),
-              # API keys and Python options
-              conditionalPanel(
-                condition = "0",
-                column(
-                  width = 4,
-                  actionButton("api_button", "Settings")
-                ),
-                column(
-                  width = 4,
-                  checkboxInput("use_python", "Python", value = FALSE)
-                )
-              )
-            ),
-
-            fluidRow(
-              column(12,
-                # Horizontal Line
-                tags$style(HTML("hr{border-top: 1px solid #90BD8C;}")),
-                hr()
-              )
-            )
+            mod_02_load_data_ui("load_data")
           ),
 
       ###############################################################################
@@ -179,7 +59,7 @@ app_ui <- function(request) {
             shinyjs::useShinyjs(),
 
             conditionalPanel(
-              condition = "input.submit_button == 0",
+              condition = "input['load_data-submit_button'] == 0",
               fluidRow(
                 column(
                   width = 9,
@@ -213,7 +93,7 @@ app_ui <- function(request) {
             ),
 
             conditionalPanel(
-              condition = "input.submit_button != 0",
+              condition = "input['load_data-submit_button'] != 0",
               fluidRow(
                 column(
                   width = 4,
@@ -247,7 +127,7 @@ app_ui <- function(request) {
               ),
 
               conditionalPanel(
-                condition = "input.use_python == 0",
+                condition = "true",  # "input['load_data-use_python'] == 0",
 
                 uiOutput("error_message"),
 
@@ -278,7 +158,7 @@ app_ui <- function(request) {
                 uiOutput("tips_interactive"),
               ),
               conditionalPanel(
-                condition = "input.use_python == 1",
+                condition = "input['load_data-use_python'] == 1",
                 uiOutput("python_markdown")
               )
             )
