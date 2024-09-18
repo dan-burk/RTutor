@@ -15,155 +15,28 @@
 app_ui <- function(request) {
   tagList(
     golem_add_external_resources(),
-    
-    mod_01_style_ui("mod_01_style_ui.R"),  # Include the style module
+
+    ### Style Module ###
+    mod_01_style_ui("mod_01_style_ui.R"),
 
     navbarPage(
       HTML('<span style="color: black;">HMCL</span>'),
       id = "tabs",
+
       tabPanel(
         title = "Home",
-        # move notifications and progress bar to the center of screen
-        tags$head(
-          tags$style(
-            HTML(".shiny-notification {
-                  width: 300px;
-                  position:fixed;
-                  top: calc(90%);
-                  left: calc(10%);
-                  }
-                  "
-                )
-            )
-        ),
-        # Embed the CSS directly in the UI
-        tags$style("
-          .modal-dialog {
-            position: absolute;
-            bottom: 0;
-          }
-        "),
 
-        ##########################################################
-        ####### Sidebar
-        ##########################################################
         sidebarLayout(
+          ### Sidebar ###
           sidebarPanel(
             mod_02_load_data_ui("load_data")
           ),
 
-      ###############################################################################
-      # Main
-      ###############################################################################
+          ### Main Panel ###
           mainPanel(
-            shinyjs::useShinyjs(),
-
-            conditionalPanel(
-              condition = "input['load_data-submit_button'] == 0",
-              fluidRow(
-                column(
-                  width = 9,
-                  h3(style = "font-weight: bold;", "Hero MotoCorp Data Portal (v0.01)"),
-                  h4("Based on the RTutor platform. Work in progress in proof of concept stage. Feedbacks welcome."),
-                  br(),
-                  br(),
-                  h4("Be aware of the limitations of the generative AI."),
-                  br(),
-                  h4(
-                    "Start by watching a short ",
-                    a(
-                      "video!",
-                      href = "https://youtu.be/a-bZW26nK9k",
-                      target = "_blank"
-                    )
-                  ),
-                  align = "left"
-                ),
-                column(
-                  width = 3,
-                  img(
-                    src = "www/logo.png",
-                    width = "155",
-                    height = "77"
-                  ),
-                  align = "left"
-                )
-              ),
-
-            ),
-
-            conditionalPanel(
-              condition = "input['load_data-submit_button'] != 0",
-              fluidRow(
-                column(
-                  width = 4,
-                  selectInput(
-                    inputId = "selected_chunk",
-                    label = "AI generated code:",
-                    selected = NULL,
-                    choices = NULL
-                  ),
-                  tippy::tippy_this(
-                    "selected_chunk",
-                    "You can go back to any previous code chunk and continue from there. The data will also be reverted to that point.",
-                    theme = "light-border"
-                  )
-                ),
-                column(
-                  width = 8,
-                  checkboxInput(
-                    inputId = "show_code",
-                    label = "Show code",
-                    value = FALSE
-                  ),
-                  align = "right"
-                )
-              ),
-
-              # show code based on the checkbox
-              conditionalPanel(
-                condition = "input.show_code == 1",
-                verbatimTextOutput("openAI")
-              ),
-
-              conditionalPanel(
-                condition = "true",  # "input['load_data-use_python'] == 0",
-
-                uiOutput("error_message"),
-
-                # shows error message in local machine, but not on the server
-                verbatimTextOutput("console_output"),
-                uiOutput("plot_ui"),
-                fluidRow(
-                  column(
-                    width = 5,
-                    checkboxInput(
-                      inputId = "make_ggplot_interactive",
-                      label = NULL,
-                      value = FALSE
-                    ),
-                    align = "right"
-                  ),
-                  column(
-                    width = 5,
-                    checkboxInput(
-                      inputId = "make_cx_interactive",
-                      label = NULL,
-                      value = FALSE
-                    ),
-                    align = "left"
-                  )
-                ),
-                br(),
-                uiOutput("tips_interactive"),
-              ),
-              conditionalPanel(
-                condition = "input['load_data-use_python'] == 1",
-                uiOutput("python_markdown")
-              )
-            )
-          ) #mainPanel
-        ) #sideBarpanel
+            mod_03_main_panel_ui("main_panel")
+          )
+        )
       ), #tabPanel
 
       #############################

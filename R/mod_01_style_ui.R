@@ -27,6 +27,14 @@ mod_01_style_ui <- function(id) {
     .well {
         background-color: #C1E2BE;border-color: #90BD8C;
     }
+
+    .shiny-notification {
+        width: 300px;position: fixed;top: calc(90%);left: calc(10%);
+    }
+
+    .modal-dialog {
+        position: absolute;bottom: 0;
+    }
   ")))
   
 }

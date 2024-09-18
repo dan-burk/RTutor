@@ -43,8 +43,6 @@ mod_02_load_data_ui <- function(id) {
         )
       )
     ),
-
-    # Horizontal Line
     hr(),
 
     # User Input Text Box
@@ -56,8 +54,6 @@ mod_02_load_data_ui <- function(id) {
 
     # Example Prompts
     uiOutput(ns("prompt_ui")),
-
-    # Horizontal Line
     hr(),
 
     fluidRow(
@@ -100,7 +96,6 @@ mod_02_load_data_ui <- function(id) {
     fluidRow(
       column(
         width = 12,
-        # Horizontal Line
         hr()
       )
     )

@@ -14,7 +14,7 @@
 app_server <- function(input, output, session) {
 
 
-  #                             1.
+  #                             1. Module 02
   #____________________________________________________________________________
   #  Loading data
   #____________________________________________________________________________
@@ -30,11 +30,37 @@ app_server <- function(input, output, session) {
   use_python <- reactive({  FALSE })
 
 
-  #                             2.
+  #                             2. Module 03
   #____________________________________________________________________________
-  # API key management
+  #   Main Panel
   #____________________________________________________________________________
   
+  # 'Main Panel' module
+  tabs <- reactive({ input$tabs })
+
+  mod_03 <- mod_03_main_panel_serv(
+    id = "main_panel",
+    openAI_response = openAI_response,
+    logs = logs,
+    code_error = code_error,
+    run_result = run_result,
+    run_env_start = run_env_start,
+    submit_button = submit_button,
+    use_python = use_python,
+    tabs = tabs,
+    current_data = current_data,
+    selected_dataset_name = selected_dataset_name
+  )
+
+  # Rename the reactive values for easier use
+  selected_chunk <- reactive({  mod_03$selected_chunk() })
+
+
+  #                             3.
+  #____________________________________________________________________________
+  #   API key management
+  #____________________________________________________________________________
+
   # Api key for the session
   api_key_session <- reactive({
 
@@ -99,7 +125,7 @@ app_server <- function(input, output, session) {
  })
 
 
-  #                             3.
+  #                             4.
   #____________________________________________________________________________
   # Send API Request, handle API errors
   #____________________________________________________________________________
@@ -544,12 +570,6 @@ app_server <- function(input, output, session) {
     }
   })
 
-  output$openAI <- renderText({
-    req(openAI_response()$cmd)
-    res <- logs$raw
-    res <- gsub("```", "", res)
-  })
-
  # Defining & initializing the reactiveValues object
   logs <- reactiveValues(
     id = 0, # 1, 2, 3, id for code chunk
@@ -598,9 +618,11 @@ app_server <- function(input, output, session) {
 
     choices <- 1:length(logs$code_history)
     names(choices) <- paste0("Chunk #", choices)
+
     # update chunk choices
     updateSelectInput(
-      inputId = "selected_chunk",
+      session = session,
+      inputId = "main_panel-selected_chunk",
       label = "AI generated code:",
       choices = choices,
       selected = logs$id
@@ -608,10 +630,10 @@ app_server <- function(input, output, session) {
   })
 
   # change code when past code is selected.
-  observeEvent(input$selected_chunk, {
+  observeEvent(selected_chunk(), {
     # req(run_result())
-    req(input$selected_chunk)
-    id <- as.integer(input$selected_chunk)
+    req(selected_chunk())
+    id <- as.integer(selected_chunk())
     logs$code <- logs$code_history[[id]]$code
     logs$raw <- logs$code_history[[id]]$raw
 
@@ -742,202 +764,6 @@ app_server <- function(input, output, session) {
       return(!is.null(run_result()$error_message) && run_result()$error_message != "")
     } else { # Python
       return(python_to_html() == -1)
-    }
-  })
-
-  output$error_message <- renderUI({
-    req(code_error())
-    req(logs$code)
-    if(code_error()) {
-      h4(paste("Error!", run_result()$error_message), style = "color:red")
-    } else {
-      return(NULL)
-    }
-  })
-
-  output$console_output <- renderText({
-    req(!code_error())
-    paste(run_result()$console_output, collapse = "\n")
-  })
-
-  output$result_plot <- renderPlot({
-    req(!code_error())
-    req(logs$code)
-    # req(relevancy_response())
-    # Check if the result is not a ggplot or a known plot type
-    if (inherits(run_result()$result, "ggplot") || is.null(run_result()$console_output)) {
-      return(run_result()$result)
-    } else {
-      # If the result is not a ggplot (e.g., corrplot), re-evaluate the command_string,
-      #under the parent environment of the run_env()
-      tmp_env <- list2env(run_env_start())
-      tryCatch({
-        eval_result <- eval(
-          parse(text = clean_cmd(logs$code, selected_dataset_name(), file.exists(on_server))),
-          envir = tmp_env
-        )
-      })
-    }
-  })
-
-  output$result_plotly <- plotly::renderPlotly({
-    req(!code_error())
-    req(!use_python())
-    req(
-      is_interactive_plot() ||   # natively interactive
-      turned_on(input$make_ggplot_interactive)
-    )
-
-    g <- run_result()$result
-    # still errors some times, when the returned list is not a plot
-    if(is.character(g) || is.data.frame(g) || is.numeric(g)) {
-      return(NULL)
-    } else {
-      return(g)
-    }
-  })
-
-  output$result_CanvasXpress <- canvasXpress::renderCanvasXpress({
-    req(!code_error())
-    req(!use_python())
-
-    g <- run_result()$result
-    if (
-      turned_on(input$make_cx_interactive) &&
-      !is.character(g) &&
-      !is.data.frame(g) &&
-      !is.numeric(g)
-    ) {
-      g <- canvasXpress::canvasXpress(g)
-    } else {
-      g <- canvasXpress::canvasXpress(destroy = TRUE)
-    }
-    return(g)
-  })
-
-  # Remind user to uncheck.
-  observe({
-
-    req(input$make_cx_interactive && input$tabs == "Home")
-    showNotification(
-      ui = paste("Please uncheck the CanvasXpress
-      box before proceeding to the next request."),
-      id = "uncheck_canvasXpress",
-      duration = NULL,
-      type = "error"
-    )
-  })
-
-  # Remove messages if the tab changes --------
-  observe({
-    req(!input$make_cx_interactive || input$tabs != "Home")
-    removeNotification("uncheck_canvasXpress")
-  })
-
-
-  output$plot_ui <- renderUI({
-    req(submit_button())
-    req(!use_python())
-    req(!code_error())
-    req(logs$code)
-    # req(relevancy_response())
-    if (
-      is_interactive_plot() ||   # natively interactive
-      turned_on(input$make_ggplot_interactive) # converted
-    ){
-      plotly::plotlyOutput("result_plotly")
-    } else if (
-      turned_on(input$make_cx_interactive) # converted
-    ) {
-      canvasXpress::canvasXpressOutput("result_CanvasXpress")
-    } else {
-      plotOutput("result_plot")
-    }
-  })
-
-  observe({
-    # hide it by default
-    shinyjs::hideElement(id = "make_ggplot_interactive")
-    updateCheckboxInput(
-      session = session,
-      inputId = "make_ggplot_interactive",
-      label = "Interactive via plotly",
-      value = FALSE
-    )
-
-    req(!code_error())
-    req(logs$code)
-    txt <- paste(openAI_response()$cmd, collapse = " ")
-
-    if (inherits(run_result()$result, "ggplot") && # if  ggplot2, and it is
-      !is_interactive_plot() && #not already an interactive plot, show
-       # if there are too many data points, don't do the interactive
-      !(dim(current_data())[1] > max_data_points && grepl("geom_point|geom_jitter", txt))
-    ) {
-      shinyjs::showElement(id = "make_ggplot_interactive")
-    }
-  })
-
-  observe({
-    # hide it by default
-    shinyjs::hideElement(id = "make_cx_interactive")
-    updateCheckboxInput(
-      session = session,
-      inputId = "make_cx_interactive",
-      label = "Interactive via CanvasXpress",
-      value = FALSE
-    )
-
-    req(!code_error())
-    req(logs$code)
-    txt <- paste(openAI_response()$cmd, collapse = " ")
-
-    if (inherits(run_result()$result, "ggplot") && # if  canvasXpress, and it is
-      !is_interactive_plot() && #not already an interactive plot, show
-       # if there are too many data points, don't do the interactive
-      !(dim(current_data())[1] > max_data_points && grepl("geom_point|geom_jitter", txt))
-    ) {
-      shinyjs::showElement(id = "make_cx_interactive")
-    }
-  })
-
-
-  is_interactive_plot <- reactive({
-    # only true if the plot is interactive, natively.
-    req(submit_button())
-    req(logs$code)
-    req(!code_error())
-    if (inherits(run_result()$result, "plotly")) {
-      return(TRUE)
-    } else {
-      return(FALSE)
-    }
-  })
-
-  output$tips_interactive <- renderUI({
-    req(submit_button())
-    req(openAI_response()$cmd)
-    if(is_interactive_plot() ||   # natively interactive
-      turned_on(input$make_ggplot_interactive)
-     ) {
-      tagList(
-        p("Mouse over to see values. Select a region to zoom.
-        Click on the legends to deselect a group.
-        Double click a category to hide all others.
-        Use the menu on the top right for other functions."
-        )
-      )
-    } else if (turned_on(input$make_cx_interactive)) {
-      tagList(
-        p("To reset, press ESC. Or mouse over the top,
-        then click the reset button on the top left.
-        Mouse over to see values. Select a region to zoom.
-        Click on the legends to deselect a group.
-        Double click a category to hide all others.
-        Use the menu on the top right for other functions.
-        Right click for more options."
-        )
-      )
     }
   })
 
@@ -1631,22 +1457,6 @@ app_server <- function(input, output, session) {
       )
     })
     tagList(faq_items)
-  })
-
-  # Python
-  output$python_markdown <- renderUI({
-    req(openAI_response()$cmd)
-    req(use_python())
-
-    id <- as.integer(input$selected_chunk)
-    rendered <- logs$code_history[[id]]$html_file
-    req(rendered)
-
-    if (rendered == -1) {
-      p("Error!")
-    } else {
-      includeHTML(rendered)
-    }
   })
 
   # file is rendered and stored in the html_file variable in logs$code_history
