@@ -463,9 +463,12 @@ app_server <- function(input, output, session) {
   })
 
 
-  ####################################################
-  ### Error handling, record keeping/chunk history
-  ####################################################
+
+  #                             5. Module 06
+  #____________________________________________________________________________
+  #  Error handling, record keeping/chunk history
+  #____________________________________________________________________________
+
 
   # a modal shows api connection error
   api_error_modal <- shiny::modalDialog(
@@ -642,7 +645,7 @@ app_server <- function(input, output, session) {
   })
 
 
-  #                            5.
+  #                            6. Module 07
   #____________________________________________________________________________
   # Run the code, data prep, show code
   #____________________________________________________________________________
@@ -808,69 +811,26 @@ app_server <- function(input, output, session) {
   })
 
 
-#                                      7.
-#______________________________________________________________________________
-#
-#  General UI, observers, etc.
-#______________________________________________________________________________
+  #                             7. Module 08
+  #____________________________________________________________________________
+  #  Miscellaneous
+  #____________________________________________________________________________
 
+  # 'Misc' module
+  mod_08 <- mod_08_misc_serv(
+    id = "misc",
+    reset_button = reset_button,
+    submit_button = submit_button,
+    logs = logs,
+    use_python = use_python,
+    current_data = current_data,
+    selected_dataset_name = selected_dataset_name
+  )
 
-  # limit max file size to 10MB, if it is running on server
-  if (file.exists(on_server)) { #server
-    options(shiny.maxRequestSize = 50 * 1024^2) # 50 MB
-  } else { # local
-    options(shiny.maxRequestSize = 10000 * 1024^2) # 10 GB
-  }
+  # Rename the reactive values for easier use
+  python_to_html <- reactive({  mod_08$python_to_html() })
 
-  pdf(NULL) # otherwise, base R plots sometimes do not show.
+  pdf(NULL) # otherwise, base R plots sometimes do not show
 
-  observeEvent(reset_button(), {
-    # reset session
-    session$reload()
-  })
-
-  # Display RTutor Version
-  output$RTutor_version <- renderUI({
-    h4(paste("RTutor Version", release))
-  })
-
-  output$RTutor_version_main <- renderUI({
-    tagList(
-      h3(paste("RTutor.ai ", release))
-    )
-  })
-
-  # 'About' tab FAQ's and answers
-  output$faq_list <- renderUI({
-    faq_items <- lapply(seq_len(nrow(faqs)), function(i) {
-      tags$div(
-        class = "faq-item",
-        tags$h5(
-          class = "faq-question",
-          faqs$question[i]
-        ),
-        tags$p(
-          class = "faq-answer",
-          faqs$answer[i]
-        )
-      )
-    })
-    tagList(faq_items)
-  })
-
-  # file is rendered and stored in the html_file variable in logs$code_history
-  python_to_html <- reactive({
-    req(submit_button())
-    req(logs$language == "Python")
-    req(use_python())
-
-    isolate({
-      python_html(
-        python_code = logs$code,
-        select_data = available_datasets[[selected_dataset_name()]],
-        current_data = current_data()
-      )
-    })
-  })
 
 }

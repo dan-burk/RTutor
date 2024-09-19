@@ -12,8 +12,10 @@
 #'     DO NOT REMOVE.
 #' @import shiny
 #' @noRd
+
 app_ui <- function(request) {
   tagList(
+
     golem_add_external_resources(),
 
     ### Style Module ###
@@ -23,6 +25,7 @@ app_ui <- function(request) {
       HTML('<span style="color: black;">HMCL</span>'),
       id = "tabs",
 
+      ### 'Home' Tab Panel ###
       tabPanel(
         title = "Home",
 
@@ -39,50 +42,13 @@ app_ui <- function(request) {
         )
       ), #tabPanel
 
-      #############################
-      # 'About' Tab Panel
+      ### 'About' Tab Panel ###
       tabPanel(
         title = "About",
         value = "About",
-        hr(),
-        p("Developed by RTutor LLC for HeroMotor Corp."),
-        p("RTutor uses ",
-          a(
-            "OpenAI's",
-            href = "https://openai.com/",
-            target = "_blank"
-          ),
-          " powerful large language models",
-          " to translate natural language into R code, which is then excuted.",
-          "You can request your analysis, just like asking a real person.",
-          "Your results can be downloaded as an HTML report or RMarkdown file in minutes!"
-        ),
-        p("NO WARRANTY! Some of the scripts run but may yield incorrect result. 
-        Please use the auto-generated code as a starting 
-        point for further refinement and validation."
-        ),
-        hr(),
 
-        # FAQ drop down component
-        fluidRow(
-          column(
-            width = 8,
-
-            h4(style = "font-weight: bold;", "Frequently Asked Questions"),
-            uiOutput("faq_list"),
-            tags$script(HTML('
-              $(document).on("click", ".faq-question", function() {
-                var answer = $(this).next(".faq-answer");
-                if (answer.is(":visible")) {
-                  answer.hide();
-                } else {
-                  answer.show();
-                }
-              });
-            '))
-          )
-        ),
-        hr()
+        ### Miscellaneous Module ###
+        mod_08_misc_ui("misc")
       )
     ),
 
