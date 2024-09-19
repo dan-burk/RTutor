@@ -119,7 +119,9 @@ mod_08_misc_serv <- function(id, reset_button, submit_button, logs, use_python,
 
     # Return reactive values so they can be used outside the module
     return(
-      list(python_to_html = python_to_html)
+      list(
+        python_to_html = python_to_html
+      )
     )
   })
 }

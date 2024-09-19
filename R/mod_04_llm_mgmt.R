@@ -105,10 +105,11 @@ mod_04_llm_mgmt_serv <- function(id, submit_button, input_text, selected_dataset
 
     # Return reactive values so they can be used outside the module
     return(
-        list(api_key_session = api_key_session,
-             sample_temp = sample_temp,
-             selected_model = selected_model
-        )
+      list(
+        api_key_session = api_key_session,
+        sample_temp = sample_temp,
+        selected_model = selected_model
+      )
     )
   })
 }

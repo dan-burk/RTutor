@@ -358,7 +358,9 @@ mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
 
     # Return reactive values so they can be used outside the module
     return(
-        list(selected_chunk = reactive(input$selected_chunk))
+      list(
+        selected_chunk = reactive(input$selected_chunk)
+      )
     )
 
   })

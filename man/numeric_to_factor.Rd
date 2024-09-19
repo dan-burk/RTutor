@@ -5,7 +5,7 @@
 \title{Returns a data frame with some numeric columns with fewer levels 
 converted as factors}
 \usage{
-numeric_to_factor(df, max_levels_factor, max_proptortion_factor)
+numeric_to_factor(df, max_levels_factor, max_proportion_factor)
 }
 \arguments{
 \item{df}{a data frame}

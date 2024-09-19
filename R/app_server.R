@@ -155,9 +155,10 @@ app_server <- function(input, output, session) {
               df <- numeric_to_factor(
                 df,
                 max_levels_factor(),
-                max_proptortion_factor()
+                max_proportion_factor()
               )
             }
+
             # update the current_data() reactive value
             current_data(df)
             selected_file(df_name) # update selected_file() reactive value
@@ -267,7 +268,7 @@ app_server <- function(input, output, session) {
               df <- numeric_to_factor(
                 df,
                 max_levels_factor(),
-                max_proptortion_factor()
+                max_proportion_factor()
               )
             }
             # update the current_data() reactive value
@@ -602,7 +603,6 @@ app_server <- function(input, output, session) {
 
   # change code when past code is selected
   observeEvent(selected_chunk(), {
-    # req(run_result())
     req(selected_chunk())
     id <- as.integer(selected_chunk())
     logs$code <- logs$code_history[[id]]$code
@@ -650,165 +650,42 @@ app_server <- function(input, output, session) {
   # Run the code, data prep, show code
   #____________________________________________________________________________
 
-  ### Run the code ###
 
-  # define a reactive variable that holds an R environment
-  # This is needed for the Rmd chunk.
-  run_env <- reactiveVal(new.env())
+  ### Initialize reactives ###
 
-  # a list stores all data objects before running the code.
-  run_env_start <- reactiveVal(list())
-
-  # stores the results after running the generated code.
-  # return error indicator and message
-  # Sometimes returns NULL, even when code run fine. Especially when
-  # a base R plot is generated.
-
-  # define a reactive variable. Reactive function not returning error
-  run_result <- reactiveVal(list())
-
-  observeEvent(
-    eventExpr = {
-      submit_button()  # when submit is clicked
-      reverted()           # or when a previous code chunk is selected
-      logs$code
-    }, {
-    req(logs$code != "")
-    req(!use_python())
-    # req(relevancy_response())
-    result <- NULL
-    console_output <- NULL
-    error_message <- NULL
-
-    withProgress(message = "Running the code ...", {
-      incProgress(0.4)
-
-      run_env_start(as.list(run_env())) # keep a copy of the crime scene
-
-      result <- tryCatch({
-        eval_result <- eval(
-          #parse(text = "log('error')"),
-          parse(text = clean_cmd(logs$code, selected_dataset_name(), file.exists(on_server))),
-          envir = run_env()
-        )
-        console_output <- capture.output(print(eval_result))
-        eval_result  # without this the interactive plots does not work
-      }, error = function(e) {
-        list(error_message = e$message) # won't work if not inside a list!!!!
-      })
-
-      # update the error message, if any
-      if(length(names(result)) != 0) {
-        if(names(result)[1] == "error_message") {
-          error_message <- result$error_message
-        }
-      }
-
-      # Run with error
-      if(!is.null(error_message)) {
-        run_env(list2env(run_env_start())) # revert the environment
-      }
-
-      run_result(list(
-        result = result,
-        console_output = console_output,
-        error_message = error_message
-      ))
-    })
-  })
-
-  
-  ### Data Prep ###
-
-  # Convert data columns to factors
-  # Treat the columns that look like a category as a category.
-  # This applies to columns that contain numbers but have very few unique values.
-  # The default is that these conversions are on.
-  convert_to_factor <- reactive({
-      convert <- TRUE # default, to turn off: use 'convert <- FALSE'
-      if (!is.null(input$numeric_as_factor)) {
-        convert <- input$numeric_as_factor
-      }
-      return(convert)
-  })
-
-  max_proptortion_factor <- reactive({
-      max_proptortion <- unique_ratio #default
-      if(!is.null(input$max_proptortion_factor)) {
-        max_proptortion <- input$max_proptortion_factor
-      }
-      if(max_proptortion < 0.05) {
-        max_proptortion <- 0.05
-      }
-      if(max_proptortion > 0.5) {
-        max_proptortion <- 0.5
-      }
-      return(max_proptortion)
-  })
-
-
-   max_levels_factor <- reactive({
-      max_levels_1 <- max_levels_factor_conversion #default
-      if (!is.null(input$max_levels_factor)) {
-        max_levels_1 <- input$max_levels_factor
-      }
-      if (max_levels_1 < 2) {
-        max_levels_1 <- 2
-      }
-      if (max_levels_1 > 100) {
-        max_levels_1 <- 100
-      }
-      return(max_levels_1)
-  })
-
-  # The current data & file name
+  # the current data & file name
   current_data <- reactiveVal(NULL)
   selected_file <- reactiveVal(NULL)
 
-  observeEvent(available_datasets[[selected_dataset_name()]], {
-    req(available_datasets[[selected_dataset_name()]])
+  # define a reactive variable that holds an R environment
+  # This is needed for the Rmd chunk
+  run_env <- reactiveVal(new.env())
 
-    if(selected_dataset_name() == uploaded_data) {
-      eval(parse(text = paste0("df <- user_data()$df")))
-    } else if(selected_dataset_name() == no_data){
-      df <- NULL # as.data.frame("No data selected or uploaded.")
-    } else {
-      # otherwise built-in data is unavailable when running from R package.
-      library(tidyverse)
-      data <- current_data()
-      eval(parse(text = paste0("df <- data")))
-    }
+  # a list stores all data objects before running the code
+  run_env_start <- reactiveVal(list())
+  # define a reactive variable. Reactive function not returning error
+  run_result <- reactiveVal(list())
 
-    if (convert_to_factor()) {
-      df <- numeric_to_factor(
-        df,
-        max_levels_factor(),
-        max_proptortion_factor()
-      )
-    }
 
-    # if the first column looks like id?
-    if(
-      length(unique(df[, 1])) == nrow(df) &&  # all unique...what about duplicate ID's??
-      is.character(df[, 1])  # first column is character
-    ) {
-       row.names(df) <- df[, 1]
-       df <- df[, -1]
-    }
+  # "Run Code" module
+  mod_07 <- mod_07_run_code_serv(
+    id = "run_code",
+    run_env = run_env,
+    run_env_start = run_env_start,
+    run_result = run_result,
+    submit_button = submit_button,
+    reverted = reverted,
+    logs = logs,
+    use_python = use_python,
+    selected_dataset_name = selected_dataset_name,
+    current_data = current_data,
+    selected_file = selected_file
+  )
 
-    # sometimes no row is left after processing.
-    if(is.null(df)) { # no_data
-      current_data(NULL)
-    } else if(nrow(df) == 0) {
-      current_data(NULL)
-    } else { # there are data in the dataframe
-
-      current_data(df)
-    }
-    # add the data to the current environment
-    run_env(rlang::env(run_env(), df = current_data()))
-    run_env_start(as.list(run_env()))
-  })
+  # Rename the reactive values for easier use
+  convert_to_factor <- reactive({  mod_07$convert_to_factor() })
+  max_proportion_factor <- reactive({  mod_07$max_proportion_factor() })
+  max_levels_factor <- reactive({  mod_07$max_levels_factor() })
 
 
   #                             7. Module 08

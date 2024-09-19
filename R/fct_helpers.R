@@ -319,7 +319,7 @@ turned_on <- function(x) {
 #' @param max_proportion_factor max proportion
 #'
 #' @return Returns a data frame
-numeric_to_factor <- function(df, max_levels_factor, max_proptortion_factor) {
+numeric_to_factor <- function(df, max_levels_factor, max_proportion_factor) {
   # some columns looks like numbers but have few levels
   # convert these to factors
 
@@ -329,7 +329,7 @@ numeric_to_factor <- function(df, max_levels_factor, max_proptortion_factor) {
       if (
         (is.numeric(x) || is.character(x)) &&
         # if there are few unique values compared to total values
-        length(unique(x)) / length(x) < max_proptortion_factor &&
+        length(unique(x)) / length(x) < max_proportion_factor &&
         length(unique(x)) <= max_levels_factor  # less than 12 unique values
           # relcassify numeric variable as categorical
       ) {
