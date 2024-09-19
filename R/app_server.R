@@ -21,9 +21,9 @@ app_server <- function(input, output, session) {
   # limit max file size to 10MB, if it is running on server
   if(file.exists(on_server)){ #server
     options(shiny.maxRequestSize = 50 * 1024^2) # 50 MB
-  } else { # local
+  } else  # local
     options(shiny.maxRequestSize = 10000 * 1024^2) # 10 GB
-  }
+  
 
   if(dev.cur() == 1){
     pdf(NULL) #otherwise, base R plots sometimes do not show.
@@ -50,7 +50,7 @@ app_server <- function(input, output, session) {
       dev.off()
     }
     pdf(NULL)
-    RSQLite::dbDisconnect(con)
+    DBI::dbDisconnect(con)
   })
 
   
