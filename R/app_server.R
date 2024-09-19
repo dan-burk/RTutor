@@ -58,7 +58,7 @@ app_server <- function(input, output, session) {
 
   #                             3.
   #____________________________________________________________________________
-  #   API key management
+  #   LLM Component Management
   #____________________________________________________________________________
 
   # Api key for the session
@@ -122,15 +122,9 @@ app_server <- function(input, output, session) {
         duration = 10
       )
     }
- })
+  })
 
-
-  #                             4.
-  #____________________________________________________________________________
-  # Send API Request, handle API errors
-  #____________________________________________________________________________
-
-  sample_temp <- reactive({
+   sample_temp <- reactive({
       temperature <- default_temperature #default
       if (!is.null(input$temperature)) { #user supplied temperature
          temperature <- input$temperature
@@ -148,6 +142,12 @@ app_server <- function(input, output, session) {
       return(model)
   })
 
+
+  #                             4.
+  #____________________________________________________________________________
+  # API Request & Response
+  #____________________________________________________________________________
+
   openAI_prompt <- reactive({
     req(submit_button())
     req(available_datasets[[selected_dataset_name()]])
@@ -155,7 +155,6 @@ app_server <- function(input, output, session) {
     isolate({ # so that it does not do it twice with each submit
       prep_input(input_text(), selected_dataset_name(), current_data(), use_python(), logs$id, selected_model())
     })
-
   })
 
   relevancy_response <- reactiveVal(TRUE) #Initializing relevancy_response to be TRUE as a reactive varaible.
@@ -176,6 +175,7 @@ app_server <- function(input, output, session) {
         req(user_data())
       }
 
+      # Loading spinner, displays jokes
       shinybusy::show_modal_spinner(
         spin = "orbit",
         text = sample(jokes, 1),
@@ -530,6 +530,11 @@ app_server <- function(input, output, session) {
     })
   })
 
+
+  ####################################################
+  ### Error handling, record keeping/chunk history
+  ####################################################
+
   # a modal shows api connection error
   api_error_modal <- shiny::modalDialog(
     title = "API connection error!",
@@ -544,7 +549,6 @@ app_server <- function(input, output, session) {
     easyClose = TRUE,
     size = "s"
   )
-
 
   # show a warning message when reached 10c, 20c, 30c ...
   observeEvent(submit_button(), {
@@ -570,6 +574,29 @@ app_server <- function(input, output, session) {
     }
   })
 
+  # Error when running the generated code
+  code_error <- reactive({
+    error_status <- FALSE
+    req(submit_button() != 0) #Require the submit button to be pushed
+    if(!use_python()) { # R
+      return(!is.null(run_result()$error_message) && run_result()$error_message != "")
+    } else { # Python
+      return(python_to_html() == -1)
+    }
+  })
+
+  # Show notification when error
+  observeEvent(code_error(), {
+    # show notification message
+    if(code_error()) {
+      showNotification(
+        "Resubmit the same request to see if ChatGPT can resolve the error.
+        If that fails, change the request.",
+        duration = 10
+      )
+    }
+  })
+
  # Defining & initializing the reactiveValues object
   logs <- reactiveValues(
     id = 0, # 1, 2, 3, id for code chunk
@@ -578,7 +605,14 @@ app_server <- function(input, output, session) {
     last_code = "", # last code for Rmarkdown
     language = "", # Python or R
     code_history = list(), # keep all code chunks
+  )
 
+  # Defining & initializing the reactiveValues object
+  counter <- reactiveValues(
+    costs_total = 0, # cummulative cost
+    requests = 0, # cummulative requests
+    tokens_current = 0,  # tokens for current query
+    time = 0 # response time for current
   )
 
   observeEvent(submit_button(), {
@@ -602,7 +636,6 @@ app_server <- function(input, output, session) {
       prompt_all = openAI_prompt(), # entire prompt, as sent to openAI
       error = code_error(),
       error_message = run_result()$error_message,
-      rmd = Rmd_chunk(),
       language = ifelse(use_python(), "Python", "R"),
       # saves the rendered file in the logs object.
       html_file = ifelse(use_python(), python_to_html(), -1),
@@ -629,7 +662,10 @@ app_server <- function(input, output, session) {
     )
   })
 
-  # change code when past code is selected.
+  # change value when a previous code chunk is selected
+  reverted <- reactiveVal(0)
+
+  # change code when past code is selected
   observeEvent(selected_chunk(), {
     # req(run_result())
     req(selected_chunk())
@@ -673,19 +709,13 @@ app_server <- function(input, output, session) {
 
   })
 
- # Defining & initializing the reactiveValues object
-  counter <- reactiveValues(
-    costs_total = 0, # cummulative cost
-    requests = 0, # cummulative requests
-    tokens_current = 0,  # tokens for current query
-    time = 0 # response time for current
-  )
-
 
   #                            5.
   #____________________________________________________________________________
-  # Run the code, shows plots, code, and errors
+  # Run the code, data prep, show code
   #____________________________________________________________________________
+
+  ### Run the code ###
 
   # define a reactive variable that holds an R environment
   # This is needed for the Rmd chunk.
@@ -701,9 +731,6 @@ app_server <- function(input, output, session) {
 
   # define a reactive variable. Reactive function not returning error
   run_result <- reactiveVal(list())
-
-  # change value when a previous code chunk is selected.
-  reverted <- reactiveVal(0)
 
   observeEvent(
     eventExpr = {
@@ -755,22 +782,15 @@ app_server <- function(input, output, session) {
     })
   })
 
+  
+  ### Data Prep ###
 
-  # Error when run the generated code?
-  code_error <- reactive({
-    error_status <- FALSE
-    req(submit_button() != 0) #Require the submit button to be pushed
-    if(!use_python()) { # R
-      return(!is.null(run_result()$error_message) && run_result()$error_message != "")
-    } else { # Python
-      return(python_to_html() == -1)
-    }
-  })
-
-  # had to use this. Otherwise, the checkbox returns to false
-  # when the popup is closed and openned again.
+  # Convert data columns to factors
+  # Treat the columns that look like a category as a category.
+  # This applies to columns that contain numbers but have very few unique values.
+  # The default is that these conversions are on.
   convert_to_factor <- reactive({
-      convert <- TRUE #default
+      convert <- TRUE # default, to turn off: use 'convert <- FALSE'
       if (!is.null(input$numeric_as_factor)) {
         convert <- input$numeric_as_factor
       }
@@ -855,547 +875,6 @@ app_server <- function(input, output, session) {
     run_env_start(as.list(run_env()))
   })
 
-  output$data_table_DT <- DT::renderDataTable({
-    req(current_data())
-    DT::datatable(
-      current_data(),
-      options = list(
-        lengthMenu = c(5, 20, 50, 100),
-        pageLength = 10,
-        dom = 'ftp',
-        scrollX = "400px"
-      ),
-      rownames = FALSE
-    )
-  })
-
-  output$data_table <- renderTable({
-    req(current_data())
-
-    current_data()[
-      1:min(20, nrow(current_data())),
-      ]
-  })
-
-  output$data_size <- renderText({
-    req(!is.null(current_data()))
-    paste(
-      dim(current_data())[1], "rows X ",
-      dim(current_data())[2], "columns"
-    )
-  })
-
-  output$data_structure <- renderPrint({
-    req(!is.null(current_data()))
-    str(current_data())
-  })
-
-  output$data_summary <- renderText({
-    req(!is.null(current_data()))
-    paste(
-      capture.output(
-        summary(current_data())
-      ),
-      collapse = "\n"
-    )
-  })
-
-  # plotting missing values
-  output$missing_values <- plotly::renderPlotly({
-    req(!is.null(current_data()))
-    p <- missing_values_plot(current_data())
-    if(!is.null(p)) {
-      plotly::ggplotly(p)
-    } else {
-      return(NULL)
-    }
-  })
-
-  # data frame summary
-  output$dfSummary <- renderText({
-    req(current_data())
-    res <- capture.output(summarytools::dfSummary(current_data()))
-    res <- paste(res, collapse = "\n")
-    return(res)
-  })
-
-  observe({
-    if(selected_dataset_name() != no_data && !is.null(current_data())) {
-    shinyjs::show(id = "first_file")
-    } else {
-      shinyjs::hide(id = "first_file")
-    }
-  })
-
-  # Add a download button for current_data()
-  output$download_data <- downloadHandler(
-    filename = function() {
-      paste("data-", Sys.Date(), ".csv", sep = "")
-    },
-    content = function(file) {
-      write.csv(current_data(), file, row.names = FALSE)
-    }
-  )
-
-
-
-  #                                 6.
-  #____________________________________________________________________________
-  #  Reports
-  #____________________________________________________________________________
-
-  observeEvent(submit_button(), {
-    choices <- 1:length(logs$code_history)
-    names(choices) <- paste0("Chunk #", choices)
-    updateSelectInput(
-      inputId = "selected_chunk_report",
-      label = "Chunks to include (Use backspace to delete):",
-      selected = "All chunks without errors",
-      choices = c(
-        "All chunks",
-        "All chunks without errors",
-        choices
-      )
-    )
-
-  })
-
-  # collect all RMarkdown chunks
-  Rmd_total <- reactive({
-
-  Rmd_script <- ""
-
-  # if first chunk
-  Rmd_script <- paste0(
-    Rmd_script,
-    # Get the data from the params list-----------
-    "\nDeveloped by [Steven Ge](https://twitter.com/StevenXGe) using API access via the
-[openai](https://cran.rstudio.com/web/packages/openai/index.html)
-    package  to
-    [OpenAI's](https://cran.rstudio.com/web/packages/openai/index.html) \"",
-    selected_model(),
-    "\" model.",
-    "\n\nRTutor Website: [https://RTutor.ai](https://RTutor.ai)",
-    "\n"
-  )
-
-  # if the first chunk & data is uploaded,
-  # insert script for reading data
-  if (selected_dataset_name() == uploaded_data) {
-
-    # Read file
-    file_name <- input$user_file$name
-    if(user_data()$file_type == "read_excel") {
-      txt <- paste0(
-        "# install.packages(readxl)\nlibrary(readxl)\ndf <- read_excel(\"",
-        file_name,
-        "\")"
-      )
-
-    }
-    if (user_data()$file_type == "read.csv") {
-      txt <- paste0(
-        "df <- read.csv(\"",
-        file_name,
-        "\")"
-      )
-    }
-    if (user_data()$file_type == "read.table") {
-      txt <- paste0(
-        "df <- read.table(\"",
-        file_name,
-        "\", sep = \"\t\", header = TRUE)"
-      )
-    }
-
-    Rmd_script <- paste0(
-      "\n### 0. Read File\n",
-      "```{R, eval = FALSE}\n",
-      txt,
-      "\n```\n"
-    )
-  }
-
-  Rmd_script <- paste0(
-    Rmd_script,
-    # Get the data from the params list for every chunk-----------
-    # Do not change this without changing the output$Rmd_source function
-    # this chunk is removed for local knitting.
-    "\n```{R, echo = FALSE}\n",
-    "df <- params$df\n",
-    "```\n"
-  )
-
-  #------------------Add selected chunks
-  if("All chunks" %in% input$selected_chunk_report) {
-      ix <- 1:length(logs$code_history)
-  } else if("All chunks without errors" %in% input$selected_chunk_report) {
-    ix <- c()
-    for (i in 1:length(logs$code_history)) {
-      if(!logs$code_history[[i]]$error) {
-        ix <- c(ix, i)
-      }
-    }
-  } else {  # selected
-    ix <- as.integer(input$selected_chunk_report)
-  }
-
-  for (i in ix) {
-    Rmd_script <- paste0(Rmd_script, "\n", logs$code_history[[i]]$rmd)
-  }
-  return(Rmd_script)
-  })
-
-
-  # Markdown chunk for the current request
-  Rmd_chunk <- reactive({
-    req(openAI_response()$cmd)
-    req(openAI_prompt())
-
-    Rmd_script <- ""
-
-    if(use_python()) {
-      Rmd_script <- paste0(
-        Rmd_script,
-        "```{R}\n",
-        "library(reticulate)\n",
-        "```\n",
-        "```{python, message=FALSE}\n",
-        "df = r.df\n",
-        "```\n"
-      )
-    }
-
-    # User request----------------------
-    Rmd_script  <- paste0(
-      Rmd_script,
-      "\n### ",
-      counter$requests,
-      ". ",
-      paste(
-        # remove pre-inserted commands
-        gsub(
-          paste0(
-            "\n|",
-            pre_text,
-            "|",
-            after_text,
-            ".*"
-          ),
-          "",
-          openAI_prompt()
-        ),
-        collapse = " "
-      ),
-      paste0(
-        "\n ",
-        names(selected_model()),
-        " (Temperature=",
-        sample_temp(),
-        ")"
-      ),
-      "\n"
-    )
-
-    # R Markdown code chunk----------------------
-    if(!use_python()) {  # R code chunk
-      # if error when running the code, do not run
-      if (code_error() == TRUE) {
-        Rmd_script <- paste0(
-          Rmd_script,
-          "```{R, eval = FALSE}"
-        )
-      } else {
-        Rmd_script <- paste0(
-          Rmd_script,
-          "```{R}"
-        )
-      }
-    } else {  # Python code chunk
-      # if error when running the code, do not run
-      if (python_to_html() == -1) {
-        Rmd_script <- paste0(
-          Rmd_script,
-          "```{python, eval = FALSE}"
-        )
-      } else {
-        Rmd_script <- paste0(
-          Rmd_script,
-          "```{python}"
-        )
-      }
-    }
-    cmd <- openAI_response()$cmd
-    # remove empty line
-    if(nchar(cmd[1]) == 0) {
-      cmd <- cmd[-1]
-    }
-
-    # Add R code
-    Rmd_script <- paste0(
-      Rmd_script,
-      paste(
-        cmd,
-        collapse = "\n"
-      ),
-      "\n```\n"
-    )
-
-    # indicate error
-    if (code_error()) {
-      Rmd_script <- paste0(
-        Rmd_script,
-        "** Error **  \n"
-      )
-    }
-
-    return(Rmd_script)
-  })
-
-  output$html_report <- renderUI({
-    req(openAI_response()$cmd)
-    tagList(
-      actionButton(
-        inputId = "report",
-        label = "HTML Session Report"
-      ),
-      tippy::tippy_this(
-        "report",
-        "Render a HTML report file for this session.",
-        theme = "light-border"
-      )
-   )
-  })
-
-  output$rmd_chunk_output <- renderText({
-    req(Rmd_chunk())
-    Rmd_total()
-  })
-
-
-  # Markdown report
-  output$Rmd_source <- downloadHandler(
-    # For PDF output, change this to "report.pdf"
-    filename = "RTutor.Rmd",
-    content = function(file) {
-      Rmd_script <- paste0(
-        "---\n",
-        "title: \"RTutor report\"\n",
-        "author: \"RTutor, Powered by ChatGPT\"\n",
-        "date: \"",
-        date(), "\"\n",
-        "output: html_document\n",
-        "---\n",
-        # this chunk is not needed when they download the Rmd and knit locally
-        gsub(
-          "```\\{R, echo = FALSE\\}\ndf <- params\\$df\n```\n",
-          "",
-          Rmd_total()
-        )
-      )
-      writeLines(Rmd_script, file)
-    }
-  )
-
-
-  report_file <- reactiveVal(NULL)
-
-  observeEvent(input$report, {
-    req(selected_dataset_name() != no_data)
-    req(!use_python())
-    req(!is.null(current_data()))
-
-
-    withProgress(message = "Generating Report (5 minutes)", {
-      incProgress(0.2)
-      tempReport <- file.path(tempdir(), "report.Rmd")
-      # tempReport
-      tempReport <- gsub("\\", "/", tempReport, fixed = TRUE)
-
-      req(openAI_response()$cmd)
-      req(openAI_prompt())
-      output_file <- gsub("Rmd$", "html", tempReport)
-
-      # RMarkdown file's Header
-      Rmd_script <- paste0(
-        "---\n",
-        "title: \"RTutor.ai report\"\n",
-        "author: \"RTutor v.",
-        release,
-        ", Powered by ChatGPT\"\n",
-        "date: \"",
-        date(), "\"\n",
-        "output: html_document\n",
-        "params:\n",
-        "  df:\n",
-        "printcode:\n",
-        "  label: \"Display Code\"\n",
-        "  value: TRUE\n",
-        "  input: checkbox\n",
-        "---\n"
-      )
-      Rmd_script <- paste0(
-        Rmd_script,
-        # Get the data from the params list for every chunk-----------
-        # Do not change this without changing the output$Rmd_source function
-        # this chunk is removed for local knitting.
-        "\n```{R, echo = FALSE}\n",
-        "df <- params$df\n",
-        "```\n"
-      )
-      Rmd_script <- paste0(
-        Rmd_script,
-        "\n\n### "
-      )
-
-      # R Markdown code chunk----------------------
-
-      # Add R code
-      Rmd_script <- paste(
-        Rmd_script,
-        Rmd_total()
-      )
-
-      write(
-        Rmd_script,
-        file = tempReport,
-        append = FALSE
-      )
-
-      # Set up parameters to pass to Rmd document
-      params <- list(df = iris) # dummy
-      # if uploaded, use that data
-      req(available_datasets[[selected_dataset_name()]])
-      df <- current_data()
-      if (selected_dataset_name() != no_data) {
-        params <- list(
-          df = df
-        )
-      }
-
-      req(params)
-
-      tryCatch({
-        rmarkdown::render(
-          input = tempReport, # markdown_location,
-          output_file = output_file,
-          params = params,
-          envir = new.env(parent = globalenv())
-        )
-      },
-        error = function(e) {
-          showNotification(
-            ui = paste("Error when generating the report. Please try again."),
-            id = "report_error",
-            duration = 5,
-            type = "error"
-          )
-      },
-        finally = {
-          report_file(output_file)
-          # show modal with download button
-          showModal(modalDialog(
-            title = "Successfully rendered the report!",
-            downloadButton(
-              outputId = "download_report",
-              label = "Download"
-            ),
-            easyClose = TRUE
-          ))
-        }
-      )
-    })
-  })
-
-  # Markdown report
-  output$download_report <- downloadHandler(
-    # For PDF output, change this to "report.pdf"
-    filename = "RTutor_report.html",
-    content = function(file) {
-      validate(
-        need(!is.null(report_file()), "File not found.")
-      )
-      file.copy(from = report_file(), to = file, overwrite = TRUE)
-    }
-  )
-
-  # Markdown report
-  output$report_dsdsdf <- downloadHandler(
-    # For PDF output, change this to "report.pdf"
-    filename = "RTutor_report.html",
-    content = function(file) {
-      withProgress(message = "Generating Report ...", {
-        incProgress(0.2)
-
-        tempReport <- file.path(tempdir(), "report.Rmd")
-        # tempReport
-        tempReport <- gsub("\\", "/", tempReport, fixed = TRUE)
-
-        req(openAI_response()$cmd)
-        req(openAI_prompt())
-
-        # RMarkdown file's Header
-        Rmd_script <- paste0(
-          "---\n",
-          "title: \"RTutor.ai report\"\n",
-          "author: \"RTutor v.",
-          release,
-          ", Powered by ChatGPT\"\n",
-          "date: \"",
-          date(), "\"\n",
-          "output: html_document\n",
-          "params:\n",
-          "  df:\n",
-          "printcode:\n",
-          "  label: \"Display Code\"\n",
-          "  value: TRUE\n",
-          "  input: checkbox\n",
-          "---\n"
-        )
-
-        Rmd_script <- paste0(
-          Rmd_script,
-          "\n\n### "
-        )
-
-        # R Markdown code chunk----------------------
-        # Add R code
-        Rmd_script <- paste(
-          Rmd_script,
-          Rmd_total()
-        )
-
-        write(
-          Rmd_script,
-          file = tempReport,
-          append = FALSE
-        )
-
-        # Set up parameters to pass to Rmd document
-        params <- list(df = iris) # dummy
-
-        # if uploaded, use that data
-        req(available_datasets[[selected_dataset_name()]])
-        if (selected_dataset_name() != no_data) {
-          params <- list(
-            df = current_data()
-          )
-        }
-
-        req(params)
-        # Knit the document, passing in the `params` list, and eval it in a
-        # child of the global environment (this isolates the code in the document
-        # from the code in this app).
-        rmarkdown::render(
-          input = tempReport, # markdown_location,
-          output_file = file,
-          params = params,
-          envir = new.env(parent = globalenv())
-        )
-      })
-    }
-  )
-
 
 #                                      7.
 #______________________________________________________________________________
@@ -1416,18 +895,6 @@ app_server <- function(input, output, session) {
   observeEvent(reset_button(), {
     # reset session
     session$reload()
-  })
-
-  # Show notification when error
-  observeEvent(code_error(), {
-    # show notification message
-    if(code_error()) {
-      showNotification(
-        "Resubmit the same request to see if ChatGPT can resolve the error.
-        If that fails, change the request.",
-        duration = 10
-      )
-    }
   })
 
   # Display RTutor Version

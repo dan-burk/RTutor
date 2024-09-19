@@ -6,9 +6,8 @@
 ###################################################
 
 
-
 ###################################################
-# Global variables
+# Global Variables
 ###################################################
 
 release <- "0.98" # RTutor
@@ -21,14 +20,11 @@ language_models <- c("gpt-4-turbo", "gpt-4o", "gpt-4-1106-preview", "gpt-3.5-tur
 names(language_models) <- c("GPT-4 Turbo", "GPT-4o", "GPT-4 Turbo (11/23)", "ChatGPT", "ChatGPT 16k", "ChatGPT (03/23)", "GPT-4", "GPT-4 (03/23)", "Davinci")
 default_model <- "GPT-4 Turbo" #"GPT-4 Turbo (11/23)" # "GPT-4o"  # "ChatGPT" #   "GPT-4 (03/23)"
 max_content_length <- 3000 # max tokens:  Change according to model !!!!
-max_content_length_ask <- 3000 # max tokens:  Change according to model !!!!
 default_temperature <- 0.2
 pre_text <- "Write correct, efficient R code to answer this prompt:"
 pre_text_python <- "Write correct, efficient Python code."
 after_text <- "Use the df data frame."
-max_char_question <- 1000 # max n. of characters in the Q&A
 max_eda_levels <- 12 # max number of levels in categorical varaible for EDA, ggairs
-max_eda_var <- 20 # maximum num of variables in EDA
 max_data_points <- 10000  # max number of data points for interactive plot
 max_levels_factor_conversion <- 5 # Numeric columns will be converted to factor if less than or equal to this many levels
 # if a column is numeric but only have a few unique values, treat as categorical
@@ -40,73 +36,15 @@ sqltable <- "usage"
 system_role <- "Act as an experienced data scientist and statistician. You will write R code following instructions. Do not provide explanation.
 Try to produce a plot when possible. ggplot2 is preferred. Make the plot visually appealing. If multiple plots are generated, try to combine them into one."
 system_role_date <- "Assume Today's date is 2024-03-26."
-growth_instruct <- "Calculate growth rate! Ensure all date and time manipulations are dynamically handled based on the data. Try using dplyr::lag() for 
-time comparisons. Ensure to include a fair comparison period of equal length. Do not use print() to display tables."
-decline_instruct <- "Calculate decline rate! Ensure all date and time manipulations are dynamically handled based on the data. Try using dplyr::lag() for 
-time comparisons. Ensure to include a fair comparison period of equal length. Do not use print() to display tables."
-forecast_instruct <- "Ensure the output includes a table of forecasted sales with confidence intervals, and validate the forecast accuracy against 
-historical data. Plot the time progression, doesn't have to be ggplot2. Do not use print() to display tables."
-compare_instruct <- "Compare the specified metrics to identify differences/similarities. Focus on key metrics like performance indicators. Highlight 
-significant variations."
-performance_instruct <- "Analyze performance metrics for the specified period. Include key performance indicators (KPIs). Compare current performance to 
-historical data to identify trends."
-trend_instruct <- "Identify and analyze trends over the specified timeframe. Use time series analysis to detect patterns and changes in the data. 
-Highlight upward or downward trends."
-m_over_m_instruct <- "Conduct month-over-month analysis comparing the data between consecutive months. Calculate percentage changes and identify 
-significant increases or decreases. Highlight any recurring monthly patterns or anomalies."
-y_over_y_instruct <- "Conduct year-over-year analysis comparing the data from the same period in different years. Calculate growth rate and 
-percentage changes. Highlight any significant long-term trends/shifts in the data."
 
-system_relevancy <- "Act as an experienced data analyst. You will determine two things. Decide if the following prompt: 1. is relevant to the 
- current data and 2. is a follow-up inquiry to the previous one (including modifications to visualizations, follow-up analysis, etc.)."
-user_relevancy <- "If either 1. or 2. is true, respond with only 'True'. If the prompt is asking about something not in the current data AND isn't a 
- follow-up or modification to visualizations, respond with only 'False'. "
-
-system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. 
-You will respond like answering questions by students. If the question is in languages other than English, respond in that language. 
-If the question is not remotely related to your expertise, respond with 'No comment'."
-# system_role_growth <- "If 'growth' or 'decline' is in the prompt, CALCULATE growth rate! Ensure all date and time manipulations are 
-# dynamically handled based on the data. Try using dplyr::lag() for time comparisons. Ensure to include a fair comparison period of equal length."
-
-# voice input parameters
-wake_word <- "Tutor" #Tutor, Emma, Note that "Hey Cox" does not work very well.
-# this triggers the submit button
-action_verbs <- c(
-  "now",
-  "over",
-  "do it",
-  "do it now",
-  "go ahead",
-  "submit",
-  "what are you waiting for"
-)
-
-#RMarkdown file's Header for knit python chunks
-Rmd_script_python <-
-"---
-output: html_fragment
-params:
-  df:
-printcode:
-  label: \"Display Code\"
-  value: TRUE
-  input: checkbox
----
-
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
-library(reticulate)
-df <- params$df
-```
-
-```{python, echo = FALSE, message=FALSE}
-df = r.df
-```
-
-#### Results:"
-
-# if this file exists, running on the server. Otherwise local.
-# this is used to change app behavior.
+# If this file exists, running on the server. Otherwise local. This is used to change app behavior.
 on_server <- "on_server.txt"
+
+
+
+###################################################################
+# Load Data & Demo Prompts
+###################################################################
 
 
 ######### Folder/Data Path with RDS files #########
@@ -123,6 +61,14 @@ Sales_Masked_Rtutor <- readRDS(paste0(data_path, "Sales_Masked_Rtutor.rds"))
 Dispatch_Masked_Rtutor <- readRDS(paste0(data_path, "Dispatch_Masked_Rtutor.rds"))
 Vahan_Share_Masked_Rtutor <- readRDS(paste0(data_path, "Vahan_Masked_Rtutor.rds"))
 
+# Create list of available datasets to print on sidebar
+available_datasets <- list(
+  "Select a dataset:" = NULL,
+  "Sales Data" = "Sales_Masked_Rtutor.rds",
+  "Registration Data" = "Vahan_Masked_Rtutor.rds",
+  "Dispatch Data" = "Dispatch_Masked_Rtutor.rds"
+)
+
 # load meta data, from JSON file
 meta_data <- function() {
   readr::read_file(paste0(data_path, "metadata.json"))
@@ -133,24 +79,19 @@ meta_data_csv <- function() {
 }
 
 
-#' Move an element to the front of a vector
-#'
-#' The response from GPT3 sometimes contains strings that are not R commands.
-#'
-#' @param v is the vector
-#' @param e is the element
-#'
-#' @return Returns a reordered vector
-move_front <- function(v, e){
-  ix <- which(v == e)
+# A file, demo requests for different datasets, demo questions
+demo <- read.csv(app_sys("app", "www", "demo_questions.csv"))
 
-  # if found, move to the beginning.
-  if(length(ix) != 0) {
-    v <- v[-ix]
-    v <- c(e, v)
-  }
-  return(v)
-}
+# extract jokes
+jokes <- demo[
+  which(demo$data == "jokes"),
+  "requests"
+]
+
+
+###################################################################
+# Prepare User Input & Command & API Key
+###################################################################
 
 
 #' Prepare User input.
@@ -294,77 +235,6 @@ polish_cmd <- function(cmd) {
 }
 
 
-
-###################################################################
-# Prepare data
-###################################################################
-
-# A file, demo requests for different datasets, demo questions
-demo <- read.csv(app_sys("app", "www", "demo_questions.csv"))
-
-# extract demo questions
-ix <- which(demo$data == "questions")
-demo_questions <- demo$requests[ix]
-names(demo_questions) <- demo$name[ix]
-
-# extract jokes
-jokes <- demo[
-  which(demo$data == "jokes"),
-  "requests"
-]
-
-# prepare a list of available data sets that are built-in
-datasets <- data()$results[, 3] # name of datasets
-datasets <- gsub(" .*", "", datasets)
-
-datasets <- sort(datasets)
-
-# if dataset is not data frame or matrix, remove.
-ix <- sapply(
-  datasets, 
-  function(x) {
-    eval(
-      parse(
-        text = paste(
-          "is.data.frame(",
-          x,
-          ") | is.matrix(",
-           x, 
-           ")"
-        )
-      )
-    )
-  }
-)
-datasets <- datasets[which(ix)]
-
-datasets <- move_front(datasets, "state.x77")
-datasets <- move_front(datasets, "iris")
-datasets <- move_front(datasets, "mtcars")
-
-
-# append a dummy value, used when user upload their data.
-datasets <- c(datasets, uploaded_data)
-# move it to 2nd place
-datasets <- move_front(datasets, uploaded_data)
-
-# append a dummy value, used when user do not use any data
-datasets <- c(datasets, no_data)
-# move it to 2nd place
-datasets <- move_front(datasets, no_data)
-
-datasets <- move_front(datasets, "diamonds")
-# default
-datasets <- move_front(datasets, "mpg")
-
-datasets <- setNames(datasets, datasets)
-
-names(datasets)[match("mpg", datasets)] <- "mpg (examples)"
-names(datasets)[match("diamonds", datasets)] <- "diamonds (examples)"
-
-colnames(mpg) <- c("maker", "model", "dis", "year", "cylinder", 
-  "transmission", "drive", "city", "highway", "fuel", "type")
-
 #' Clean up API key character
 #'
 #' The response from GPT3 sometimes contains strings that are not R commands.
@@ -378,24 +248,6 @@ clean_api_key <- function(api_key) {
   return(api_key)
 }
 
-
-#' Validate API key character
-#'
-#' The response from GPT3 sometimes contains strings that are not R commands.
-#'
-#' @param api_key is a character string
-#'
-#' @return Returns TRUE or FALSE
-validate_api_key <- function(api_key) {
-  valid <- TRUE
-  # if 51 characters, use the one in the file
-  if (nchar(api_key) != 51) {
-    valid <- FALSE
-  }
-  return(valid)
-}
-
-
 # get API key from environment variable.
 api_key_global <- Sys.getenv("OPEN_API_KEY")
 key_source <- "from OS environment variable."
@@ -405,12 +257,58 @@ if (file.exists(file.path(getwd(), "api_key.txt"))) {
   api_key_file <- readLines(file.path(getwd(), "api_key.txt"))
   api_key <- clean_api_key(api_key_file)
 
-  # if valid, replace with file
-  if(validate_api_key(api_key_file)) {
-    api_key_global <- api_key_file
-    key_source <- "from file."
+  api_key_global <- api_key_file
+  key_source <- "from file."
+}
+
+
+#' Estimate tokens from text
+#' 
+#'
+#' @param text a string
+#'
+#' @return a number
+#' 
+tokens <- function(text) {
+  # Approximate tokenization by splitting on spaces and punctuations
+  tokens <- unlist(strsplit(text, "[[:space:]]|[[:punct:]]"))
+  
+  # Filter out empty tokens
+  tokens <- tokens[nchar(tokens) > 0]
+  
+  # Further split longer tokens (this is a very crude approximation)
+  long_tokens <- tokens[nchar(tokens) > 3]
+  additional_tokens <- sum(nchar(long_tokens) %/% 4)
+  
+  total_tokens <- length(tokens) + additional_tokens
+  
+  return(total_tokens)
+}
+
+
+#' Estimate API cost
+#' 
+#'
+#' @param prompt_tokens a number
+#' @param completion_tokens a number
+#' @param selected_model a string
+#'
+#' @return a number
+#' 
+api_cost <- function(prompt_tokens, completion_tokens, selected_model) {
+  if(grepl("gpt-4", selected_model)) { # gpt4
+    # input token $0.03 / 1k token, Output is $0.06 / 1k for GPT-4
+    completion_tokens * 6e-5+ prompt_tokens  * 3e-5
+  } else {
+    # ChatGPT
+    completion_tokens * 2e-6+ prompt_tokens  * 1.5e-6 
   }
 }
+
+
+###################################################################
+# Prepare Data
+###################################################################
 
 
 #' Returns true only defined and has a value of true
@@ -483,6 +381,35 @@ numeric_to_factor <- function(df, max_levels_factor, max_proptortion_factor) {
 }
 
 
+###################################################################
+# Miscellaneous
+###################################################################
+
+
+# RMarkdown file's Header for knit python chunks
+Rmd_script_python <-
+"---
+output: html_fragment
+params:
+  df:
+printcode:
+  label: \"Display Code\"
+  value: TRUE
+  input: checkbox
+---
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(reticulate)
+df <- params$df
+```
+
+```{python, echo = FALSE, message=FALSE}
+df = r.df
+```
+
+#### Results:"
+
+
 #' Generate html file from Python code
 #' 
 #'
@@ -544,101 +471,6 @@ python_html <- function(python_code, select_data, current_data) {
     }
 }
 
-
-#' Estimate tokens from text
-#' 
-#'
-#' @param text a string
-#'
-#' @return a number
-#' 
-tokens <- function(text) {
-  # Approximate tokenization by splitting on spaces and punctuations
-  tokens <- unlist(strsplit(text, "[[:space:]]|[[:punct:]]"))
-  
-  # Filter out empty tokens
-  tokens <- tokens[nchar(tokens) > 0]
-  
-  # Further split longer tokens (this is a very crude approximation)
-  long_tokens <- tokens[nchar(tokens) > 3]
-  additional_tokens <- sum(nchar(long_tokens) %/% 4)
-  
-  total_tokens <- length(tokens) + additional_tokens
-  
-  return(total_tokens)
-}
-
-#' Estimate API cost
-#' 
-#'
-#' @param prompt_tokens a number
-#' @param completion_tokens a number
-#' @param selected_model a string
-#'
-#' @return a number
-#' 
-api_cost <- function(prompt_tokens, completion_tokens, selected_model) {
-  if(grepl("gpt-4", selected_model)) { # gpt4
-    # input token $0.03 / 1k token, Output is $0.06 / 1k for GPT-4
-    completion_tokens * 6e-5+ prompt_tokens  * 3e-5
-  } else {
-    # ChatGPT
-    completion_tokens * 2e-6+ prompt_tokens  * 1.5e-6 
-  }
-
-
-}
-
-#' Plot missing values
-#' 
-#'
-#' @param df a dataframe
-#'
-#' @return a plot
-#' 
-#ploting missing values
-missing_values_plot <- function(df) {
-  req(!is.null(df))
-
-  # Calculate the total number of missing values per column
-  missing_values <- sapply(df, function(x) sum(is.na(x)))
-
-  # Calculate the number of cases with at least one missing value
-  cases_with_missing <- sum(apply(df, 1, function(x) any(is.na(x))))
-
-  # Check if there are any missing values
-  if (all(missing_values == 0)) {
-    return(NULL)
-  } else {
-    # Create a data frame for plotting
-    missing_data_df <- data.frame(
-      Column = c(names(missing_values), "At Least One Missing"),
-      MissingValues = c(missing_values, cases_with_missing)
-    )
-    # Calculate the percentage of missing values per column
-    # missing_percentage <- (missing_values / nrow(df)) * 100
-    # Plot the number of missing values for all columns with labels
-    ggplot(missing_data_df, aes(x = Column, y = MissingValues, fill = Column)) +
-      geom_bar(stat = "identity") +
-      geom_text(aes(label = sprintf("%.0f%%", MissingValues / nrow(df) * 100)), hjust = -5) + # Add labels to the bars
-      # geom_text(aes(label = sprintf("%.2f%%", MissingPercentage)), hjust = -0.3) +
-      coord_flip() + # Makes the bars horizontal
-      labs(title = "Number of Missing Values by Column", x = "Column", y = "Number of Missing Values") +
-      scale_fill_brewer(palette = "Set3") + # Use a color palette for different bars
-      theme(legend.position = "none", axis.title.y = element_blank()) + # Remove the legend
-      scale_y_continuous(expand = expansion(mult = c(0, 0.2))) # Extend the y-axis limits by 10%
-  }
-}
-
-
-# Create list of available datasets to print on sidebar
-available_datasets <- list(
-  "Select a dataset:" = NULL,
-  "Sales Data" = "Sales_Masked_Rtutor.rds",
-  "Registration Data" = "Vahan_Masked_Rtutor.rds",
-  "Dispatch Data" = "Dispatch_Masked_Rtutor.rds"
-)
-
 # Create a data frame with questions and answers for FAQ section
 # Used in faq_list component
 faqs <- data.frame(
@@ -666,4 +498,3 @@ faqs <- data.frame(
   ),
   stringsAsFactors = FALSE
 )
-
