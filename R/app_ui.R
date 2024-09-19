@@ -70,18 +70,6 @@ app_ui <- function(request) {
 
             h4(style = "font-weight: bold;", "Frequently Asked Questions"),
             uiOutput("faq_list"),
-            tags$style(HTML("
-              .faq-answer {
-                display: none;
-                padding-left: 10px;
-              }
-              .faq-question {
-                cursor: pointer;
-                padding: 5px;
-                border: 1px solid #ccc;
-                background-color: #f1f1f1;
-              }
-            ")),
             tags$script(HTML('
               $(document).on("click", ".faq-question", function() {
                 var answer = $(this).next(".faq-answer");

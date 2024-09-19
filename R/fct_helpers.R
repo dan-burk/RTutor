@@ -24,7 +24,6 @@ default_temperature <- 0.2
 pre_text <- "Write correct, efficient R code to answer this prompt:"
 pre_text_python <- "Write correct, efficient Python code."
 after_text <- "Use the df data frame."
-max_eda_levels <- 12 # max number of levels in categorical varaible for EDA, ggairs
 max_data_points <- 10000  # max number of data points for interactive plot
 max_levels_factor_conversion <- 5 # Numeric columns will be converted to factor if less than or equal to this many levels
 # if a column is numeric but only have a few unique values, treat as categorical
@@ -232,33 +231,6 @@ polish_cmd <- function(cmd) {
   cmd <- gsub("\r", "", cmd)
   
   return(paste0("\n", cmd))
-}
-
-
-#' Clean up API key character
-#'
-#' The response from GPT3 sometimes contains strings that are not R commands.
-#'
-#' @param api_key is a character string
-#'
-#' @return Returns a string with api key.
-clean_api_key <- function(api_key) {
-  # remove spaces
-  api_key <- gsub(" ", "", api_key)
-  return(api_key)
-}
-
-# get API key from environment variable.
-api_key_global <- Sys.getenv("OPEN_API_KEY")
-key_source <- "from OS environment variable."
-
-# If there is an key file in the current folder, use that instead.
-if (file.exists(file.path(getwd(), "api_key.txt"))) {
-  api_key_file <- readLines(file.path(getwd(), "api_key.txt"))
-  api_key <- clean_api_key(api_key_file)
-
-  api_key_global <- api_key_file
-  key_source <- "from file."
 }
 
 

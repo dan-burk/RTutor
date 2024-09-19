@@ -35,6 +35,14 @@ mod_01_style_ui <- function(id) {
     .modal-dialog {
         position: absolute;bottom: 0;
     }
+
+    .faq-answer {
+        display: none;padding-left: 10px;
+    }
+    
+    .faq-question {
+        cursor: pointer;padding: 5px;border: 1px solid #ccc;background-color: #f3faf3;
+    }
   ")))
   
 }

@@ -56,94 +56,26 @@ app_server <- function(input, output, session) {
   selected_chunk <- reactive({  mod_03$selected_chunk() })
 
 
-  #                             3.
+  #                             3. Module 04
   #____________________________________________________________________________
   #   LLM Component Management
   #____________________________________________________________________________
 
-  # Api key for the session
-  api_key_session <- reactive({
+  # 'LLM Mgmt' module
+  mod_04 <- mod_04_llm_mgmt_serv(
+    id = "llm_mgmt",
+    submit_button = submit_button, 
+    input_text = input_text, 
+    selected_dataset_name = selected_dataset_name
+  )
 
-    api_key <- api_key_global
-    session_key_source <- key_source
-      return(
-        list(
-          api_key = api_key,
-          key_source = session_key_source
-        )
-      )
-  })
-
-  output$session_api_source <- renderText({
-    txt <- api_key_session()$api_key
-
-    # The following is essential for correctly getting the
-    # environment variable on Linux!!! Don't ask.
-    tem <- Sys.getenv("OPEN_API_KEY")
-    paste0(
-      "Current API key: ",
-      substr(txt, 1, 4),
-      ".....",
-      substr(txt, nchar(txt) - 4, nchar(txt)),
-      " (",
-      api_key_session()$key_source,
-      ")"
-    )
-  })
-
-  # only save key, if app is running locally.
-  observeEvent(submit_button(), {
-    # if too short, do not send.
-    if (nchar(input_text()) < min_query_length) {
-      showNotification(
-        paste(
-          "Request too short! Should be more than ",
-          min_query_length,
-          " characters."
-        ),
-        duration = 10
-      )
-    }
-    # if too long, do not send.
-    if (nchar(input_text()) > max_query_length) {
-      showNotification(
-        paste(
-          "Request too long! Should be less than ",
-          max_query_length,
-          " characters."
-        ),
-        duration = 10
-      )
-    }
-    # if no file is selected, do not send.
-    if (is.null(available_datasets[[selected_dataset_name()]])) {
-      showNotification(
-        paste("No file found. Please select a dataset and try again."),
-        duration = 10
-      )
-    }
-  })
-
-   sample_temp <- reactive({
-      temperature <- default_temperature #default
-      if (!is.null(input$temperature)) { #user supplied temperature
-         temperature <- input$temperature
-      }
-      return(temperature)
-  })
-
-  selected_model <- reactive({
-      model <- language_models[default_model] #gpt-4
-      if (!is.null(input$language_model)) { #user supplied model
-         model <- input$language_model
-      }
-      # get the name of the model for display
-      names(model) <- names(language_models)[language_models == model]
-      return(model)
-  })
+  # Rename the reactive values for easier use
+  api_key_session <- reactive({  mod_04$api_key_session() })
+  sample_temp <- reactive({  mod_04$sample_temp() })
+  selected_model <- reactive({  mod_04$selected_model() })
 
 
-  #                             4.
+  #                             4. Module 5
   #____________________________________________________________________________
   # API Request & Response
   #____________________________________________________________________________
@@ -157,7 +89,7 @@ app_server <- function(input, output, session) {
     })
   })
 
-  relevancy_response <- reactiveVal(TRUE) #Initializing relevancy_response to be TRUE as a reactive varaible.
+  relevancy_response <- reactiveVal(TRUE) # Initializing relevancy_response to be TRUE as a reactive variable
   meta_data_res <- meta_data()
   meta_data_csv_res <- meta_data_csv()
 
