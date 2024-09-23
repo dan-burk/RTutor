@@ -87,6 +87,81 @@ app_ui <- function(request) {
       });
     ")),
 
+    tags$head(
+      tags$link(rel = "stylesheet", type = "text/css", href = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/codemirror.min.css"),
+      tags$link(rel = "stylesheet", type = "text/css", href = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/theme/material-darker.min.css"), #theme: 'material-darker'
+      tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/codemirror.min.js"),
+      tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/mode/r/r.min.js"),
+      tags$script(HTML("
+        var editor;  // Declare editor variable in the global scope
+
+        Shiny.addCustomMessageHandler('initializeCodeMirror', function(message) {
+          if (editor) {
+            editor.toTextArea();  // Cleanup previous instance
+            editor = null;  // Clear the reference to make sure it's fully reset
+          }
+          // Small delay to ensure the modal is rendered before initializing the editor
+          setTimeout(function() {
+            editor = CodeMirror.fromTextArea(document.getElementById('modalCode'), {
+              lineNumbers: true,
+              mode: 'r',
+              theme: 'material-darker',
+              autoCloseBrackets: true
+            });
+            editor.on('change', function() {
+              Shiny.setInputValue('modalCode', editor.getValue());
+            });
+            editor.focus(); // Focus the editor after initialization
+            editor.setValue(message.code || ''); // Set the initial value if provided
+          }, 100);  // Adjust delay if necessary
+        });
+      ")),
+      tags$style(HTML("
+        /* Custom CSS to mimic VSCode Dark+ color scheme for CodeMirror */
+        .CodeMirror {
+          background-color: #1e1e1e; /* VSCode Dark+ background */
+          color: #d4d4d4; /* Main text color */
+        }
+
+        .cm-s-material-darker .CodeMirror-gutters {
+          background-color: #252526; /* Gutter (line number sidebar) color */
+        }
+
+        .cm-s-material-darker .cm-keyword {
+          color: #569cd6; /* Blue keywords (e.g., if, else, function) */
+        }
+
+        .cm-s-material-darker .cm-string {
+          color: #ce9178; /* Orange-red for strings */
+        }
+
+        .cm-s-material-darker .cm-comment {
+          color: #6a9955; /* Green for comments */
+        }
+
+        .cm-s-material-darker .cm-variable {
+          color: #dcdcaa; /* Yellowish for variables and functions */
+        }
+
+        .cm-s-material-darker .cm-number {
+          color: #b5cea8; /* Light green for numeric values */
+        }
+
+        .cm-s-material-darker .cm-operator {
+          color: #d4d4d4; /* White for operators */
+        }
+
+        /* Optional: Customize the cursor and selection color */
+        .cm-s-material-darker .CodeMirror-cursor {
+          border-left: 1px solid #aeafad; /* Cursor color */
+        }
+
+        .cm-s-material-darker .CodeMirror-selected {
+          background-color: #264f78; /* Selection background (similar to VSCode) */
+        }
+      "))
+    ),
+
     navbarPage(
       title = HTML('<span style="color: black;font-size: 20px;">RTutor</span>'),
       id = "tabs",
@@ -302,6 +377,24 @@ app_ui <- function(request) {
                     "selected_chunk",
                     "You can go back to any previous code chunk and continue from there. The data will also be reverted to that point.",
                     theme = "light-border"
+                  )
+                ),
+                column(
+                  width = 8,
+                  div(
+                    actionButton(
+                      inputId = "modify_code",
+                      label = "Modify Code"
+                    ),
+                    tags$head(tags$style(
+                      "#modify_code{font-size: 14px;color: black; background-color: #F6FFF5; border-color: #90BD8C;}"
+                    )),
+                    tippy::tippy_this(
+                      "modify_code",
+                      "Modify Code Output",
+                      theme = "light-border"
+                    ),
+                    align = "right"
                   )
                 )
               ),
