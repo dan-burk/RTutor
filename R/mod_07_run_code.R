@@ -7,7 +7,7 @@
 
 mod_07_run_code_serv <- function(id, run_env, run_env_start, run_result, submit_button,
                                  reverted, logs, use_python, selected_dataset_name,
-                                 current_data, selected_file) {
+                                 current_data) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -120,16 +120,9 @@ mod_07_run_code_serv <- function(id, run_env, run_env_start, run_result, submit_
     observeEvent(available_datasets[[selected_dataset_name()]], {
       req(available_datasets[[selected_dataset_name()]])
 
-      if(selected_dataset_name() == uploaded_data) {
-        eval(parse(text = paste0("df <- user_data()$df")))
-      } else if (selected_dataset_name() == no_data) {
-        df <- NULL # as.data.frame("No data selected or uploaded.")
-      } else {
-        # otherwise built-in data is unavailable when running from R package.
-        library(tidyverse)
-        data <- current_data()
-        eval(parse(text = paste0("df <- data")))
-      }
+      library(tidyverse)
+      data <- current_data()
+      eval(parse(text = paste0("df <- data")))
 
       if (convert_to_factor()) {
         df <- numeric_to_factor(

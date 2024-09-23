@@ -11,7 +11,6 @@
 ###################################################
 
 release <- "0.98" # RTutor
-uploaded_data <- "User Upload" # used for drop down
 no_data <- "no_data" # no data is uploaded or selected
 names(no_data) <- "No data (examples)"
 min_query_length <- 6  # minimum # of characters

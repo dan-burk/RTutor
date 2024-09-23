@@ -387,4 +387,3 @@ mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
 
   })
 }
-

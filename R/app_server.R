@@ -109,11 +109,6 @@ app_server <- function(input, output, session) {
       req(prepared_request)
       req(available_datasets[[selected_dataset_name()]])  # require user to select a dataset
 
-      # when submit is clicked, but no data is uploaded.
-      if(selected_dataset_name() == uploaded_data) {
-        req(user_data())
-      }
-
       # Loading spinner, displays jokes
       shinybusy::show_modal_spinner(
         spin = "orbit",
@@ -168,11 +163,11 @@ app_server <- function(input, output, session) {
 
             # update the current_data() reactive value
             current_data(df)
-            selected_file(df_name) # update selected_file() reactive value
+
             # update runtime environment with new data frame
-            run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
+            run_env(rlang::env(run_env(), df = current_data(), df_name = df_name))
             run_env_start(as.list(run_env()))
-            
+
 
             # HISTORY #
             # manage context length. If it is too long, remove the oldest ones, except the first one
@@ -204,7 +199,7 @@ app_server <- function(input, output, session) {
                 list(list(role = "user", content = logs$code_history[[i]]$prompt_all))
               )
 
-              #append error message. Only the last one
+              # append error message, only the most recent one
               # prevent error status are not logged correctly
               code_plus_error <- logs$code_history[[i]]$raw
               if(i == length(logs$code_history) && code_error()) {
@@ -254,7 +249,6 @@ app_server <- function(input, output, session) {
             )
 
             # Store True or False
-
             yn <- tolower(response$choices$message.content) == "true"
             relevancy_response(yn) # Update relevancy_response with TRUE\FALSE from OpenAI
 
@@ -280,14 +274,13 @@ app_server <- function(input, output, session) {
             }
             # update the current_data() reactive value
             current_data(df)
-            selected_file(df_name) # update the selected_file() reactive value
+
             # update runtime environment with new data frame
-            run_env(rlang::env(run_env(), df = current_data(), df_name = selected_file()))
+            run_env(rlang::env(run_env(), df = current_data(), df_name = df_name))
             run_env_start(as.list(run_env()))
 
             # Is the user's question relevant? -- relevancy agent
             # Construct prompt
-
             sub_meta_data_csv <- meta_data_csv_res %>%
               filter(file_name == df_name) %>% 
               mutate(file_name = case_when(
@@ -309,11 +302,11 @@ app_server <- function(input, output, session) {
               list(list(
                 role = "user",
                 content = paste(
-                "Determine if the current prompt is relevant to the selected dataset. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
-                input_text(),
-                "Current dataset: ",
-                sub_meta_data_json
-              ) # AND relevant to the current dataset
+                  "Determine if the current prompt is relevant to the selected dataset. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
+                  input_text(),
+                  "Current dataset: ",
+                  sub_meta_data_json
+                ) # AND relevant to the current dataset
               ))
             )
 
@@ -350,8 +343,6 @@ app_server <- function(input, output, session) {
                 role = "user",
                 content = paste(
                   prepared_request,
-                  # additional_info,
-                  # system_role_growth,
                   system_role_date,
                   # "If user mentions growth, then ensure...",
                   "Available datasets: \"\"\"",
@@ -366,32 +357,31 @@ app_server <- function(input, output, session) {
               openai_api_key = api_key_session()$api_key,
               #max_tokens = 500,
               temperature = sample_temp(),
-                messages = prompt_total
+              messages = prompt_total
             )
 
-              # to make the returned code at the same spot, as davinci model.
-              response$choices[1, 1] <- response$choices$message.content
+            # to make the returned code at the same spot, as davinci model.
+            response$choices[1, 1] <- response$choices$message.content
 
+          } else {
 
-            } else {
-              
-              response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-                model = selected_model(),
-                openai_api_key = api_key_session()$api_key,
-                # max_tokens = 500,
-                temperature = sample_temp(),
-                messages = list(list(
-                  role = "user",
-                  content = paste("Return this exact statement:",
-                  "print('Please ask a question related to HMCL dataset", selected_dataset_name(),"and try again. (Reset to select a different dataset)')")
-                ))
-              )
+            response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+              model = selected_model(),
+              openai_api_key = api_key_session()$api_key,
+              # max_tokens = 500,
+              temperature = sample_temp(),
+              messages = list(list(
+                role = "user",
+                content = paste("Return this exact statement:",
+                "print('Please ask a question related to HMCL dataset", selected_dataset_name(),"and try again. (Reset to select a different dataset)')")
+              ))
+            )
 
-              # to make the returned code at the same spot, as davinci model.
-              response$choices[1, 1] <- response$choices$message.content
-              relevancy_response(TRUE) # Reinitiate the relevancy to be TRUE
+            # to make the returned code at the same spot, as davinci model.
+            response$choices[1, 1] <- response$choices$message.content
+            relevancy_response(TRUE) # Reinitiate the relevancy to be TRUE
 
-            } # end relevancy agent
+          } # end relevancy agent
 
         },
         error = function(e) {
@@ -421,7 +411,7 @@ app_server <- function(input, output, session) {
       )
 
       error_message <- NULL
-      if(error_api) {
+      if (error_api) {
         cmd <- NULL
         response <- NULL
         error_message <- response$message
@@ -435,28 +425,28 @@ app_server <- function(input, output, session) {
         units = "secs"
       )[[1]]
 
-      if(0) {
+      if (0) {
         # if more than 10 requests, slow down. Only on server.
-        if(counter$requests > 20 && file.exists(on_server)) {
+        if (counter$requests > 20 && file.exists(on_server)) {
           Sys.sleep(counter$requests / 5 + runif(1, 0, 5))
         }
-        if(counter$requests > 50 && file.exists(on_server)) {
+        if (counter$requests > 50 && file.exists(on_server)) {
           Sys.sleep(counter$requests / 10 + runif(1, 0, 10))
         }
       }
 
-      if(counter$requests > 100 && file.exists(on_server)) {
+      if (counter$requests > 100 && file.exists(on_server)) {
         Sys.sleep(counter$requests / 40 + runif(1, 0, 40))
       }
 
       shinybusy::remove_modal_spinner()
 
-    # update usage via global reactive value/ ouput token is twice as expensive
-    counter$tokens_current <- response$usage$completion_tokens + response$usage$prompt_tokens
-    counter$requests <- counter$requests + 1
-    counter$time <- round(api_time, 0)
-    counter$costs_total <- counter$costs_total +
-      api_cost(response$usage$prompt_tokens, response$usage$completion_tokens, selected_model())
+      # update usage via global reactive value/ ouput token is twice as expensive
+      counter$tokens_current <- response$usage$completion_tokens + response$usage$prompt_tokens
+      counter$requests <- counter$requests + 1
+      counter$time <- round(api_time, 0)
+      counter$costs_total <- counter$costs_total +
+        api_cost(response$usage$prompt_tokens, response$usage$completion_tokens, selected_model())
 
       return(
         list(
@@ -531,9 +521,8 @@ app_server <- function(input, output, session) {
 
   ### Initialize reactives ###
 
-  # the current data & file name
+  # the current data
   current_data <- reactiveVal(NULL)
-  selected_file <- reactiveVal(NULL)
 
   # define a reactive variable that holds an R environment
   # This is needed for the Rmd chunk
@@ -556,8 +545,7 @@ app_server <- function(input, output, session) {
     logs = logs,
     use_python = use_python,
     selected_dataset_name = selected_dataset_name,
-    current_data = current_data,
-    selected_file = selected_file
+    current_data = current_data
   )
 
   # Rename the reactive values for easier use
