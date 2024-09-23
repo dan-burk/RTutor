@@ -1117,6 +1117,91 @@ app_server <- function(input, output, session) {
 
   })
 
+
+
+  observeEvent(input$modify_code, {
+
+    req(logs$raw)
+    res <- logs$raw
+    res <- gsub("```", "", res)
+
+    # Remove any existing modal first
+    removeModal()
+
+    showModal(modalDialog(
+      title = "Modify Code:",
+      tags$textarea(id="modalCode", style = "width: 100%; height: 300px;", ""), #HTML(res)
+      br(),
+      footer = tagList(
+        modalButton("Cancel"),
+        actionButton("saveButton", "Save")
+      ),
+    size = "l",
+    easyClose = TRUE
+    ))
+    shinyjs::delay(100, {
+      session$sendCustomMessage("initializeCodeMirror", list(code = res))
+    })
+
+  })
+
+
+
+  observeEvent(input$saveButton, {
+
+    removeModal()
+    # logs$raw <- input$modalCode #Overwriting OPENAI Code
+
+    logs$id <- logs$id + 1
+
+    logs$code <-  input$modalCode
+
+    logs$raw <- input$modalCode #openAI_response()$response$choices[1, 1]
+    # remove one or more blank lines in the beginning.
+    logs$raw <- gsub("^\n+", "", logs$raw)
+    logs$last_code <- ""
+    logs$language <- ifelse(input$use_python, "Python", "R")
+    logs$seed <- seed() #openAI_response()$seed
+    logs$system_fingerprint <- openAI_response()$response$system_fingerprint
+
+    # A list holds current request
+    current_code <- list(
+      id = logs$id,
+      code = logs$code,
+      raw = logs$raw, # for print
+      prompt = input$input_text,
+      prompt_all = openAI_prompt(), # entire prompt, as sent to openAI
+      error = code_error(),
+      error_message = run_result()$error_message,
+      rmd = Rmd_chunk(),
+      language = ifelse(input$use_python, "Python", "R"),
+      seed = logs$seed,
+      # saves the rendered file in the logs object.
+      html_file = ifelse(input$use_python, python_to_html(), -1),
+      prompt_tokens = 0,
+      output_tokens = 0,
+      # save a copy of the data in the environment as a list.
+      # if save environment, only reference is saved.
+      # This needs more memory, but works.
+      env = run_env_start() # it is a list;
+    )
+
+    logs$code_history <- append(logs$code_history, list(current_code))
+
+    choices <- 1:length(logs$code_history)
+    names(choices) <- paste0("Chunk #", choices)
+    # update chunk choices
+    updateSelectInput(
+      inputId = "selected_chunk",
+      label = "AI generated code:",
+      choices = choices,
+      selected = logs$id
+    )
+
+  })
+
+
+
  # Defining & initializing the reactiveValues object
   logs <- reactiveValues(
     id = 0, # 1, 2, 3, id for code chunk

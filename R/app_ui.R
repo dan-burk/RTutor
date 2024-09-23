@@ -72,6 +72,61 @@ app_ui <- function(request) {
       });
     ")),
 
+    # tags$head(
+    #   tags$link(rel = "stylesheet", type = "text/css", href = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/codemirror.min.css"),
+    #   # tags$link(rel = "stylesheet", type = "text/css", href = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/theme/ambiance.min.css"),  # theme: 'ambiance'
+    #   # tags$link(rel = "stylesheet", type = "text/css", href = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/theme/monokai.min.css"),  # theme: 'monokai'
+    #   tags$link(rel = "stylesheet", type = "text/css", href = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/theme/dracula.min.css"),  # Dracula theme
+    #   tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/codemirror.min.js"),
+    #   tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/mode/r/r.min.js"),
+    #   tags$script(HTML("
+    #     Shiny.addCustomMessageHandler('initializeCodeMirror', function(message) {
+    #       var editor = CodeMirror.fromTextArea(document.getElementById('modalCode'), {
+    #         lineNumbers: true,
+    #         mode: 'r',
+    #         theme: 'dracula',
+    #         autoCloseBrackets: true
+    #       });
+    #       editor.on('change', function() {
+    #         Shiny.setInputValue('modalCode', editor.getValue());
+    #       });
+    #       editor.focus(); // Focus the editor after initialization
+    #     });
+    #   "))
+    # ),
+
+
+      tags$head(
+        tags$link(rel = "stylesheet", type = "text/css", href = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/codemirror.min.css"),
+        tags$link(rel = "stylesheet", type = "text/css", href = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/theme/ambiance.min.css"),
+        tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/codemirror.min.js"),
+        tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/mode/r/r.min.js"),
+        tags$script(HTML("
+          var editor;  // Declare editor variable in the global scope
+
+          Shiny.addCustomMessageHandler('initializeCodeMirror', function(message) {
+            if (editor) {
+              editor.toTextArea();  // Cleanup previous instance
+              editor = null;  // Clear the reference to make sure it's fully reset
+            }
+            // Small delay to ensure the modal is rendered before initializing the editor
+            setTimeout(function() {
+              editor = CodeMirror.fromTextArea(document.getElementById('modalCode'), {
+                lineNumbers: true,
+                mode: 'r',
+                theme: 'ambiance',
+                autoCloseBrackets: true
+              });
+              editor.on('change', function() {
+                Shiny.setInputValue('modalCode', editor.getValue());
+              });
+              editor.focus(); // Focus the editor after initialization
+              editor.setValue(message.code || ''); // Set the initial value if provided
+            }, 100);  // Adjust delay if necessary
+          });
+        "))
+      ),
+
     navbarPage(
       title = HTML('<span style="color: black;font-size: 20px;">RTutor</span>'),
       id = "tabs",
@@ -298,9 +353,32 @@ app_ui <- function(request) {
                     "You can go back to any previous code chunk and continue from there. The data will also be reverted to that point.",
                     theme = "light-border"
                   )
+                ),
+                column(
+                  width = 8,
+                  div(
+                    actionButton(
+                      inputId = "modify_code",
+                      label = "Modify Code"
+                    ),
+                    tags$head(tags$style(
+                      "#modify_code{font-size: 14px;color: black; background-color: #F6FFF5; border-color: #90BD8C;}"
+                    )),
+                    tippy::tippy_this(
+                      "modify_code",
+                      "Modify Code Output",
+                      theme = "light-border"
+                    ),
+                    align = "right"
+                  )
                 )
               ),
               verbatimTextOutput("openAI"),
+              # tags$script(HTML("
+              #   $(document).on('click', '#openAI', function() {
+              #     Shiny.setInputValue('modify_code', Math.random());
+              #   });"
+              #   )),
               conditionalPanel(
                 condition = "input.use_python == 0",
 
