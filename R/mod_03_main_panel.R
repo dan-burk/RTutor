@@ -123,10 +123,34 @@ mod_03_main_panel_ui <- function(id) {
 
 mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
                                    run_result, run_env_start, submit_button,
-                                   use_python, tabs, current_data, selected_dataset_name) {
+                                   use_python, tabs, current_data, selected_dataset_name,
+                                   chunk_selection) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
+
+    ###  Selecting Chunk  ###
+
+    # Update the selectInput choices when number of chunks changes
+    observe( {
+      req(chunk_selection$chunk_choices)
+      req(chunk_selection$selected_chunk)
+
+      updateSelectInput(
+        session = session,
+        inputId = "selected_chunk",
+        choices = chunk_selection$chunk_choices,
+        selected = chunk_selection$selected_chunk
+      )
+    })
+
+    # React to user selection in the dropdown
+    observeEvent(input$selected_chunk, {
+      chunk_selection$selected_chunk <- input$selected_chunk
+    })
+
+
+    ###  Print Results or Error  ###
 
     # Print code chunk
     output$openAI <- renderPrint({
@@ -134,6 +158,12 @@ mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
       res <- logs$raw
       res <- gsub("```", "", res)
       cat(res)
+    })
+
+    # Print results
+    output$console_output <- renderText({
+      req(!code_error())
+      paste(run_result()$console_output, collapse = "\n")
     })
 
     # Display error messages
@@ -147,11 +177,8 @@ mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
       }
     })
 
-    # Print results
-    output$console_output <- renderText({
-      req(!code_error())
-      paste(run_result()$console_output, collapse = "\n")
-    })
+
+    ###  Plotting  ###
 
     # Plot results
     output$result_plot <- renderPlot({
@@ -340,6 +367,8 @@ mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
       }
     })
 
+
+
     # # Python Markdown
     # output$python_markdown <- renderUI({
     #   req(openAI_response()$cmd)
@@ -355,13 +384,6 @@ mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
     #     includeHTML(rendered)
     #   }
     # })
-
-    # Return reactive values so they can be used outside the module
-    return(
-      list(
-        selected_chunk = reactive(input$selected_chunk)
-      )
-    )
 
   })
 }

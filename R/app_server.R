@@ -20,7 +20,10 @@ app_server <- function(input, output, session) {
   #____________________________________________________________________________
 
   # 'Load Data' module
-  mod_02 <- mod_02_load_data_serv("load_data")
+  mod_02 <- mod_02_load_data_serv(
+      id = "load_data",
+      chunk_selection
+    )
 
   # Rename the reactive values for easier use
   input_text <- reactive({  mod_02$input_text() })
@@ -38,6 +41,12 @@ app_server <- function(input, output, session) {
   # 'Main Panel' module
   tabs <- reactive({ input$tabs })
 
+  chunk_selection <- reactiveValues(
+    chunk_choices = NULL,
+    selected_chunk = NULL,
+    past_prompt = NULL
+  )
+
   mod_03 <- mod_03_main_panel_serv(
     id = "main_panel",
     openAI_response = openAI_response,
@@ -49,11 +58,9 @@ app_server <- function(input, output, session) {
     use_python = use_python,
     tabs = tabs,
     current_data = current_data,
-    selected_dataset_name = selected_dataset_name
+    selected_dataset_name = selected_dataset_name,
+    chunk_selection = chunk_selection
   )
-
-  # Rename the reactive values for easier use
-  selected_chunk <- reactive({  mod_03$selected_chunk() })
 
 
   #                             3. Module 04
@@ -471,69 +478,7 @@ app_server <- function(input, output, session) {
   #____________________________________________________________________________
 
 
-  # a modal shows api connection error
-  api_error_modal <- shiny::modalDialog(
-    title = "API connection error!",
-    tags$h4("Is the API key is correct?", style = "color:red"),
-    tags$h4("How about the WiFi?", style = "color:red"),
-    tags$h4("Maybe the openAI.com website is taking forever to respond.", style = "color:red"),
-    tags$h5("If you keep having trouble, send us an email.", style = "color:red"),
-    tags$h4(
-      "Auto-reset ...",
-      style = "color:blue; text-align:right"
-    ),
-    easyClose = TRUE,
-    size = "s"
-  )
-
-  # show a warning message when reached 10c, 20c, 30c ...
-  observeEvent(submit_button(), {
-    req(file.exists(on_server))
-    req(!openAI_response()$error)
-
-    cost_session <-  counter$costs * 10
-    if (cost_session %% 5  == 0 & cost_session != 0) {
-      shiny::showModal(
-        shiny::modalDialog(
-          size = "s",
-          easyClose	= TRUE,
-          h4(
-            paste0(
-              "Cumulative API Cost reached ",
-              cost_session,
-              "¢"
-            )
-          ),
-          h4("Slow down. Please try to use your own API key.")
-        )
-      )
-    }
-  })
-
-  # Error when running the generated code
-  code_error <- reactive({
-    error_status <- FALSE
-    req(submit_button() != 0) #Require the submit button to be pushed
-    if(!use_python()) { # R
-      return(!is.null(run_result()$error_message) && run_result()$error_message != "")
-    } else { # Python
-      return(python_to_html() == -1)
-    }
-  })
-
-  # Show notification when error
-  observeEvent(code_error(), {
-    # show notification message
-    if(code_error()) {
-      showNotification(
-        "Resubmit the same request to see if ChatGPT can resolve the error.
-        If that fails, change the request.",
-        duration = 10
-      )
-    }
-  })
-
- # Defining & initializing the reactiveValues object
+  # Defining & initializing the reactiveValues object
   logs <- reactiveValues(
     id = 0, # 1, 2, 3, id for code chunk
     code = "", # cumulative code
@@ -551,98 +496,31 @@ app_server <- function(input, output, session) {
     time = 0 # response time for current
   )
 
-  observeEvent(submit_button(), {
-
-    logs$id <- logs$id + 1
-
-    logs$code <-  openAI_response()$cmd
-
-    logs$raw <- openAI_response()$cmd #openAI_response()$response$choices[1, 1]
-    # remove one or more blank lines in the beginning.
-    logs$raw <- gsub("^\n+", "", logs$raw)
-    logs$last_code <- ""
-    logs$language <- ifelse(use_python(), "Python", "R")
-
-    # A list holds current request
-    current_code <- list(
-      id = logs$id,
-      code = logs$code,
-      raw = logs$raw, # for print
-      prompt = input_text(),
-      prompt_all = openAI_prompt(), # entire prompt, as sent to openAI
-      error = code_error(),
-      error_message = run_result()$error_message,
-      language = ifelse(use_python(), "Python", "R"),
-      # saves the rendered file in the logs object.
-      html_file = ifelse(use_python(), python_to_html(), -1),
-      prompt_tokens = openAI_response()$response$usage$prompt_tokens,
-      output_tokens = openAI_response()$response$usage$completion_tokens,
-      # save a copy of the data in the environment as a list.
-      # if save environment, only reference is saved.
-      # This needs more memory, but works.
-      env = run_env_start() # it is a list;
-    )
-
-    logs$code_history <- append(logs$code_history, list(current_code))
-
-    choices <- 1:length(logs$code_history)
-    names(choices) <- paste0("Chunk #", choices)
-
-    # update chunk choices
-    updateSelectInput(
-      session = session,
-      inputId = "main_panel-selected_chunk",
-      label = "AI generated code:",
-      choices = choices,
-      selected = logs$id
-    )
-  })
-
-  # change value when a previous code chunk is selected
+  # Intitialize, change value when a previous code chunk is selected
   reverted <- reactiveVal(0)
 
-  # change code when past code is selected
-  observeEvent(selected_chunk(), {
-    req(selected_chunk())
-    id <- as.integer(selected_chunk())
-    logs$code <- logs$code_history[[id]]$code
-    logs$raw <- logs$code_history[[id]]$raw
+  # "Errors & History" module
+  mod_06 <- mod_06_error_hist_serv(
+    id = "errors_and_history",
+    submit_button = submit_button,
+    openAI_response = openAI_response,
+    logs = logs,
+    counter = counter,
+    reverted = reverted,
+    use_python = use_python,
+    run_result = run_result,
+    python_to_html = python_to_html,
+    input_text = input_text,
+    openAI_prompt = openAI_prompt,
+    run_env = run_env,
+    run_env_start = run_env_start,
+    chunk_selection = chunk_selection
+  )
 
-    # Switch to previous chunks
-    if(id < length(logs$code_history)) {
-      # convert list to environment;
-      # update the run_env reactive value.
-      # restore the environment to the before  running the ith chunk
-      run_env(list2env(logs$code_history[[id]]$env))
+  # Rename the reactive values for easier use
+  api_error_modal <- reactive({  mod_06$api_error_modal() })
+  code_error <- reactive({  mod_06$code_error() })
 
-      # enable re-calculation of the code
-      reverted(reverted() + 1)
-
-      showNotification(
-        ui = paste("Switched back to chunk #", id,
-        ". Any change in the data is also reverted." ),
-        id = "revert_chunk",
-        duration = 5,
-        type = "warning"
-      )
-    }
-
-    updateTextInput(
-      session,
-      "input_text",
-      value = logs$code_history[[id]]$prompt
-    )
-
-    # change language
-    if(submit_button() != 0) {
-      updateCheckboxInput(
-        session = session,
-        inputId = "use_python",
-        value = (logs$code_history[[id]]$language == "Python")
-      )
-    }
-
-  })
 
 
   #                            6. Module 07

@@ -104,7 +104,7 @@ mod_02_load_data_ui <- function(id) {
 
 
 
-mod_02_load_data_serv <- function(id) {
+mod_02_load_data_serv <- function(id, chunk_selection) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -116,6 +116,18 @@ mod_02_load_data_serv <- function(id) {
 
         txt <- paste0(input$user_selected_dataset, ".  Reset to switch.")
         return(txt)
+    })
+
+
+    # Load previous prompts based on selected chunk
+    observeEvent(chunk_selection$selected_chunk, {
+      req(chunk_selection$past_prompt)
+
+      updateTextAreaInput(
+        session,
+        inputId = "input_text",
+        value = chunk_selection$past_prompt
+      )
     })
 
     # Load demo prompts based on selected data
