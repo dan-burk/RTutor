@@ -41,6 +41,20 @@ app_ui <- function(request) {
           )
         )
       ), #tabPanel
+      
+      ### 'Report' Tab Panel ###
+      tabPanel(
+        title = "Report",
+        value = "Report",
+        tippy::tippy_this(
+          "report_tab",
+          "Download a Results Report",
+          theme = "light-border"
+        ),
+
+        ### Report Module ###
+        mod_09_report_ui("report")
+      ),
 
       ### 'About' Tab Panel ###
       tabPanel(

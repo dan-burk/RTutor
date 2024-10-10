@@ -504,7 +504,8 @@ app_server <- function(input, output, session) {
     openAI_prompt = openAI_prompt,
     run_env = run_env,
     run_env_start = run_env_start,
-    chunk_selection = chunk_selection
+    chunk_selection = chunk_selection,
+    Rmd_chunk = Rmd_chunk
   )
 
   # Rename the reactive values for easier use
@@ -575,5 +576,29 @@ app_server <- function(input, output, session) {
 
   pdf(NULL) # otherwise, base R plots sometimes do not show
 
+
+  #                             8. Module 09
+  #____________________________________________________________________________
+  #  Report Tab
+  #____________________________________________________________________________
+
+  # 'Report' module
+  mod_09 <- mod_09_report_serv(
+    id = "report",
+    submit_button = submit_button,
+    logs = logs,
+    selected_model = selected_model,
+    openAI_response = openAI_response,
+    openAI_prompt = openAI_prompt,
+    use_python = use_python,
+    counter = counter,
+    sample_temp = sample_temp,
+    code_error = code_error,
+    python_to_html = python_to_html,
+    current_data = current_data
+  )
+
+  # Rename the reactive values for easier use
+  Rmd_chunk <- reactive({  mod_09$Rmd_chunk() })
 
 }

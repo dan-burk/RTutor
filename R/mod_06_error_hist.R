@@ -9,7 +9,7 @@
   mod_06_error_hist_serv <- function(id, submit_button, openAI_response, logs, counter,
                                      reverted, use_python, run_result, python_to_html,
                                      code_error, input_text, openAI_prompt, run_env,
-                                     run_env_start, chunk_selection
+                                     run_env_start, chunk_selection, Rmd_chunk
                                      ) {
 
   moduleServer(id, function(input, output, session) {
@@ -98,6 +98,7 @@
         prompt_all = openAI_prompt(), # entire prompt, as sent to openAI
         error = code_error(),
         error_message = run_result()$error_message,
+        rmd = Rmd_chunk(),
         language = ifelse(use_python(), "Python", "R"),
         # saves the rendered file in the logs object.
         html_file = ifelse(use_python(), python_to_html(), -1),
