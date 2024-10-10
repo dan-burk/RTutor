@@ -96,192 +96,121 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
     # collect all RMarkdown chunks
     Rmd_total <- reactive({
 
+      # Initialize script with model and credits
       Rmd_script <- ""
-
-      # if first chunk
       Rmd_script <- paste0(
-        Rmd_script,
-        # Get the data from the params list-----------
-        "\nDeveloped by [Steven Ge](https://twitter.com/StevenXGe) using API
-         access via the
-        [openai](https://cran.rstudio.com/web/packages/openai/index.html)
-        package to
+        "\nDeveloped by [Steven Ge](https://twitter.com/StevenXGe) using API access via the
+        [openai](https://cran.rstudio.com/web/packages/openai/index.html) package to
         [OpenAI's](https://cran.rstudio.com/web/packages/openai/index.html) \"",
-        selected_model(),
-        "\" model.",
-        "\n\nRTutor Website: [https://RTutor.ai](https://RTutor.ai)",
-        "\nSource code: [GitHub.](https://github.com/gexijin/RTutor)\n"
+        selected_model(), "\" model.",
+        "\n\nRTutor Website: [https://RTutor.ai](https://RTutor.ai)\n",
+        "Source code: [GitHub.](https://github.com/gexijin/RTutor)\n\n"
       )
 
-      # if the first chunk & data is uploaded,
-      # insert script for reading data
+      # If user uploaded data, insert the file reading script
+      # based on the file type
       # if (input$select_data == uploaded_data) {
-
-      #   # Read file
       #   file_name <- input$user_file$name
-      #   if (user_data()$file_type == "read_excel") {
-      #     txt <- paste0(
-      #       "# install.packages(readxl)\nlibrary(readxl)\ndf <- read_excel(\"",
-      #       file_name,
-      #       "\")"
-      #     )
-
-      #   }
-      #   if (user_data()$file_type == "read.csv") {
-      #     txt <- paste0(
-      #       "df <- read.csv(\"",
-      #       file_name,
-      #       "\")"
-      #     )
-      #   }
-      #   if (user_data()$file_type == "read.table") {
-      #     txt <- paste0(
-      #       "df <- read.table(\"",
-      #       file_name,
-      #       "\", sep = \"\t\", header = TRUE)"
-      #     )
-      #   }
-
+      #   file_type <- user_data()$file_type
+      #   read_commands <- list(
+      #     "read_excel" = paste0("# install.packages(readxl)\nlibrary(readxl)\ndf <- read_excel(\"", file_name, "\")"),
+      #     "read.csv" = paste0("df <- read.csv(\"", file_name, "\")"),
+      #     "read.table" = paste0("df <- read.table(\"", file_name, "\", sep = \"\t\", header = TRUE)")
+      #   )
       #   Rmd_script <- paste0(
-      #     "\n### 0. Read File\n",
-      #     "```{R, eval = FALSE}\n",
-      #     txt,
-      #     "\n```\n"
+      #     Rmd_script, "\n### 0. Read File\n```{R, eval = FALSE}\n", read_commands[[file_type]], "\n```\n"
       #   )
       # }
 
+      # Add initial data chunk
       Rmd_script <- paste0(
-        Rmd_script,
         # Get the data from the params list for every chunk-----------
         # Do not change this without changing the output$Rmd_source function
         # this chunk is removed for local knitting.
+        Rmd_script,
         "```{R, echo = FALSE}\n",
         "df <- params$df\ndf2 <- params$df2\n",
         "```\n"
       )
 
-      #------------------Add selected chunks
+      # save chunks in 'ix' based on user's selected chunks
       if ("All chunks" %in% input$selected_chunk_report) {
         ix <- seq_along(logs$code_history)
       } else if ("All chunks without errors" %in% input$selected_chunk_report) {
-        ix <- c()
-        for (i in seq_along(logs$code_history)) {
-          if (!logs$code_history[[i]]$error) {
-            ix <- c(ix, i)
-          }
-        }
-      } else {  # selected
+        ix <- which(!sapply(logs$code_history, `[[`, "error"))
+      } else {
         ix <- as.integer(input$selected_chunk_report)
       }
 
-      for (i in ix) {
-        Rmd_script <- paste0(Rmd_script, "\n", logs$code_history[[i]]$rmd)
-      }
+      # Append all selected chunks (ix) to the RMarkdown script
+      Rmd_script <- paste0(
+        Rmd_script,
+        paste0(
+          sapply(ix, function(i) logs$code_history[[i]]$rmd),
+          collapse = "\n"
+        )
+      )
 
+      # Return the total script
       return(Rmd_script)
     })
 
 
-    # Markdown chunk for the current request
+    # RMarkdown chunk for the current request
     Rmd_chunk <- reactive({
-      req(openAI_response()$cmd)
-      req(openAI_prompt())
+      req(openAI_response()$cmd, openAI_prompt())
 
-      Rmd_script <- ""
-
-      if (use_python()) {
-        Rmd_script <- paste0(
-          Rmd_script,
-          "```{R}\n",
-          "library(reticulate)\n",
-          "```\n",
-          "```{python, message=FALSE}\n",
-          "df = r.df\n",
-          "```\n"
-        )
+      # Initialize Rmd_script
+      Rmd_script <- if (use_python()) {   # add necessary setup when using Python
+        "```{R}\nlibrary(reticulate)\n```\n```{python, message=FALSE}\ndf = r.df\n```\n"
+      } else {   # using R, don't need setup
+        ""
       }
 
-      # User request----------------------
-      Rmd_script  <- paste0(
+      # User's request
+      # remove unnecessary commands (pre_text, after_text) from the prompt
+      request_text <- gsub(
+        paste0("\n|", pre_text, "|", after_text, ".*"),
+        "",
+        openAI_prompt()
+      )
+      # Collapse the result into a single string
+      request_text <- paste(request_text, collapse = " ")
+
+      # Append request & model info to RMarkdown script
+      Rmd_script <- paste0(
         Rmd_script,
-        "\n### ",
-        counter$requests,
-        ". ",
-        paste(
-          #remove pre-inserted commands
-          gsub(
-            paste0(
-              "\n|",
-              pre_text,
-              "|",
-              after_text,
-              ".*"
-            ),
-            "",
-            openAI_prompt()
-          ),
-          collapse = " "
-        ),
-        paste0(
-          "\n ",
-          names(selected_model()),
-          " (Temperature=",
-          sample_temp(),
-          ")"
-        ),
-        "\n"
+        "\n### ", counter$requests, ". ", request_text,
+        "\n", names(selected_model()), " (Temperature = ", sample_temp(), ")\n"
       )
 
-      # R Markdown code chunk----------------------
-      if (!use_python()) {  # R code chunk
-        #if error when running the code, do not run
-        if (code_error() == TRUE) {
-          Rmd_script <- paste0(
-            Rmd_script,
-            "```{R, eval = FALSE}"
-          )
-        } else {
-          Rmd_script <- paste0(
-            Rmd_script,
-            "```{R}"
-          )
-        }
-      } else {  # Python code chunk
-        #if error when running the code, do not run
-        if (python_to_html() == -1) {
-          Rmd_script <- paste0(
-            Rmd_script,
-            "```{python, eval = FALSE}"
-          )
-        } else {
-          Rmd_script <- paste0(
-            Rmd_script,
-            "```{python}"
-          )
-        }
+      # Set code chunk evaluation status (based on R or Python)
+      eval_status <- if (use_python()) {
+        if (python_to_html() == -1) ", eval = FALSE" else ""
+      } else {
+        if (code_error()) ", eval = FALSE" else ""
       }
+
+      # Get code chunk
       cmd <- openAI_response()$cmd
-      # remove empty line
+      # If an empty first line exists -> remove it
       if (nchar(cmd[1]) == 0) {
         cmd <- cmd[-1]
       }
 
-      # Add R code
+      # Add code to script
       Rmd_script <- paste0(
         Rmd_script,
-        paste(
-          cmd,
-          collapse = "\n"
-        ),
+        "```{",
+        ifelse(use_python(), "python", "R"),  # coding language
+        eval_status, "}",   # evaluation status
+        paste(cmd, collapse = "\n"),   # code chunk
         "\n```\n"
       )
 
-      # indicate error
+      # Indicate error if any
       if (code_error()) {
-        Rmd_script <- paste0(
-          Rmd_script,
-          "** Error **  \n"
-        )
+        Rmd_script <- paste0(Rmd_script, "** Error **  \n")
       }
 
       return(Rmd_script)
@@ -317,11 +246,10 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
           "---\n",
           "title: \"RTutor report\"\n",
           "author: \"RTutor, Powered by ChatGPT\"\n",
-          "date: \"",
-          date(), "\"\n",
+          "date: \"", date(), "\"\n",
           "output: html_document\n",
           "---\n",
-          # this chunk is not needed when they download the Rmd and knit locally
+          # this chunk is not needed when downloading the Rmd and knit locally
           gsub(
             "```\\{R, echo = FALSE\\}\ndf <- params\\$df\n```\n",
             "",
@@ -336,61 +264,38 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
     report_file <- reactiveVal(NULL)
 
     observeEvent(input$report, {
-      #req(input$select_data != no_data)
-      req(!use_python())
-      req(!is.null(current_data()))
-
+      req(!use_python(), !is.null(current_data()),
+        openAI_response()$cmd, openAI_prompt()
+      )
 
       withProgress(message = "Generating Report (5 minutes)", {
         incProgress(0.2)
-        tempReport <- file.path(tempdir(), "report.Rmd")
-        # tempReport
-        tempReport <- gsub("\\", "/", tempReport, fixed = TRUE)
 
-        req(openAI_response()$cmd)
-        req(openAI_prompt())
+        # Initialize tempReport and output_file
+        tempReport <- file.path(tempdir(), "report.Rmd")
+        tempReport <- gsub("\\", "/", tempReport, fixed = TRUE)
         output_file <- gsub("Rmd$", "html", tempReport)
 
-        #RMarkdown file's Header
+        # Create RMarkdown Header and Content
         Rmd_script <- paste0(
+          # Header
+          # ensure spacing & indentation is in YAML format
           "---\n",
           "title: \"RTutor.ai report\"\n",
-          "author: \"RTutor v.",
-          release,
-          ", Powered by ChatGPT\"\n",
-          "date: \"",
-          date(), "\"\n",
+          "author: \"RTutor v.", release, ", Powered by ChatGPT\"\n",
+          "date: \"", date(), "\"\n",
           "output: html_document\n",
-          "params:\n",
-          "  df:\n",
-          "  df2:\n",
-          "printcode:\n",
-          "  label: \"Display Code\"\n",
-          "  value: TRUE\n",
-          "  input: checkbox\n",
-          "---\n"
-        )
-
-        Rmd_script <- paste0(
-          Rmd_script,
-          "\n\n### "
-        )
-
-        # R Markdown code chunk----------------------
-
-        # Add R code
-        Rmd_script <- paste(
-          Rmd_script,
+          "params:\n  df: \n  df2: \n",
+          "printcode:\n  label: \"Display Code\"\n",
+          "  value: TRUE\n  input: checkbox\n",
+          "---\n\n### ",
+          # Content
           Rmd_total()
         )
 
-        write(
-          Rmd_script,
-          file = tempReport,
-          append = FALSE
-        )
+        write(Rmd_script, file = tempReport, append = FALSE)
 
-        # Set up parameters to pass to Rmd document
+        # Prepare parameters for rendering the RMarkdown
         params <- list(df = iris) # dummy
         df2 <- NULL
         # if (!is.null(current_data_2())) {
@@ -404,36 +309,29 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
           )
         }
 
-
-        req(params)
-
+        # Render Report
         tryCatch({
           rmarkdown::render(
-            input = tempReport, # markdown_location,
+            input = tempReport, # markdown location
             output_file = output_file,
             params = params,
             envir = new.env(parent = globalenv())
           )
-        },
-        error = function(e) {
+          report_file(output_file)
+
+          # Show modal with download button
+          showModal(modalDialog(
+            title = "Successfully rendered the report!",
+            downloadButton(outputId = ns("download_report"), label = "Download"),
+            easyClose = TRUE
+          ))
+        }, error = function(e) {
           showNotification(
-            ui = paste("Error when generating the report. Please try again."),
+            "Error when generating the report. Please try again.\nError Message: ", e$message,
             id = ns("report_error"),
             duration = 5,
             type = "error"
           )
-        },
-        finally = {
-          report_file(output_file)
-          # show modal with download button
-          showModal(modalDialog(
-            title = "Successfully rendered the report!",
-            downloadButton(
-              outputId = ns("download_report"),
-              label = "Download"
-            ),
-            easyClose = TRUE
-          ))
         })
       })
     })
@@ -458,69 +356,45 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
         withProgress(message = "Generating Report ...", {
           incProgress(0.2)
 
+          # Initialize tempReport
           tempReport <- file.path(tempdir(), "report.Rmd")
-          # tempReport
           tempReport <- gsub("\\", "/", tempReport, fixed = TRUE)
 
-          req(openAI_response()$cmd)
-          req(openAI_prompt())
+          req(openAI_response()$cmd, openAI_prompt())
 
-          #RMarkdown file's Header
+          # Create RMarkdown header & content
           Rmd_script <- paste0(
+            # Header
+            # ensure spacing & indentation is in YAML format
             "---\n",
             "title: \"RTutor.ai report\"\n",
-            "author: \"RTutor v.",
-            release,
-            ", Powered by ChatGPT\"\n",
-            "date: \"",
-            date(), "\"\n",
+            "author: \"RTutor v.", release, ", Powered by ChatGPT\"\n",
+            "date: \"", date(), "\"\n",
             "output: html_document\n",
-            "params:\n",
-            "  df:\n",
-            "  df2:\n",
-            "printcode:\n",
-            "  label: \"Display Code\"\n",
-            "  value: TRUE\n",
-            "  input: checkbox\n",
-            "---\n"
-          )
-
-          Rmd_script <- paste0(
-            Rmd_script,
-            "\n\n### "
-          )
-
-          # R Markdown code chunk----------------------
-
-          # Add R code
-          Rmd_script <- paste(
-            Rmd_script,
+            "params:\n  df: null\n  df2: null\n",
+            "printcode:\n  label: \"Display Code\"\n",
+            "  value: TRUE\n  input: checkbox\n",
+            "---\n\n### ",
+            # Content
             Rmd_total()
           )
 
-          write(
-            Rmd_script,
-            file = tempReport,
-            append = FALSE
-          )
+          write(Rmd_script, file = tempReport, append = FALSE)
 
-          # Set up parameters to pass to Rmd document
+          # Prepare parameters for rendering the RMarkdown
           params <- list(df = iris) # dummy
           df2 <- NULL
           # if (!is.null(current_data_2())) {
           #   df2 <- current_data_2()
           # }
-          # # if uploaded, use that data
-          # req(input$select_data)
-          # if (input$select_data != no_data) {
-          #   params <- list(
-          #     df = current_data(),
-          #     df2 = df2
-          #   )
-          # }
+          # if uploaded, use that data
+          if (!is.null(current_data())) {
+            params <- list(
+              df = current_data(),
+              df2 = df2
+            )
+          }
 
-
-          req(params)
           # Knit the document, passing in the `params` list, and eval it in a
           # child of the global environment (isolates the code in the document
           # from the code in the app).
