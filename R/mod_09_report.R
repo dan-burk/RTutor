@@ -168,9 +168,9 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
       }
 
       # User's request
-      # remove unnecessary commands (pre_text, after_text) from the prompt
+      # remove unnecessary commands (pre_text) from the prompt
       request_text <- gsub(
-        paste0("\n|", pre_text, "|", after_text, ".*"),
+        paste0("\n|", pre_text, "|.*"),
         "",
         openAI_prompt()
       )

@@ -146,9 +146,15 @@ mod_02_load_data_serv <- function(id, chunk_selection) {
       req(input$user_selected_dataset)
 
       choices <- switch(input$user_selected_dataset,
-        "Sales Data" = demo$requests[demo$data == "Sales Data"],
-        "Registration Data" = demo$requests[demo$data == "Registration Data"],
-        "Dispatch Data" = demo$requests[demo$data == "Dispatch Data"],
+        "No Data" = demo$requests[demo$data == "No Data"],
+        "Iris" = demo$requests[demo$data == "Iris"],
+        "MTCars" = demo$requests[demo$data == "MTCars"],
+        "Air Quality" = demo$requests[demo$data == "Air Quality"],
+        "Diamonds" = demo$requests[demo$data == "Diamonds"],
+        "CO2" = demo$requests[demo$data == "CO2"],
+        "Tooth Growth" = demo$requests[demo$data == "Tooth Growth"],
+        "Pressure" = demo$requests[demo$data == "Pressure"],
+        "Chick Weights" = demo$requests[demo$data == "Chick Weights"],
         demo$requests[demo$data == "Select a dataset:"]
       )
 

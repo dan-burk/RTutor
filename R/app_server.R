@@ -21,9 +21,9 @@ app_server <- function(input, output, session) {
 
   # 'Load Data' module
   mod_02 <- mod_02_load_data_serv(
-      id = "load_data",
-      chunk_selection
-    )
+    id = "load_data",
+    chunk_selection = chunk_selection
+  )
 
   # Rename the reactive values for easier use
   input_text <- reactive({  mod_02$input_text() })
@@ -37,7 +37,7 @@ app_server <- function(input, output, session) {
   #____________________________________________________________________________
   #   Main Panel
   #____________________________________________________________________________
-  
+
   # 'Main Panel' module
   tabs <- reactive({ input$tabs })
 
@@ -71,8 +71,8 @@ app_server <- function(input, output, session) {
   # 'LLM Mgmt' module
   mod_04 <- mod_04_llm_mgmt_serv(
     id = "llm_mgmt",
-    submit_button = submit_button, 
-    input_text = input_text, 
+    submit_button = submit_button,
+    input_text = input_text,
     selected_dataset_name = selected_dataset_name
   )
 
@@ -97,8 +97,6 @@ app_server <- function(input, output, session) {
   })
 
   relevancy_response <- reactiveVal(TRUE) # Initializing relevancy_response to be TRUE as a reactive variable
-  meta_data_res <- meta_data()
-  meta_data_csv_res <- meta_data_csv()
 
   openAI_response <- reactive({
     req(submit_button())
@@ -150,9 +148,8 @@ app_server <- function(input, output, session) {
           if (length(logs$code_history) > 0) {
 
             # if there's history, identify and load dataset
-            df_name <- available_datasets[[selected_dataset_name()]]
-            selected_file_path <- paste0(data_path, df_name)
-            df <- readRDS(selected_file_path)
+            df <- get(available_datasets[[selected_dataset_name()]])
+
             if (convert_to_factor()) {
               df <- numeric_to_factor(
                 df,
@@ -165,7 +162,7 @@ app_server <- function(input, output, session) {
             current_data(df)
 
             # update runtime environment with new data frame
-            run_env(rlang::env(run_env(), df = current_data(), df_name = df_name))
+            run_env(rlang::env(run_env(), df = current_data(), df_name = selected_dataset_name()))
             run_env_start(as.list(run_env()))
 
 
@@ -220,42 +217,34 @@ app_server <- function(input, output, session) {
             # RELEVANCY AGENT #
             # Is the user's question relevant?
             # Construct prompt
-            sub_meta_data_csv <- meta_data_csv_res %>%
-              filter(file_name == df_name) %>% 
-              mutate(file_name = case_when(
-                file_name == df_name ~ "df"
-            ))
-            sub_meta_data_json <- jsonlite::toJSON(sub_meta_data_csv)
+            if (available_datasets[[selected_dataset_name()]] != no_data) {  # only run when user selects a built-in dataset
+              relevancy_prompt <- list(list(
+                role = "user",
+                content = paste(
+                  "Determine if the current prompt is relevant to any of the previous prompts. The prompt is relevant if it is a followup question for the analysis on the current dataset. If the prompt is a question about a different dataset it is not relevant. The prompt is also relevant if it is a modification for the visualizations. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
+                  input_text(),
+                  "Current dataset: the built-in R dataset",
+                  selected_dataset_name()
+                ) # AND relevant to the current dataset
+              ))
+              prompt_total_test <- append(prompt_total, relevancy_prompt)
+              prompt_total_test[[1]][[2]] <- paste("Act as an experienced data analyst. Determine if the following prompts are relevant to the current data: the built-in R dataset", selected_dataset_name())
 
-            relevancy_prompt <- list(list(
-              role = "user",
-              content = paste(
-                "Determine if the current prompt is relevant to any of the previous prompts. The prompt is relevant if it is a followup question for the analysis on the current dataset. If the prompt is a question about a different dataset it is not relevant. The prompt is also relevant if it is a modification for the visualizations. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
-                input_text(),
-                "Current dataset: ",
-                sub_meta_data_json
-              ) # AND relevant to the current dataset
-            ))
-            prompt_total_test <- append(prompt_total, relevancy_prompt)
-            prompt_total_test[[1]][[2]] <- paste("Act as an experienced data analyst. Determine if the following prompts are relevant to the metadata: ", meta_data_res)
+              # ChatGPT API
+              response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+                model = selected_model(),
+                openai_api_key = api_key_session()$api_key,
+                #max_tokens = 500,
+                temperature = sample_temp(),
+                messages = prompt_total_test
+              )
 
-            # ChatGPT API
-            response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-              model = selected_model(),
-              openai_api_key = api_key_session()$api_key,
-              #max_tokens = 500,
-              temperature = sample_temp(),
-              messages = prompt_total_test
-            )
-
-            # Store True or False
-            yn <- tolower(response$choices$message.content) == "true"
-            relevancy_response(yn) # Update relevancy_response with TRUE\FALSE from OpenAI
+              # Store True or False
+              yn <- tolower(response$choices$message.content) == "true"
+              relevancy_response(yn) # Update relevancy_response with TRUE\FALSE from OpenAI
+            }
 
           } else {  # if first prompt,  identify and load dataset
-
-            # user selected file
-            df_name <- available_datasets[[selected_dataset_name()]]
 
             # show message for 10s with the fine name
             showNotification(
@@ -263,8 +252,7 @@ app_server <- function(input, output, session) {
               duration = 10
             )
 
-            selected_file_path <- paste0(data_path, df_name)
-            df <- readRDS(selected_file_path)
+            df <- get(available_datasets[[selected_dataset_name()]])
             if (convert_to_factor()) {
               df <- numeric_to_factor(
                 df,
@@ -276,81 +264,72 @@ app_server <- function(input, output, session) {
             current_data(df)
 
             # update runtime environment with new data frame
-            run_env(rlang::env(run_env(), df = current_data(), df_name = df_name))
+            run_env(rlang::env(run_env(), df = current_data(), df_name = selected_dataset_name()))
             run_env_start(as.list(run_env()))
 
-            # Is the user's question relevant? -- relevancy agent
-            # Construct prompt
-            sub_meta_data_csv <- meta_data_csv_res %>%
-              filter(file_name == df_name) %>% 
-              mutate(file_name = case_when(
-                file_name == df_name ~ "df"
-            ))
-            sub_meta_data_json <- jsonlite::toJSON(sub_meta_data_csv)
+            if (available_datasets[[selected_dataset_name()]] != no_data) {  # only run when user selects a dataset
+              # Is the user's question relevant? -- relevancy agent
+              # Construct prompt
+              relevancy_prompt <- list()
+              relevancy_prompt <- append(
+                relevancy_prompt,
+                list(list(
+                  role = "system",
+                  content = paste("Act as an experienced data analyst. Determine if the following prompts are relevant to the current dataset: the built-in R dataset",
+                  selected_dataset_name())
+                ))
+              )
+              relevancy_prompt <- append(
+                relevancy_prompt,
+                list(list(
+                  role = "user",
+                  content = paste(
+                    "Determine if the current prompt is relevant to the selected dataset. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
+                    input_text(),
+                    "Current dataset: the built-in R dataset",
+                    selected_dataset_name()
+                  ) # AND relevant to the current dataset
+                ))
+              )
 
-            relevancy_prompt <- list()
-            relevancy_prompt <- append(
-              relevancy_prompt,
-              list(list(
-                role = "system",
-                content = paste("Act as an experienced data analyst. Determine if the following prompts are relevant to the metadata: ",
-                meta_data_res)
-              ))
-            )
-            relevancy_prompt <- append(
-              relevancy_prompt,
-              list(list(
-                role = "user",
-                content = paste(
-                  "Determine if the current prompt is relevant to the selected dataset. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
-                  input_text(),
-                  "Current dataset: ",
-                  sub_meta_data_json
-                ) # AND relevant to the current dataset
-              ))
-            )
+              # ChatGPT API
+              response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
+                model = selected_model(),
+                openai_api_key = api_key_session()$api_key,
+                #max_tokens = 500,
+                temperature = sample_temp(),
+                messages = relevancy_prompt
+              )
 
-            # ChatGPT API
-            response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-              model = selected_model(),
-              openai_api_key = api_key_session()$api_key,
-              #max_tokens = 500,
-              temperature = sample_temp(),
-              messages = relevancy_prompt
-            )
-
-            # Store True or False
-            yn <- tolower(response$choices$message.content) == "true"
-            relevancy_response(yn)
+              # Store True or False
+              yn <- tolower(response$choices$message.content) == "true"
+              relevancy_response(yn)
+            }
 
           } # end first user prompt
 
           if (relevancy_response()) {
             prepared_request = prep_input(input_text(), selected_dataset_name(), current_data(), use_python(), logs$id, selected_model())
 
-            # Subsetting Meta Data csv file to send in with prompt
-            sub_meta_data_csv <- meta_data_csv_res %>%
-              filter(file_name == df_name) %>% 
-              mutate(file_name = case_when(
-                file_name == df_name ~ "df"
-                ))
-            sub_meta_data_json <- jsonlite::toJSON(sub_meta_data_csv)
-
             # add new user prompt
-            prompt_total <- append(
-              prompt_total,
-              list(list(
-                role = "user",
-                content = paste(
-                  prepared_request,
-                  system_role_date,
-                  # "If user mentions growth, then ensure...",
-                  "Available datasets: \"\"\"",
-                  sub_meta_data_json,
-                  "\"\"\""
+            if (available_datasets[[selected_dataset_name()]] != no_data) {
+              prompt_total <- append(
+                prompt_total,
+                list(list(
+                  role = "user",
+                  content = paste(
+                    prepared_request,
+                    "Available dataset: the built-in R dataset",
+                    selected_dataset_name()
                   )
                 ))
               )
+            } else {
+              prompt_total <- append(
+                prompt_total,
+                list(list(role = "user", content = prepared_request))
+              )
+            }
 
             response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
               model = selected_model(),
@@ -373,7 +352,7 @@ app_server <- function(input, output, session) {
               messages = list(list(
                 role = "user",
                 content = paste("Return this exact statement:",
-                "print('Please ask a question related to HMCL dataset", selected_dataset_name(),"and try again. (Reset to select a different dataset)')")
+                "print('Please ask a question related to dataset", selected_dataset_name(),"and try again. (Reset to select a different dataset)')")
               ))
             )
 

@@ -12,6 +12,7 @@
 
 release <- "0.98" # RTutor
 no_data <- "no_data" # no data is uploaded or selected
+user_upload <- "user_upload" # data is uploaded by user
 names(no_data) <- "No data (examples)"
 min_query_length <- 6  # minimum # of characters
 max_query_length <- 2000 # max # of characters
@@ -22,7 +23,6 @@ max_content_length <- 3000 # max tokens:  Change according to model !!!!
 default_temperature <- 0.2
 pre_text <- "Write correct, efficient R code to answer this prompt:"
 pre_text_python <- "Write correct, efficient Python code."
-after_text <- "Use the df data frame."
 max_data_points <- 10000  # max number of data points for interactive plot
 max_levels_factor_conversion <- 5 # Numeric columns will be converted to factor if less than or equal to this many levels
 # if a column is numeric but only have a few unique values, treat as categorical
@@ -33,7 +33,6 @@ sqltable <- "usage"
 # additional prompts to send to ChatGPT
 system_role <- "Act as an experienced data scientist and statistician. You will write R code following instructions. Do not provide explanation.
 Try to produce a plot when possible. ggplot2 is preferred. Make the plot visually appealing. If multiple plots are generated, try to combine them into one."
-system_role_date <- "Assume Today's date is 2024-03-26."
 
 # If this file exists, running on the server. Otherwise local. This is used to change app behavior.
 on_server <- "on_server.txt"
@@ -44,43 +43,27 @@ on_server <- "on_server.txt"
 # Load Data & Demo Prompts
 ###################################################################
 
+######### Load Built-In Data with Base R #########
 
-######### Folder/Data Path with RDS files #########
-# if environmental variable is not set, use relative path
-# set the HMCL_DATA environment variable to the data folder such as C:/data/HMCL/
-data_path <- Sys.getenv("HMCL_DATA")[1]
-# if not defined in the environment, use too levels above
-if (nchar(data_path) == 0) {
-  data_path <- "/srv/data/" # linux; change to your path if not using HMCL_DATA environment variable
-}
-
-# load data
-Sales_Masked_Rtutor <- readRDS(paste0(data_path, "Sales_Masked_Rtutor.rds"))
-Dispatch_Masked_Rtutor <- readRDS(paste0(data_path, "Dispatch_Masked_Rtutor.rds"))
-Vahan_Share_Masked_Rtutor <- readRDS(paste0(data_path, "Vahan_Masked_Rtutor.rds"))
-
-# Create list of available datasets to print on sidebar
+# Create a list of available datasets to print on the sidebar
 available_datasets <- list(
   "Select a dataset:" = NULL,
-  "Sales Data" = "Sales_Masked_Rtutor.rds",
-  "Registration Data" = "Vahan_Masked_Rtutor.rds",
-  "Dispatch Data" = "Dispatch_Masked_Rtutor.rds"
+  #"User Upload" = user_upload,
+  "No Data" = no_data,
+  "Iris" = "iris",
+  "MTCars" = "mtcars",
+  "Air Quality" = "airquality",
+  "Diamonds" = "diamonds",
+  "CO2" = "CO2",
+  "Tooth Growth" = "ToothGrowth",
+  "Pressure" = "pressure",
+  "Chick Weights" = "ChickWeight"
 )
 
-# load meta data, from JSON file
-meta_data <- function() {
-  readr::read_file(paste0(data_path, "metadata.json"))
-}
-# load meta data, from csv file
-meta_data_csv <- function() {
-  read.csv(paste0(data_path, "hmcl_metadata.csv"))
-}
-
-
-# A file, demo requests for different datasets, demo questions
+# load demo requests for different datasets (demo questions)
 demo <- read.csv(app_sys("app", "www", "demo_questions.csv"))
 
-# extract jokes
+# load jokes
 jokes <- demo[
   which(demo$data == "jokes"),
   "requests"
@@ -142,9 +125,6 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, selected_mo
         }
       )
       relevant_var <- names(relevant_var)[relevant_var]
-
-      # Always add 'use the df data frame.'
-      txt <- paste(txt, after_text)
 
     }
   }
