@@ -68,7 +68,7 @@ mod_09_report_ui <- function(id) {
 }
 
 mod_09_report_serv <- function(id, submit_button, logs, selected_model,
-                               openAI_response, openAI_prompt, use_python,
+                               llm_response, llm_prompt, use_python,
                                counter, sample_temp, code_error, python_to_html,
                                current_data) {
 
@@ -158,7 +158,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
 
     # RMarkdown chunk for the current request
     Rmd_chunk <- reactive({
-      req(openAI_response()$cmd, openAI_prompt())
+      req(llm_response()$cmd, llm_prompt())
 
       # Initialize Rmd_script
       Rmd_script <- if (use_python()) {   # add necessary setup when using Python
@@ -172,7 +172,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
       request_text <- gsub(
         paste0("\n|", pre_text, "|.*"),
         "",
-        openAI_prompt()
+        llm_prompt()
       )
       # Collapse the result into a single string
       request_text <- paste(request_text, collapse = " ")
@@ -192,7 +192,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
       }
 
       # Get code chunk
-      cmd <- openAI_response()$cmd
+      cmd <- llm_response()$cmd
       # If an empty first line exists -> remove it
       if (nchar(cmd[1]) == 0) {
         cmd <- cmd[-1]
@@ -217,7 +217,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
     })
 
     output$html_report <- renderUI({
-      req(openAI_response()$cmd)
+      req(llm_response()$cmd)
       tagList(
         actionButton(
           inputId = ns("report"),
@@ -265,7 +265,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
 
     observeEvent(input$report, {
       req(!use_python(), !is.null(current_data()),
-        openAI_response()$cmd, openAI_prompt()
+        llm_response()$cmd, llm_prompt()
       )
 
       withProgress(message = "Generating Report (5 minutes)", {
@@ -360,7 +360,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
           tempReport <- file.path(tempdir(), "report.Rmd")
           tempReport <- gsub("\\", "/", tempReport, fixed = TRUE)
 
-          req(openAI_response()$cmd, openAI_prompt())
+          req(llm_response()$cmd, llm_prompt())
 
           # Create RMarkdown header & content
           Rmd_script <- paste0(

@@ -49,7 +49,7 @@ app_server <- function(input, output, session) {
 
   mod_03 <- mod_03_main_panel_serv(
     id = "main_panel",
-    openAI_response = openAI_response,
+    llm_response = llm_response,
     logs = logs,
     code_error = code_error,
     run_result = run_result,
@@ -84,361 +84,34 @@ app_server <- function(input, output, session) {
 
   #                             4. Module 5
   #____________________________________________________________________________
-  # API Request & Response
+  #   LLMs
   #____________________________________________________________________________
 
-  openAI_prompt <- reactive({
-    req(submit_button())
-    req(available_datasets[[selected_dataset_name()]])
-    req(input_text())
-    isolate({ # so that it does not do it twice with each submit
-      prep_input(input_text(), selected_dataset_name(), current_data(), use_python(), logs$id, selected_model())
-    })
-  })
+  mod_05 <- mod_05_llms_serv(
+    id = "llms",
+    submit_button = submit_button,
+    input_text = input_text,
+    selected_dataset_name = selected_dataset_name,
+    api_key_session = api_key_session,
+    sample_temp = sample_temp,
+    selected_model = selected_model,
+    logs = logs,
+    counter = counter,
+    api_error_modal = api_error_modal,
+    code_error = code_error,
+    current_data = current_data,
+    run_env = run_env,
+    run_env_start = run_env_start,
+    run_result = run_result,
+    use_python = use_python,
+    convert_to_factor = convert_to_factor,
+    max_proportion_factor = max_proportion_factor,
+    max_levels_factor = max_levels_factor
+  )
 
-  relevancy_response <- reactiveVal(TRUE) # Initializing relevancy_response to be TRUE as a reactive variable
-
-  openAI_response <- reactive({
-    req(submit_button())
-
-    isolate({  # so that it will not respond to text, until submitted
-      req(input_text())
-      prepared_request <- openAI_prompt()
-      req(prepared_request)
-      req(available_datasets[[selected_dataset_name()]])  # require user to select a dataset
-
-      # Loading spinner, displays jokes
-      shinybusy::show_modal_spinner(
-        spin = "orbit",
-        text = sample(jokes, 1),
-        color = "#000000"
-      )
-
-      start_time <- Sys.time()
-
-      # Send to openAI
-      tryCatch(
-        if(selected_model() == "text-davinci-003") { # completion model: davinci-text-003
-          response <- openai::create_completion(
-            engine_id = selected_model(),
-            prompt = prepared_request,
-            openai_api_key = api_key_session()$api_key,
-            max_tokens = 1000,
-            temperature = sample_temp()
-          )
-        } else {
-
-          prompt_total <- list()
-
-          # System role: You are an experienced programmer, etc
-          if (!is.null(system_role)) {
-            if (nchar(system_role) > 10) {
-              prompt_total <- append(
-                prompt_total,
-                list(list(
-                  role = "system",
-                  content = system_role
-
-                ))
-              )
-            }
-          }
-
-          # add history, first, if any
-          if (length(logs$code_history) > 0) {
-
-            # if there's history, identify and load dataset
-            df <- get(available_datasets[[selected_dataset_name()]])
-
-            if (convert_to_factor()) {
-              df <- numeric_to_factor(
-                df,
-                max_levels_factor(),
-                max_proportion_factor()
-              )
-            }
-
-            # update the current_data() reactive value
-            current_data(df)
-
-            # update runtime environment with new data frame
-            run_env(rlang::env(run_env(), df = current_data(), df_name = selected_dataset_name()))
-            run_env_start(as.list(run_env()))
-
-
-            # HISTORY #
-            # manage context length. If it is too long, remove the oldest ones, except the first one
-            history_tokens <- sapply(
-              1:length(logs$code_history),
-              function(i) {
-                if(i == 1) {
-                  logs$code_history[[i]]$prompt_tokens + logs$code_history[[i]]$output_tokens
-                } else {
-                  # since the chat history includes previous prompt and output
-                  logs$code_history[[i]]$prompt_tokens + logs$code_history[[i]]$output_tokens  - logs$code_history[[i - 1]]$prompt_tokens - logs$code_history[[i - 1]]$output_tokens
-                }
-              }
-            )
-
-            #cumulative from backwards
-            cum_sum <- rev(cumsum(rev(history_tokens)))
-                                                                  # new request               # first one
-            cutoff <-  max_content_length - tokens(prepared_request) - history_tokens[1]
-
-            cum_sum[1] <- 0 # do not remove the first one
-            included <- which(cum_sum < cutoff)  # 1, 4, 5, 6, 7
-
-            # add each chunk, only keep chunk
-            history <- list()
-            for(i in included) {
-              history <- append(
-                history,
-                list(list(role = "user", content = logs$code_history[[i]]$prompt_all))
-              )
-
-              # append error message, only the most recent one
-              # prevent error status are not logged correctly
-              code_plus_error <- logs$code_history[[i]]$raw
-              if(i == length(logs$code_history) && code_error()) {
-                code_plus_error <- paste0(
-                  code_plus_error,
-                  "\n\nError: ",
-                  run_result()$error_message
-                )
-              }
-
-              history <- append(
-                history,
-                list(list(role = "assistant", content = code_plus_error))
-              )
-            }
-            prompt_total <- append(prompt_total, history)
-
-            # RELEVANCY AGENT #
-            # Is the user's question relevant?
-            # Construct prompt
-            if (available_datasets[[selected_dataset_name()]] != no_data) {  # only run when user selects a built-in dataset
-              relevancy_prompt <- list(list(
-                role = "user",
-                content = paste(
-                  "Determine if the current prompt is relevant to any of the previous prompts. The prompt is relevant if it is a followup question for the analysis on the current dataset. If the prompt is a question about a different dataset it is not relevant. The prompt is also relevant if it is a modification for the visualizations. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
-                  input_text(),
-                  "Current dataset: the built-in R dataset",
-                  selected_dataset_name()
-                ) # AND relevant to the current dataset
-              ))
-              prompt_total_test <- append(prompt_total, relevancy_prompt)
-              prompt_total_test[[1]][[2]] <- paste("Act as an experienced data analyst. Determine if the following prompts are relevant to the current data: the built-in R dataset", selected_dataset_name())
-
-              # ChatGPT API
-              response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-                model = selected_model(),
-                openai_api_key = api_key_session()$api_key,
-                #max_tokens = 500,
-                temperature = sample_temp(),
-                messages = prompt_total_test
-              )
-
-              # Store True or False
-              yn <- tolower(response$choices$message.content) == "true"
-              relevancy_response(yn) # Update relevancy_response with TRUE\FALSE from OpenAI
-            }
-
-          } else {  # if first prompt,  identify and load dataset
-
-            # show message for 10s with the fine name
-            showNotification(
-              paste("Selected dataset: ", selected_dataset_name()),
-              duration = 10
-            )
-
-            df <- get(available_datasets[[selected_dataset_name()]])
-            if (convert_to_factor()) {
-              df <- numeric_to_factor(
-                df,
-                max_levels_factor(),
-                max_proportion_factor()
-              )
-            }
-            # update the current_data() reactive value
-            current_data(df)
-
-            # update runtime environment with new data frame
-            run_env(rlang::env(run_env(), df = current_data(), df_name = selected_dataset_name()))
-            run_env_start(as.list(run_env()))
-
-            if (available_datasets[[selected_dataset_name()]] != no_data) {  # only run when user selects a dataset
-              # Is the user's question relevant? -- relevancy agent
-              # Construct prompt
-              relevancy_prompt <- list()
-              relevancy_prompt <- append(
-                relevancy_prompt,
-                list(list(
-                  role = "system",
-                  content = paste("Act as an experienced data analyst. Determine if the following prompts are relevant to the current dataset: the built-in R dataset",
-                  selected_dataset_name())
-                ))
-              )
-              relevancy_prompt <- append(
-                relevancy_prompt,
-                list(list(
-                  role = "user",
-                  content = paste(
-                    "Determine if the current prompt is relevant to the selected dataset. If it is relevant, respond with 'True'. Otherwise, respond with 'False'. Current prompt: ",
-                    input_text(),
-                    "Current dataset: the built-in R dataset",
-                    selected_dataset_name()
-                  ) # AND relevant to the current dataset
-                ))
-              )
-
-              # ChatGPT API
-              response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-                model = selected_model(),
-                openai_api_key = api_key_session()$api_key,
-                #max_tokens = 500,
-                temperature = sample_temp(),
-                messages = relevancy_prompt
-              )
-
-              # Store True or False
-              yn <- tolower(response$choices$message.content) == "true"
-              relevancy_response(yn)
-            }
-
-          } # end first user prompt
-
-          if (relevancy_response()) {
-            prepared_request = prep_input(input_text(), selected_dataset_name(), current_data(), use_python(), logs$id, selected_model())
-
-            # add new user prompt
-            if (available_datasets[[selected_dataset_name()]] != no_data) {
-              prompt_total <- append(
-                prompt_total,
-                list(list(
-                  role = "user",
-                  content = paste(
-                    prepared_request,
-                    "Available dataset: the built-in R dataset",
-                    selected_dataset_name()
-                  )
-                ))
-              )
-            } else {
-              prompt_total <- append(
-                prompt_total,
-                list(list(role = "user", content = prepared_request))
-              )
-            }
-
-            response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-              model = selected_model(),
-              openai_api_key = api_key_session()$api_key,
-              #max_tokens = 500,
-              temperature = sample_temp(),
-              messages = prompt_total
-            )
-
-            # to make the returned code at the same spot, as davinci model.
-            response$choices[1, 1] <- response$choices$message.content
-
-          } else {
-
-            response <- openai::create_chat_completion(  # chat model: gpt-3.5-turbo, gpt-4
-              model = selected_model(),
-              openai_api_key = api_key_session()$api_key,
-              # max_tokens = 500,
-              temperature = sample_temp(),
-              messages = list(list(
-                role = "user",
-                content = paste("Return this exact statement:",
-                "print('Please ask a question related to dataset", selected_dataset_name(),"and try again. (Reset to select a different dataset)')")
-              ))
-            )
-
-            # to make the returned code at the same spot, as davinci model.
-            response$choices[1, 1] <- response$choices$message.content
-            relevancy_response(TRUE) # Reinitiate the relevancy to be TRUE
-
-          } # end relevancy agent
-
-        },
-        error = function(e) {
-          # remove spinner, show message for 5s, & reload
-          shinybusy::remove_modal_spinner()
-          shiny::showModal(api_error_modal)
-          Sys.sleep(5)
-          session$reload()
-
-          list(
-            error_value = -1,
-            message = capture.output(print(e$message)),
-            error_status = TRUE
-          )
-        }
-      )
-
-      error_api <- FALSE
-      # if error returns true, otherwise
-      # that slot does not exist, returning false.
-      # or be NULL
-      error_api <- tryCatch(
-        !is.null(response$error_status),
-        error = function(e) {
-          return(TRUE)
-        }
-      )
-
-      error_message <- NULL
-      if (error_api) {
-        cmd <- NULL
-        response <- NULL
-        error_message <- response$message
-      } else {
-        cmd <- response$choices[1, 1]
-      }
-
-      api_time <- difftime(
-        Sys.time(),
-        start_time,
-        units = "secs"
-      )[[1]]
-
-      if (0) {
-        # if more than 10 requests, slow down. Only on server.
-        if (counter$requests > 20 && file.exists(on_server)) {
-          Sys.sleep(counter$requests / 5 + runif(1, 0, 5))
-        }
-        if (counter$requests > 50 && file.exists(on_server)) {
-          Sys.sleep(counter$requests / 10 + runif(1, 0, 10))
-        }
-      }
-
-      if (counter$requests > 100 && file.exists(on_server)) {
-        Sys.sleep(counter$requests / 40 + runif(1, 0, 40))
-      }
-
-      shinybusy::remove_modal_spinner()
-
-      # update usage via global reactive value/ ouput token is twice as expensive
-      counter$tokens_current <- response$usage$completion_tokens + response$usage$prompt_tokens
-      counter$requests <- counter$requests + 1
-      counter$time <- round(api_time, 0)
-      counter$costs_total <- counter$costs_total +
-        api_cost(response$usage$prompt_tokens, response$usage$completion_tokens, selected_model())
-
-      return(
-        list(
-          cmd = polish_cmd(cmd),
-          response = response,
-          time = round(api_time, 0),
-          error = error_api,
-          error_message = error_message
-        )
-      )
-    })
-  })
-
+  # Rename the reactive values for easier use
+  llm_prompt <- reactive({  mod_05$llm_prompt() })
+  llm_response <- reactive({  mod_05$llm_response() })
 
 
   #                             5. Module 06
@@ -472,7 +145,7 @@ app_server <- function(input, output, session) {
   mod_06 <- mod_06_error_hist_serv(
     id = "errors_and_history",
     submit_button = submit_button,
-    openAI_response = openAI_response,
+    llm_response = llm_response,
     logs = logs,
     counter = counter,
     reverted = reverted,
@@ -480,7 +153,7 @@ app_server <- function(input, output, session) {
     run_result = run_result,
     python_to_html = python_to_html,
     input_text = input_text,
-    openAI_prompt = openAI_prompt,
+    llm_prompt = llm_prompt,
     run_env = run_env,
     run_env_start = run_env_start,
     chunk_selection = chunk_selection,
@@ -567,8 +240,8 @@ app_server <- function(input, output, session) {
     submit_button = submit_button,
     logs = logs,
     selected_model = selected_model,
-    openAI_response = openAI_response,
-    openAI_prompt = openAI_prompt,
+    llm_response = llm_response,
+    llm_prompt = llm_prompt,
     use_python = use_python,
     counter = counter,
     sample_temp = sample_temp,

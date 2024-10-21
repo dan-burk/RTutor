@@ -13,7 +13,6 @@
 release <- "0.98" # RTutor
 no_data <- "no_data" # no data is uploaded or selected
 user_upload <- "user_upload" # data is uploaded by user
-names(no_data) <- "No data (examples)"
 min_query_length <- 6  # minimum # of characters
 max_query_length <- 2000 # max # of characters
 language_models <- c("gpt-4-turbo", "gpt-4o", "gpt-4-1106-preview", "gpt-3.5-turbo", "gpt-3.5-turbo-16k", "gpt-3.5-turbo-0301", "gpt-4", "gpt-4-0314", "text-davinci-003")

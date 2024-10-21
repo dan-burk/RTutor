@@ -121,7 +121,7 @@ mod_03_main_panel_ui <- function(id) {
   )
 }
 
-mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
+mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
                                    run_result, run_env_start, submit_button,
                                    use_python, tabs, current_data, selected_dataset_name,
                                    chunk_selection) {
@@ -132,7 +132,7 @@ mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
     ###  Selecting Chunk  ###
 
     # Update the selectInput choices when number of chunks changes
-    observe( {
+    observe({
       req(chunk_selection$chunk_choices)
       req(chunk_selection$selected_chunk)
 
@@ -154,7 +154,7 @@ mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
 
     # Print code chunk
     output$openAI <- renderPrint({
-      req(openAI_response()$cmd)
+      req(llm_response()$cmd)
       res <- logs$raw
       res <- gsub("```", "", res)
       cat(res)
@@ -261,7 +261,7 @@ mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
     # Display tips for interactive plots
     output$tips_interactive <- renderUI({
       req(submit_button())
-      req(openAI_response()$cmd)
+
       if(is_interactive_plot() ||   # natively interactive
         turned_on(input$make_ggplot_interactive) # converted
        ) {
@@ -307,7 +307,7 @@ mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
         ui = paste("Please uncheck the CanvasXpress
         box before proceeding to the next request."),
         id = "uncheck_canvasXpress",
-        duration = NULL,
+        duration = 10,
         type = "error"
       )
     })
@@ -332,10 +332,10 @@ mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
 
       req(!code_error())
       req(logs$code)
-      txt <- paste(openAI_response()$cmd, collapse = " ")
+      txt <- paste(llm_response()$cmd, collapse = " ")
 
       # if not a dataframe, create dummy data
-      if (class(current_data()) == "data.frame") {
+      if ("data.frame" %in% class(current_data())) {
         df <- current_data()
       } else {
         df <- data.frame(value = rep(1, 3))
@@ -363,10 +363,10 @@ mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
 
       req(!code_error())
       req(logs$code)
-      txt <- paste(openAI_response()$cmd, collapse = " ")
+      txt <- paste(llm_response()$cmd, collapse = " ")
 
       # if not a dataframe, create dummy data
-      if (class(current_data()) == "data.frame") {
+      if ("data.frame" %in% class(current_data())) {
         df <- current_data()
       } else {
         df <- data.frame(value = rep(1, 3))
@@ -385,7 +385,7 @@ mod_03_main_panel_serv <- function(id, openAI_response, logs, code_error,
 
     # # Python Markdown
     # output$python_markdown <- renderUI({
-    #   req(openAI_response()$cmd)
+    #   req(llm_response()$cmd)
     #   req(use_python())
 
     #   id <- as.integer(input$selected_chunk)

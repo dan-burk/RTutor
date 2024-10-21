@@ -6,9 +6,9 @@
   #____________________________________________________________________________
 
 
-  mod_06_error_hist_serv <- function(id, submit_button, openAI_response, logs, counter,
+  mod_06_error_hist_serv <- function(id, submit_button, llm_response, logs, counter,
                                      reverted, use_python, run_result, python_to_html,
-                                     code_error, input_text, openAI_prompt, run_env,
+                                     code_error, input_text, llm_prompt, run_env,
                                      run_env_start, chunk_selection, Rmd_chunk
                                      ) {
 
@@ -33,7 +33,7 @@
     # Warning message when reached 10 cents, 20c, 30c ...
     observeEvent(submit_button(), {
       req(file.exists(on_server))
-      req(!openAI_response()$error)
+      req(!llm_response()$error)
 
       cost_session <-  counter$costs * 10
       if (cost_session %% 5  == 0 & cost_session != 0) {
@@ -81,9 +81,9 @@
 
       logs$id <- logs$id + 1
 
-      logs$code <-  openAI_response()$cmd
+      logs$code <-  llm_response()$cmd
 
-      logs$raw <- openAI_response()$cmd 
+      logs$raw <- llm_response()$cmd 
       # remove one or more blank lines in the beginning.
       logs$raw <- gsub("^\n+", "", logs$raw)
       logs$last_code <- ""
@@ -95,15 +95,15 @@
         code = logs$code,
         raw = logs$raw, # for print
         prompt = input_text(),
-        prompt_all = openAI_prompt(), # entire prompt, as sent to openAI
+        prompt_all = llm_prompt(), # entire prompt, as sent to openAI
         error = code_error(),
         error_message = run_result()$error_message,
         rmd = Rmd_chunk(),
         language = ifelse(use_python(), "Python", "R"),
         # saves the rendered file in the logs object.
         html_file = ifelse(use_python(), python_to_html(), -1),
-        prompt_tokens = openAI_response()$response$usage$prompt_tokens,
-        output_tokens = openAI_response()$response$usage$completion_tokens,
+        prompt_tokens = llm_response()$response$usage$prompt_tokens,
+        output_tokens = llm_response()$response$usage$completion_tokens,
         # save a copy of the data in the environment as a list.
         # if save environment, only reference is saved.
         # This needs more memory, but works.
