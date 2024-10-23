@@ -9,7 +9,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
   moduleServer(id, function(input, output, session) {
     
     # Store dataset name
-    dataset_name <- reactive({  available_datasets[[selected_dataset_name()]] })
+    dataset_name <- reactive({ available_datasets[[selected_dataset_name()]] })
 
     # LLM prompt
     llm_prompt <- reactive({

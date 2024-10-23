@@ -253,4 +253,21 @@ app_server <- function(input, output, session) {
   # Rename the reactive values for easier use
   Rmd_chunk <- reactive({  mod_09$Rmd_chunk() })
 
+
+
+  #                             9. Module 10
+  #____________________________________________________________________________
+  #  Exploratory Data Analysis Tab
+  #____________________________________________________________________________
+
+  # 'EDA' module
+  mod_10 <- mod_10_eda_serv(
+    id = "eda",
+    selected_dataset_name = selected_dataset_name,
+    use_python = use_python,
+    current_data = current_data,
+    logs = logs
+  )
+
+
 }

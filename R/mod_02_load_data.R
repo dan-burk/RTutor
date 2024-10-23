@@ -82,15 +82,15 @@ mod_02_load_data_ui <- function(id) {
             )
           )
         )
-      )#,
-      # # API keys and Python options
-      # conditionalPanel(
-      #   condition = "0",
-      #   column(
-      #     width = 4,
-      #     checkboxInput(ns("use_python"), "Python", value = FALSE)
-      #   )
-      # )
+      ),
+      # API keys and Python options
+      conditionalPanel(
+        condition = "0",
+        column(
+          width = 4,
+          checkboxInput(ns("use_python"), "Python", value = FALSE)
+        )
+      )
     ),
 
     fluidRow(
@@ -160,7 +160,7 @@ mod_02_load_data_serv <- function(id, chunk_selection) {
 
       names(choices) <- demo$name[match(choices, demo$requests)]
 
-      # # subset based on R or Python
+      # subset based on R or Python
       # if (input$use_python) {
       #   choices <- choices[demo$Python == 1]
       # } else {
@@ -201,8 +201,8 @@ mod_02_load_data_serv <- function(id, chunk_selection) {
         input_text = reactive(input$input_text),
         selected_dataset_name = reactive(input$user_selected_dataset),
         submit_button = reactive(input$submit_button),
-        reset_button = reactive(input$reset_button)#,
-        # use_python = reactive(input$use_python)
+        reset_button = reactive(input$reset_button),
+        use_python = reactive(input$use_python)
       )
     )
 

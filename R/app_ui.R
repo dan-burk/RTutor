@@ -56,6 +56,20 @@ app_ui <- function(request) {
         mod_09_report_ui("report")
       ),
 
+      ### 'EDA' Tab Panel ###
+      tabPanel(
+        title = "EDA",
+        value = "EDA",
+        tippy::tippy_this(
+          "eda_tab",
+          "Exploratory Data Analysis",
+          theme = "light-border"
+        ),
+
+        ### EDA Module ###
+        mod_10_eda_ui("eda")
+      ),
+
       ### 'About' Tab Panel ###
       tabPanel(
         title = "About",

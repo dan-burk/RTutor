@@ -26,6 +26,8 @@ max_data_points <- 10000  # max number of data points for interactive plot
 max_levels_factor_conversion <- 5 # Numeric columns will be converted to factor if less than or equal to this many levels
 # if a column is numeric but only have a few unique values, treat as categorical
 unique_ratio <- 0.05   # number of unique values / total # of rows
+max_eda_levels <- 12 # max number of levels in categorical varaible for EDA, ggairs
+max_eda_var <- 20 # maximum num of variables in EDA
 sqlitePath <- "../../data/usage_data.db" # folder to store the user queries, generated R code, and running results
 sqltable <- "usage"
 
@@ -334,6 +336,48 @@ numeric_to_factor <- function(df, max_levels_factor, max_proportion_factor) {
 ###################################################################
 # Miscellaneous
 ###################################################################
+
+
+#' Plot missing values
+#' 
+#'
+#' @param df a dataframe
+#'
+#' @return a plot
+#' 
+#ploting missing values
+missing_values_plot <- function(df) {
+  req(!is.null(df))
+
+  # Calculate the total number of missing values per column
+  missing_values <- sapply(df, function(x) sum(is.na(x)))
+
+  # Calculate the number of cases with at least one missing value
+  cases_with_missing <- sum(apply(df, 1, function(x) any(is.na(x))))
+
+  # Check if there are any missing values
+  if (all(missing_values == 0)) {
+    return(NULL)
+  } else {
+    # Create a data frame for plotting
+    missing_data_df <- data.frame(
+      Column = c(names(missing_values), "At Least One Missing"),
+      MissingValues = c(missing_values, cases_with_missing)
+    )
+    # Calculate the percentage of missing values per column
+    # missing_percentage <- (missing_values / nrow(df)) * 100
+    # Plot the number of missing values for all columns with labels
+    ggplot(missing_data_df, aes(x = Column, y = MissingValues, fill = Column)) +
+      geom_bar(stat = "identity") +
+      geom_text(aes(label = sprintf("%.0f%%", MissingValues / nrow(df) * 100)), hjust = -5) + # Add labels to the bars
+      # geom_text(aes(label = sprintf("%.2f%%", MissingPercentage)), hjust = -0.3) +
+      coord_flip() + # Makes the bars horizontal
+      labs(title = "Number of Missing Values by Column", x = "Column", y = "Number of Missing Values") +
+      scale_fill_brewer(palette = "Set3") + # Use a color palette for different bars
+      theme(legend.position = "none", axis.title.y = element_blank()) + # Remove the legend
+      scale_y_continuous(expand = expansion(mult = c(0, 0.2))) # Extend the y-axis limits by 10%
+  }
+}
 
 
 # RMarkdown file's Header for knit python chunks
