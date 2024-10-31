@@ -41,7 +41,7 @@ app_ui <- function(request) {
           )
         )
       ), #tabPanel
-      
+
       ### 'Report' Tab Panel ###
       tabPanel(
         title = "Report",
@@ -68,6 +68,14 @@ app_ui <- function(request) {
 
         ### EDA Module ###
         mod_10_eda_ui("eda")
+      ),
+
+      ### 'Settings' Tab Panel ###
+      tabPanel(
+        title = "Settings",
+        value = "Settings",
+        ### Settings Module ###
+        #mod_11_settings_ui("sett")
       ),
 
       ### 'About' Tab Panel ###
