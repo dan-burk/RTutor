@@ -15,9 +15,9 @@ no_data <- "no_data" # no data is uploaded or selected
 user_upload <- "user_upload" # data is uploaded by user
 min_query_length <- 6  # minimum # of characters
 max_query_length <- 2000 # max # of characters
-language_models <- c("gpt-4-turbo", "gpt-4o", "gpt-4-1106-preview", "gpt-3.5-turbo", "gpt-3.5-turbo-16k", "gpt-3.5-turbo-0301", "gpt-4", "gpt-4-0314", "text-davinci-003")
-names(language_models) <- c("GPT-4 Turbo", "GPT-4o", "GPT-4 Turbo (11/23)", "ChatGPT", "ChatGPT 16k", "ChatGPT (03/23)", "GPT-4", "GPT-4 (03/23)", "Davinci")
-default_model <- "GPT-4 Turbo" #"GPT-4 Turbo (11/23)" # "GPT-4o"  # "ChatGPT" #   "GPT-4 (03/23)"
+language_models <- c("gpt-4o-2024-08-06",  "gpt-4o-mini", "gpt-3.5-turbo")
+names(language_models) <- c("GPT-4o", "GPT-4o mini", "GPT-3.5 Turbo" )
+default_model <- "GPT-4o"  # "GPT-4 Turbo"   # "ChatGPT"   # "GPT-4 (03/23)"
 max_content_length <- 3000 # max tokens:  Change according to model !!!!
 default_temperature <- 0.2
 pre_text <- "Write correct, efficient R code to answer this prompt:"
@@ -87,11 +87,11 @@ jokes <- demo[
 #' @param chunk_id  first or not? First chunk add data description
 #'
 #' @return Returns a cleaned up version, so that it could be sent to GPT.
-prep_input <- function(txt, selected_data, df, use_python, chunk_id, selected_model) {
+prep_input <- function(txt, selected_data, df, use_python) {
 
   if(is.null(txt) || is.null(selected_data)) {
     return(NULL)
-  } 
+  }
   # if too short, do not send. 
   if(nchar(txt) < min_query_length || nchar(txt) > max_query_length) {
     return(NULL)
@@ -116,10 +116,12 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, selected_mo
         function(x) {
           # hwy. class
           grepl(
-            paste0(
-              " ", # proceeding space
-              x,
-              "[ |\\.|,|?]" # ending space, comma, period, or question mark
+            tolower(
+              paste0(
+                " ", # proceeding space
+                x,
+                "[ |\\.|,|?]" # ending space, comma, period, or question mark
+              )
             ),
           txt
           )
@@ -246,14 +248,14 @@ tokens <- function(text) {
 #' @param selected_model a string
 #'
 #' @return a number
-#' 
+#'
 api_cost <- function(prompt_tokens, completion_tokens, selected_model) {
-  if(grepl("gpt-4", selected_model)) { # gpt4
+  if (grepl("gpt-4", selected_model)) { # gpt4
     # input token $0.03 / 1k token, Output is $0.06 / 1k for GPT-4
-    completion_tokens * 6e-5+ prompt_tokens  * 3e-5
+    completion_tokens * 6e-5 + prompt_tokens  * 3e-5
   } else {
     # ChatGPT
-    completion_tokens * 2e-6+ prompt_tokens  * 1.5e-6 
+    completion_tokens * 2e-6 + prompt_tokens  * 1.5e-6
   }
 }
 
@@ -464,6 +466,154 @@ python_html <- function(python_code, select_data, current_data) {
       return(-1)
     }
 }
+
+
+# #' Creates a SQLite database file for collecting user data
+# #' 
+# #' The data file should be stored in the ../../data folder inside 
+# #' the container. From outside in the RTutor_server folder, 
+# #' it is in data folder.
+# #'  Only works on local machines. Not on linux.
+# #' @return nothing
+# create_usage_db <- function() {
+#   # if db does not exist, create one
+#   if(!file.exists(sqlitePath)) {
+#     db <- RSQLite::dbConnect(RSQLite::SQLite(), gsub(".*/", "", sqlitePath))
+#     txt <- sprintf(
+#       paste0(
+#       "CREATE TABLE ",
+#         sqltable,
+#         "(\n",
+#         "date DATE NOT NULL,
+#         time TIME NOT NULL,
+#         request varchar(5000),
+#         code varchar(5000),
+#         error int ,
+#         data_str varchar(5000))"
+#       )
+#     )
+#       # Submit the update query and disconnect
+#       RSQLite::dbExecute(db, txt)
+#       RSQLite::dbDisconnect(db)
+#   }
+# }
+# # To create a database under Ubuntu
+# # sudo apt update
+# # sudo apt install sqlite3
+# # cd ~/Rtutor_server/data
+# # sudo  sqlite3 usage_data.db
+# # CREATE TABLE usage (
+# #        date DATE NOT NULL,
+# #        time TIME NOT NULL,
+# #        request varchar(5000),
+# #        code varchar(5000),
+# #        error int,
+# #        data_str varchar(5000),
+# #       dataset varchar(100));
+# # sudo chmod a+w usage_data.db
+# # note that error column, 1 means error, 0 means no error, success.
+#' Saves user queries, code, and error status
+#' 
+#'
+#' @param date Date in the format of "2023-01-04"
+#' @param time Time "13:05:12"
+#' @param request, user request
+#' @param code AI generated code
+#' @param error status, TRUE, error
+#' @param chunk, id, from 1, 2, ...
+#' @param api_time  time in seconds for API response
+#' @param tokens  total completion tokens
+#' @param filename name of the uploaded file
+#' @param filesize size
+#' 
+#' @return nothing
+# save_data <- function(
+#   date, time, request, code, error_status,
+#   data_str, dataset, session, filename,
+#   filesize, chunk, api_time, tokens, language
+# ) {
+#   # if db does not exist, create one
+#   if (file.exists(sqlitePath)) {
+#     # Connect to the database
+#     db <- RSQLite::dbConnect(RSQLite::SQLite(), sqlitePath, flags = RSQLite::SQLITE_RW)
+#     # Construct the update query by looping over the data fields
+#     txt <- sprintf(
+#       "INSERT INTO %s (%s) VALUES ('%s')",
+#       sqltable,
+#       "date, time, request, code, error, data_str, dataset, session, filename, filesize, chunk, api_time, tokens, language",
+#       paste(
+#         c(
+#           as.character(date),
+#           as.character(time),
+#           clean_txt(request),
+#           clean_txt(code),
+#           as.integer(error_status),
+#           clean_txt(data_str),
+#           dataset,
+#           session,
+#           filename,
+#           filesize,
+#           chunk,
+#           api_time,
+#           tokens,
+#           language
+#         ),
+#         collapse = "', '"
+#       )
+#     )
+#     # Submit the update query and disconnect
+#     try(
+#       RSQLite::dbExecute(db, txt)
+#     )
+#     RSQLite::dbDisconnect(db)
+#   }
+# }
+# SQLite command to create feedback table
+# "CREATE TABLE feedback (
+#        date DATE NOT NULL,
+#        time TIME NOT NULL,
+#        helpfulness varchar(50),
+#        experience varchar(50),
+#        comments varchar(5000)); "
+#' Save user feedback
+#' 
+#'
+#' @param date Date in the format of "2023-01-04"
+#' @param time Time "13:05:12"
+#' @param comments, user request
+#' @param helpfulness rating
+#' @param experience  R experience
+#'
+#' @return nothing
+# save_comments <- function(date, time, comments, helpfulness, experience) {
+#   # if db does not exist, create one
+#   if (file.exists(sqlitePath)) {
+#     # Connect to the database
+#     db <- RSQLite::dbConnect(RSQLite::SQLite(), sqlitePath, flags = RSQLite::SQLITE_RW)
+#     # Construct the update query by looping over the data fields
+#     txt <- sprintf(
+#       "INSERT INTO %s (%s) VALUES ('%s')",
+#       "feedback",
+#       "date, time, comments, helpfulness, experience",
+#       paste(
+#         c(
+#           as.character(date),
+#           as.character(time),
+#           clean_txt(comments),
+#           helpfulness,
+#           experience
+#         ),
+#         collapse = "', '"
+#       )
+#     )
+#     # Submit the update query and disconnect
+#     try(
+#       RSQLite::dbExecute(db, txt)
+#     )
+#     RSQLite::dbDisconnect(db)
+#   }
+# }
+
 
 # Create a data frame with questions and answers for FAQ section
 # Used in faq_list component

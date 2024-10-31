@@ -16,7 +16,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
       req(submit_button(), dataset_name(), input_text())
 
       isolate({  # so it does not run twice with each submit
-        prep_input(input_text(), selected_dataset_name(), current_data(), use_python(), logs$id, selected_model())
+        prep_input(input_text(), selected_dataset_name(), current_data(), use_python())
       })
     })
 
