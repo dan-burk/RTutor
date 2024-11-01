@@ -169,7 +169,7 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
     # Display error messages
     output$error_message <- renderUI({
       req(code_error())
-      req(logs$code)
+      req(logs$code != "")
       if(code_error()) {
         h4(paste("Error!", run_result()$error_message), style = "color:red")
       } else {
@@ -183,7 +183,7 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
     # Plot results
     output$result_plot <- renderPlot({
       req(!code_error())
-      req(logs$code)
+      req(logs$code != "")
       # Check if the result is not a ggplot or a known plot type
       if (inherits(run_result()$result, "ggplot") || is.null(run_result()$console_output)) {
         return(run_result()$result)
@@ -242,11 +242,11 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
       req(submit_button())
       req(!use_python())
       req(!code_error())
-      req(logs$code)
+      req(logs$code != "")
 
       if (
         is_interactive_plot() ||   # natively interactive
-        turned_on(input$make_ggplot_interactive) # converted
+          turned_on(input$make_ggplot_interactive) # converted
       ) {
         plotly::plotlyOutput(ns("result_plotly"))
       } else if (
@@ -260,11 +260,11 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
 
     # Display tips for interactive plots
     output$tips_interactive <- renderUI({
-      req(submit_button())
+      req(submit_button(), selected_dataset_name())
 
-      if(is_interactive_plot() ||   # natively interactive
-        turned_on(input$make_ggplot_interactive) # converted
-       ) {
+      if (is_interactive_plot() ||   # natively interactive
+          turned_on(input$make_ggplot_interactive) # converted
+      ) {
         tagList(
           p("Mouse over to see values. Select a region to zoom.
           Click on the legends to deselect a group.
@@ -290,7 +290,7 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
     is_interactive_plot <- reactive({
       # only true if the plot is interactive, natively.
       req(submit_button())
-      req(logs$code)
+      req(logs$code != "")
       req(!code_error())
       if (inherits(run_result()$result, "plotly")) {
         return(TRUE)
@@ -331,7 +331,7 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
       )
 
       req(!code_error())
-      req(logs$code)
+      req(logs$code != "")
       txt <- paste(llm_response()$cmd, collapse = " ")
 
       # if not a dataframe, create dummy data
@@ -342,9 +342,9 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
       }
 
       if (inherits(run_result()$result, "ggplot") && # if ggplot2, and it is
-        !is_interactive_plot() && # not already an interactive plot, show
-        # if there are too many data points, don't do the interactive
-        !(dim(df)[1] > max_data_points && grepl("geom_point|geom_jitter", txt))
+          !is_interactive_plot() && # not already an interactive plot, show
+          # if there are too many data points, don't do the interactive
+          !(dim(df)[1] > max_data_points && grepl("geom_point|geom_jitter", txt))
       ) {
         shinyjs::showElement(id = "make_ggplot_interactive")
       }
@@ -362,7 +362,7 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
       )
 
       req(!code_error())
-      req(logs$code)
+      req(logs$code != "")
       txt <- paste(llm_response()$cmd, collapse = " ")
 
       # if not a dataframe, create dummy data

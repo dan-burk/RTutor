@@ -11,7 +11,7 @@ mod_07_run_code_serv <- function(id, run_env, run_env_start, run_result, submit_
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
+
     ### Run the code ###
 
     # stores the results after running the generated code.
@@ -67,7 +67,7 @@ mod_07_run_code_serv <- function(id, run_env, run_env_start, run_result, submit_
       })
     })
 
-  
+
     ### Data Prep ###
 
     # Convert data columns to factors

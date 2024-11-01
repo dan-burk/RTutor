@@ -191,7 +191,7 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
 
     # if user selects more than 20 columns for the eda_variables, only the first 20 is selected by eda_variables. Show a warning.
     observeEvent(c(input$eda_variables, input$eda_target_variable), {
-      req(!use_python())
+      req(!use_python(), selected_dataset_name())
       req(!is.null(ggpairs_data()))
 
       selected_var <- input$eda_variables
@@ -517,9 +517,10 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
 
     # data used for EDA
     ggpairs_data <- reactive({
+      req(selected_dataset_name())
       df <- current_data()
       # if analyses are run, use the original data
-      if(length(logs$code_history) > 0) {
+      if (length(logs$code_history) > 0) {
         df <- logs$code_history[[1]]$env$df
       }
       #df <- na.omit(df) # remove missing values

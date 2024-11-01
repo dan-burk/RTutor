@@ -103,7 +103,7 @@ mod_08_misc_serv <- function(id, reset_button, submit_button, logs, use_python,
 
     # File is rendered and stored in the html_file variable in logs$code_history
     python_to_html <- reactive({
-      req(submit_button())
+      req(submit_button(), selected_dataset_name())
       req(logs$language == "Python")
       req(use_python())
 

@@ -82,14 +82,6 @@ mod_02_load_data_ui <- function(id) {
             )
           )
         )
-      ),
-      # API keys and Python options
-      conditionalPanel(
-        condition = "0",
-        column(
-          width = 4,
-          checkboxInput(ns("use_python"), "Python", value = FALSE)
-        )
       )
     ),
 
@@ -111,11 +103,11 @@ mod_02_load_data_serv <- function(id, chunk_selection) {
 
     # Display selected dataset
     output$selected_dataset <- renderText({
-        req(input$submit_button)
-        req(!is.null(available_datasets[[input$user_selected_dataset]]))
+      req(input$submit_button)
+      req(available_datasets[[input$user_selected_dataset]])
 
-        txt <- paste0(input$user_selected_dataset, ".  Reset to switch.")
-        return(txt)
+      txt <- paste0(input$user_selected_dataset, ".  Reset to switch.")
+      return(txt)
     })
 
 
@@ -160,13 +152,6 @@ mod_02_load_data_serv <- function(id, chunk_selection) {
 
       names(choices) <- demo$name[match(choices, demo$requests)]
 
-      # subset based on R or Python
-      # if (input$use_python) {
-      #   choices <- choices[demo$Python == 1]
-      # } else {
-      #   choices <- choices[demo$R == 1]
-      # }
-
       tagList(
         # CSS Styles
         tags$head(tags$style(HTML(paste0("
@@ -194,6 +179,39 @@ mod_02_load_data_serv <- function(id, chunk_selection) {
       )
     })
 
+    # User Request Handling
+    observeEvent(input$submit_button, {
+      # if user's request too short, do not send
+      if (nchar(input$input_text) < min_query_length) {
+        showNotification(
+          paste(
+            "Request too short! Should be more than ",
+            min_query_length,
+            " characters."
+          ),
+          duration = 10
+        )
+      }
+      # if user's request too long, do not send
+      if (nchar(input$input_text) > max_query_length) {
+        showNotification(
+          paste(
+            "Request too long! Should be less than ",
+            max_query_length,
+            " characters."
+          ),
+          duration = 10
+        )
+      }
+      # if no file is selected, do not send
+      if (is.null(available_datasets[[input$user_selected_dataset]])) {
+        showNotification(
+          paste("No file found. Please select a dataset and try again."),
+          duration = 10
+        )
+      }
+    })
+
 
     # Return all reactive values so they can be used outside the module
     return(
@@ -201,8 +219,7 @@ mod_02_load_data_serv <- function(id, chunk_selection) {
         input_text = reactive(input$input_text),
         selected_dataset_name = reactive(input$user_selected_dataset),
         submit_button = reactive(input$submit_button),
-        reset_button = reactive(input$reset_button),
-        use_python = reactive(input$use_python)
+        reset_button = reactive(input$reset_button)
       )
     )
 

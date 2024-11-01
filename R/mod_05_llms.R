@@ -1,13 +1,13 @@
 
 
 
-mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_name, 
-                                       api_key_session, sample_temp, selected_model, logs, 
-                                       counter, api_error_modal, code_error, current_data, 
-                                       run_env, run_env_start, run_result, use_python,
-                                       convert_to_factor, max_proportion_factor, max_levels_factor) {
+mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_name,
+                             api_key_session, sample_temp, selected_model, logs,
+                             counter, api_error_modal, code_error, current_data,
+                             run_env, run_env_start, run_result, use_python,
+                             convert_to_factor, max_proportion_factor, max_levels_factor) {
   moduleServer(id, function(input, output, session) {
-    
+
     # Store dataset name
     dataset_name <- reactive({ available_datasets[[selected_dataset_name()]] })
 
@@ -23,23 +23,23 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
 
     # LLM response
     llm_response <- reactive({
-      req(submit_button())
-      
+      req(submit_button(), dataset_name())
+
       isolate({
         # will not respond to text input until submitted
-        req(input_text(), llm_prompt(), dataset_name())
+        req(input_text(), llm_prompt())
 
         # Store prompt
         prepared_request <- llm_prompt()
-        
+
         # Loading modal
         shinybusy::show_modal_spinner(spin = "orbit", text = sample(jokes, 1), color = "#000000")
         on.exit(shinybusy::remove_modal_spinner(), add = TRUE)
-        
+
         start_time <- Sys.time()
 
         # Get LLM response
-        response <- tryCatch({  
+        response <- tryCatch({
           # Update env. & append history, if any
           update_environment()
 
@@ -63,7 +63,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
             error_status = TRUE
           )
         })
-        
+
         final_response <- process_response(response, start_time)
       })
 
@@ -76,12 +76,12 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
     # History/Record Keeping
     build_history <- function(prepared_request) {
       prompt_total <- list()
-      
+
       # Add system role
       if (!is.null(system_role) && nchar(system_role) > 10) {
         prompt_total <- append(prompt_total, list(list(role = "system", content = system_role)))
       }
-      
+
       # If there's history
       if (length(logs$code_history) > 0) {
         # Calculate token usage from previous interactions, adjusted for overlap
@@ -93,24 +93,24 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
               logs$code_history[[i - 1]]$prompt_tokens - logs$code_history[[i - 1]]$output_tokens
           }
         })
-        
+
         # Determine which history items to include
         included <- which(rev(cumsum(rev(history_tokens))) < (max_content_length - tokens(prepared_request) - history_tokens[1]))
-        
+
         # Build prompt history with included items
         for (i in included) {
           code_plus_error <- logs$code_history[[i]]$raw
           if (i == length(logs$code_history) && code_error()) {
             code_plus_error <- paste0(code_plus_error, "\n\nError: ", run_result()$error_message)
           }
-          
+
           prompt_total <- append(prompt_total, list(
             list(role = "user", content = logs$code_history[[i]]$prompt_all),
             list(role = "assistant", content = code_plus_error)
           ))
         }
       }
-      
+
       # Return prompt history
       return(prompt_total)
     }
@@ -123,7 +123,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
 
       # Process/update data
       if (dataset_name() != no_data) { # or user upload!!!
-        df <- get(dataset_name()) 
+        df <- get(dataset_name())
         if (convert_to_factor()) {
           df <- numeric_to_factor(df, max_levels_factor(), max_proportion_factor())
         }
@@ -133,7 +133,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
       # Update environment
       run_env(rlang::env(run_env(), df = current_data(), df_name = selected_dataset_name()))
       run_env_start(as.list(run_env()))
-      
+
       # Display selected data
       if (length(logs$code_history) == 0) {
         showNotification(paste("Selected dataset:", selected_dataset_name()), duration = 10)
@@ -148,7 +148,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
       counter$costs_total <- counter$costs_total +
         api_cost(response$usage$prompt_tokens, response$usage$completion_tokens, selected_model())
     }
-    
+
 
     ### LLM Agents ###
 
@@ -225,11 +225,11 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
       prompt_total <- if (is_relevant) {
           append(prompt_total, list(list(role = "user", content = paste(prepared_request, dataset_details))))
       } else {   # if prompt is not relevant, send message
-          list(list(role = "user", content = paste(
-            "Return this exact statement: print('Please ask a question related to dataset",
-            selected_dataset_name(),
-            "and try again. (Reset to select a different dataset)')"
-          )))
+        list(list(role = "user", content = paste(
+          "Return this exact statement: print('Please ask a question related to dataset",
+          selected_dataset_name(),
+          "and try again. (Reset to select a different dataset)')"
+        )))
       }
 
 
@@ -248,16 +248,16 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
       error_api <- !is.null(response$error_status)
       cmd <- if (error_api) NULL else response$choices[1, 1]
       error_message <- if (error_api) response$message else NULL
-      
+
       # Get API time
       api_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-      
+
       if (counter$requests > 100 && file.exists(on_server)) {
         Sys.sleep(counter$requests / 40 + runif(1, 0, 40))
       }
-            
+
       update_counter(response, api_time)
-      
+
       # Store info in response variable, return it
       return(list(
         cmd = polish_cmd(cmd),
@@ -268,7 +268,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
       ))
     }
 
-    
+
     ### LLM Functions ###
 
     # OpenAI ChatGPT API function

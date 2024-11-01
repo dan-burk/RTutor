@@ -47,39 +47,6 @@ mod_04_llm_mgmt_serv <- function(id, submit_button, input_text, selected_dataset
         )
     })
 
-    # Only save API key if app is running locally
-    observeEvent(submit_button(), {
-      # if too short, do not send.
-      if (nchar(input_text()) < min_query_length) {
-        showNotification(
-          paste(
-            "Request too short! Should be more than ",
-            min_query_length,
-            " characters."
-          ),
-          duration = 10
-        )
-      }
-      # if too long, do not send
-      if (nchar(input_text()) > max_query_length) {
-        showNotification(
-          paste(
-            "Request too long! Should be less than ",
-            max_query_length,
-            " characters."
-          ),
-          duration = 10
-        )
-      }
-      # if no file is selected, do not send
-      if (is.null(available_datasets[[selected_dataset_name()]])) {
-        showNotification(
-          paste("No file found. Please select a dataset and try again."),
-          duration = 10
-        )
-      }
-    })
-
 
     # ____________________
     ### LLM Parameters ###

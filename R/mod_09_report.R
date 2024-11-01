@@ -77,6 +77,8 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
 
     # Dropdown to pick what chunks to include in report
     observeEvent(submit_button(), {
+      req(logs$code != "")
+
       choices <- seq_along(logs$code_history)
       names(choices) <- paste0("Chunk #", choices)
 
@@ -95,6 +97,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
 
     # collect all RMarkdown chunks
     Rmd_total <- reactive({
+      req(llm_prompt())
 
       # Initialize script with model and credits
       Rmd_script <- ""
