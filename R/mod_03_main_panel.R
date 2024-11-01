@@ -77,8 +77,8 @@ mod_03_main_panel_ui <- function(id) {
       ),
 
       conditionalPanel(
-        condition = "true",  # "input['load_data-use_python'] == 0",
-        
+        condition = "true",
+
         # shows error message in local machine, but not on the server
         uiOutput(ns("error_message")),
         verbatimTextOutput(ns("console_output")),
@@ -110,12 +110,6 @@ mod_03_main_panel_ui <- function(id) {
         br(),
         # Display helpful tips on interactive plots
         uiOutput(ns("tips_interactive"))
-      ),
-
-      # If using python code, show python markdown option
-      conditionalPanel(
-        condition = "false", # "input['load_data-use_python'] == 1",
-        #uiOutput(ns("python_markdown"))
       )
     )
   )
@@ -169,7 +163,7 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
     # Display error messages
     output$error_message <- renderUI({
       req(code_error())
-      req(logs$code != "")
+      req(logs$code)
       if(code_error()) {
         h4(paste("Error!", run_result()$error_message), style = "color:red")
       } else {
@@ -183,7 +177,7 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
     # Plot results
     output$result_plot <- renderPlot({
       req(!code_error())
-      req(logs$code != "")
+      req(logs$code)
       # Check if the result is not a ggplot or a known plot type
       if (inherits(run_result()$result, "ggplot") || is.null(run_result()$console_output)) {
         return(run_result()$result)
@@ -206,12 +200,12 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
       req(!use_python())
       req(
         is_interactive_plot() ||   # natively interactive
-        turned_on(input$make_ggplot_interactive)
+          turned_on(input$make_ggplot_interactive)
       )
 
       g <- run_result()$result
       # still errors some times, when the returned list is not a plot
-      if(is.character(g) || is.data.frame(g) || is.numeric(g)) {
+      if (is.character(g) || is.data.frame(g) || is.numeric(g)) {
         return(NULL)
       } else {
         return(g)
@@ -226,9 +220,9 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
       g <- run_result()$result
       if (
         turned_on(input$make_cx_interactive) &&
-        !is.character(g) &&
-        !is.data.frame(g) &&
-        !is.numeric(g)
+          !is.character(g) &&
+          !is.data.frame(g) &&
+          !is.numeric(g)
       ) {
         g <- canvasXpress::canvasXpress(g)
       } else {
@@ -242,7 +236,7 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
       req(submit_button())
       req(!use_python())
       req(!code_error())
-      req(logs$code != "")
+      req(logs$code)
 
       if (
         is_interactive_plot() ||   # natively interactive
@@ -260,7 +254,7 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
 
     # Display tips for interactive plots
     output$tips_interactive <- renderUI({
-      req(submit_button(), selected_dataset_name())
+      req(submit_button())
 
       if (is_interactive_plot() ||   # natively interactive
           turned_on(input$make_ggplot_interactive) # converted
@@ -290,7 +284,7 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
     is_interactive_plot <- reactive({
       # only true if the plot is interactive, natively.
       req(submit_button())
-      req(logs$code != "")
+      req(logs$code)
       req(!code_error())
       if (inherits(run_result()$result, "plotly")) {
         return(TRUE)
@@ -331,7 +325,7 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
       )
 
       req(!code_error())
-      req(logs$code != "")
+      req(logs$code)
       txt <- paste(llm_response()$cmd, collapse = " ")
 
       # if not a dataframe, create dummy data
@@ -362,7 +356,7 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
       )
 
       req(!code_error())
-      req(logs$code != "")
+      req(logs$code)
       txt <- paste(llm_response()$cmd, collapse = " ")
 
       # if not a dataframe, create dummy data
@@ -381,23 +375,6 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
       }
     })
 
-
-
-    # # Python Markdown
-    # output$python_markdown <- renderUI({
-    #   req(llm_response()$cmd)
-    #   req(use_python())
-
-    #   id <- as.integer(input$selected_chunk)
-    #   rendered <- logs$code_history[[id]]$html_file
-    #   req(rendered)
-
-    #   if (rendered == -1) {
-    #     p("Error!")
-    #   } else {
-    #     includeHTML(rendered)
-    #   }
-    # })
 
   })
 }

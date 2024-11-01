@@ -23,11 +23,11 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
 
     # LLM response
     llm_response <- reactive({
-      req(submit_button(), dataset_name())
+      req(submit_button())
 
       isolate({
         # will not respond to text input until submitted
-        req(input_text(), llm_prompt())
+        req(input_text(), llm_prompt(), dataset_name())
 
         # Store prompt
         prepared_request <- llm_prompt()
@@ -120,15 +120,6 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
 
     # Update environment
     update_environment <- function() {
-
-      # Process/update data
-      if (dataset_name() != no_data) { # or user upload!!!
-        df <- get(dataset_name())
-        if (convert_to_factor()) {
-          df <- numeric_to_factor(df, max_levels_factor(), max_proportion_factor())
-        }
-      }
-      current_data(df)
 
       # Update environment
       run_env(rlang::env(run_env(), df = current_data(), df_name = selected_dataset_name()))
@@ -223,7 +214,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
 
       # If prompt is relevant, send request
       prompt_total <- if (is_relevant) {
-          append(prompt_total, list(list(role = "user", content = paste(prepared_request, dataset_details))))
+        append(prompt_total, list(list(role = "user", content = paste(prepared_request, dataset_details))))
       } else {   # if prompt is not relevant, send message
         list(list(role = "user", content = paste(
           "Return this exact statement: print('Please ask a question related to dataset",
@@ -234,7 +225,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
 
 
       # Send request
-      response <- openAI_agent(prompt_total) 
+      response <- openAI_agent(prompt_total)
       response$choices[1, 1] <- response$choices$message.content
 
       return(response)
