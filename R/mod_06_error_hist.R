@@ -56,7 +56,6 @@
 
     # Capture error when running the generated code
     code_error <- reactive({
-      req(llm_response())
       error_status <- FALSE
       req(submit_button() != 0) # Require the submit button to be pushed
       if (!use_python()) { # R

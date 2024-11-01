@@ -25,6 +25,7 @@ app_server <- function(input, output, session) {
     chunk_selection = chunk_selection
   )
 
+  # (remove extra reactive wrap!!!)
   # Rename the reactive values for easier use
   input_text <- reactive({  mod_02$input_text() })
   selected_dataset_name <- reactive({ mod_02$selected_dataset_name()  })

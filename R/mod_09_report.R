@@ -97,7 +97,6 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
 
     # collect all RMarkdown chunks
     Rmd_total <- reactive({
-      req(llm_prompt())
 
       # Initialize script with model and credits
       Rmd_script <- ""
@@ -267,9 +266,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
     report_file <- reactiveVal(NULL)
 
     observeEvent(input$report, {
-      req(!use_python(), !is.null(current_data()),
-        llm_response()$cmd, llm_prompt()
-      )
+      req(!use_python(), llm_response()$cmd, llm_prompt())
 
       withProgress(message = "Generating Report (5 minutes)", {
         incProgress(0.2)

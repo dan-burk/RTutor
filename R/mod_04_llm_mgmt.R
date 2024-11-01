@@ -9,7 +9,7 @@ mod_04_llm_mgmt_serv <- function(id, submit_button, input_text, selected_dataset
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
+
     # ____________________
     ### API Key ###
     # ____________________
@@ -39,12 +39,12 @@ mod_04_llm_mgmt_serv <- function(id, submit_button, input_text, selected_dataset
 
       api_key <- api_key_global
       session_key_source <- key_source
-        return(
-          list(
-            api_key = api_key,
-            key_source = session_key_source
-          )
+      return(
+        list(
+          api_key = api_key,
+          key_source = session_key_source
         )
+      )
     })
 
 
