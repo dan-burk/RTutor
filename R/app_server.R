@@ -105,9 +105,9 @@ app_server <- function(input, output, session) {
     run_env_start = run_env_start,
     run_result = run_result,
     use_python = use_python,
-    convert_to_factor = convert_to_factor,
-    max_proportion_factor = max_proportion_factor,
-    max_levels_factor = max_levels_factor
+    convert_to_factor = TRUE,
+    max_proportion_factor = unique_ratio,
+    max_levels_factor = max_levels_factor_conversion
   )
 
   # Rename the reactive values for easier use
@@ -201,11 +201,6 @@ app_server <- function(input, output, session) {
     selected_dataset_name = selected_dataset_name,
     current_data = current_data
   )
-
-  # Rename the reactive values for easier use
-  convert_to_factor <- reactive({  mod_07$convert_to_factor() })
-  max_proportion_factor <- reactive({  mod_07$max_proportion_factor() })
-  max_levels_factor <- reactive({  mod_07$max_levels_factor() })
 
 
   #                             7. Module 08

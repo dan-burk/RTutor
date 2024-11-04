@@ -57,7 +57,7 @@
     # Capture error when running the generated code
     code_error <- reactive({
       error_status <- FALSE
-      req(submit_button() != 0) # Require the submit button to be pushed
+      req(submit_button()) # Require the submit button to be pushed
       if (!use_python()) { # R
         return(!is.null(run_result()$error_message) && run_result()$error_message != "")
       } else { # Python
@@ -78,7 +78,7 @@
 
     # Update Logs when Submitted
     observeEvent(submit_button(), {
-      req(llm_response())
+      req(llm_response())   # necessary for sequence of app's events
 
       logs$id <- logs$id + 1
 
@@ -100,7 +100,7 @@
         error = code_error(),
         error_message = run_result()$error_message,
         rmd = Rmd_chunk(),
-        language = ifelse(use_python(), "Python", "R"),
+        language = logs$language,
         # saves the rendered file in the logs object.
         html_file = ifelse(use_python(), python_to_html(), -1),
         prompt_tokens = llm_response()$response$usage$prompt_tokens,
@@ -154,14 +154,6 @@
       # Directly update prompt display based on chunk selection
       chunk_selection$past_prompt <- logs$code_history[[id]]$prompt
 
-      # change language
-      if (submit_button() != 0) {
-        # updateCheckboxInput(
-        #   session = session,
-        #   inputId = "use_python",
-        #   value = (logs$code_history[[id]]$language == "Python")
-        # )
-      }
     })
 
 
