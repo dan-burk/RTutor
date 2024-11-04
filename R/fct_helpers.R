@@ -16,7 +16,7 @@ user_upload <- "user_upload" # data is uploaded by user
 min_query_length <- 6  # minimum # of characters
 max_query_length <- 2000 # max # of characters
 language_models <- c("gpt-4o-2024-08-06",  "gpt-4o-mini", "gpt-3.5-turbo")
-names(language_models) <- c("GPT-4o", "GPT-4o mini", "GPT-3.5 Turbo" )
+names(language_models) <- c("GPT-4o", "GPT-4o mini", "GPT-3.5 Turbo")
 default_model <- "GPT-4o"  # "GPT-4 Turbo"   # "ChatGPT"   # "GPT-4 (03/23)"
 max_content_length <- 3000 # max tokens:  Change according to model !!!!
 default_temperature <- 0.2

@@ -104,7 +104,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
         "\nDeveloped by [Steven Ge](https://twitter.com/StevenXGe) using API access via the
         [openai](https://cran.rstudio.com/web/packages/openai/index.html) package to
         [OpenAI's](https://cran.rstudio.com/web/packages/openai/index.html) \"",
-        selected_model(), "\" model.",
+        names(language_models)[language_models == selected_model()], "\" model.",
         "\n\nRTutor Website: [https://RTutor.ai](https://RTutor.ai)\n",
         "Source code: [GitHub.](https://github.com/gexijin/RTutor)\n\n"
       )
@@ -183,7 +183,8 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
       Rmd_script <- paste0(
         Rmd_script,
         "\n### ", counter$requests, ". ", request_text,
-        "\n", names(selected_model()), " (Temperature = ", sample_temp(), ")\n"
+        "\n", names(language_models)[language_models == selected_model()],
+        " (Temperature = ", sample_temp(), ")\n"
       )
 
       # Set code chunk evaluation status (based on R or Python)
@@ -407,6 +408,20 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
         })
       }
     )
+
+    # # Python Markdown
+    # output$python_markdown <- renderUI({
+    #   req(llm_response()$cmd)
+    #   req(use_python())
+    #   id <- as.integer(chunk_selection$selected_chunk)
+    #   rendered <- logs$code_history[[id]]$html_file
+    #   req(rendered)
+    #   if (rendered == -1) {
+    #     p("Error!")
+    #   } else {
+    #     includeHTML(rendered)
+    #   }
+    # })
 
     # Return reactive values so they can be used outside the module
     return(
