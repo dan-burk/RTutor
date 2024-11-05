@@ -54,7 +54,7 @@ mod_08_misc_ui <- function(id) {
 
 
 mod_08_misc_serv <- function(id, reset_button, submit_button, logs, use_python,
-                                 current_data, selected_dataset_name) {
+                             current_data, selected_dataset_name) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns

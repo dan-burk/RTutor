@@ -58,10 +58,10 @@
     code_error <- reactive({
       error_status <- FALSE
       req(submit_button()) # Require the submit button to be pushed
-      if (!use_python()) { # R
-        return(!is.null(run_result()$error_message) && run_result()$error_message != "")
-      } else { # Python
+      if (use_python()) { # Python
         return(python_to_html() == -1)
+      } else { # R
+        return(!is.null(run_result()$error_message) && run_result()$error_message != "")
       }
     })
 

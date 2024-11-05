@@ -89,23 +89,23 @@ jokes <- demo[
 #' @return Returns a cleaned up version, so that it could be sent to GPT.
 prep_input <- function(txt, selected_data, df, use_python) {
 
-  if(is.null(txt) || is.null(selected_data)) {
+  if (is.null(txt) || is.null(selected_data)) {
     return(NULL)
   }
-  # if too short, do not send. 
-  if(nchar(txt) < min_query_length || nchar(txt) > max_query_length) {
+  # if too short, do not send.
+  if (nchar(txt) < min_query_length || nchar(txt) > max_query_length) {
     return(NULL)
   }
 
   # remove extra space at the end.
-   txt <- gsub(" *$|\n*$", "", txt)
-   # some times it is like " \n "
-   txt <- gsub(" *$|\n*$", "", txt)
-   # if last character is not a period. Add it. Otherwise, 
-   # Davinci will try to complete a sentence.
-   if (!grepl("\\.$|?", txt)) {
-     txt <- paste(txt, ".", sep = "")
-   }
+  txt <- gsub(" *$|\n*$", "", txt)
+  # some times it is like " \n "
+  txt <- gsub(" *$|\n*$", "", txt)
+  # if last character is not a period. Add it. Otherwise,
+  # Davinci will try to complete a sentence.
+  if (!grepl("\\.$|?", txt)) {
+    txt <- paste(txt, ".", sep = "")
+  }
 
   if (!is.null(selected_data)) {
     if (selected_data != no_data) {
@@ -123,7 +123,7 @@ prep_input <- function(txt, selected_data, df, use_python) {
                 "[ |\\.|,|?]" # ending space, comma, period, or question mark
               )
             ),
-          txt
+            txt
           )
         }
       )
@@ -152,13 +152,13 @@ prep_input <- function(txt, selected_data, df, use_python) {
 #' The response from GTP3 sometimes contains strings that are not R commands.
 #'
 #' @param cmd A string that stores the completion from GTP3.
-#' @param selected_data, name of the selected dataset. 
+#' @param selected_data, name of the selected dataset.
 #' @param on_server, whether or not running on the server.
-#' @return Returns a cleaned up version, so that it could be executed as R command.
+#' @return Returns a cleaned up version, so it can be executed as an R command.
 clean_cmd <- function(cmd, selected_data, on_server = FALSE) {
   req(cmd)
   # simple way to check
-  if(grepl("That model is currently overloaded with other requests.|Error:", cmd)) {
+  if (grepl("That model is currently overloaded with other requests.|Error:", cmd)) {
     return(NULL)
   }
   # Use cat to converts \n to newline
@@ -182,7 +182,7 @@ clean_cmd <- function(cmd, selected_data, on_server = FALSE) {
   )
 
   # use pacman, load if installed; otherwise install it first then load.
-  if(!on_server) {
+  if (!on_server) {
     cmd <- gsub("library\\(", "pacman::p_load\\(", cmd)
   }
   #if (selected_data != no_data) {
@@ -208,40 +208,40 @@ polish_cmd <- function(cmd) {
 
   # remove anything after ```
   cmd <- gsub("```.*", "", cmd)
-  
+
   # sometimes ChatGPT returns \r\n as new lines. The \r causes error.
   cmd <- gsub("\r", "", cmd)
-  
+
   return(paste0("\n", cmd))
 }
 
 
 #' Estimate tokens from text
-#' 
+#'
 #'
 #' @param text a string
 #'
 #' @return a number
-#' 
+#'
 tokens <- function(text) {
   # Approximate tokenization by splitting on spaces and punctuations
   tokens <- unlist(strsplit(text, "[[:space:]]|[[:punct:]]"))
-  
+
   # Filter out empty tokens
   tokens <- tokens[nchar(tokens) > 0]
-  
+
   # Further split longer tokens (this is a very crude approximation)
   long_tokens <- tokens[nchar(tokens) > 3]
   additional_tokens <- sum(nchar(long_tokens) %/% 4)
-  
+
   total_tokens <- length(tokens) + additional_tokens
-  
+
   return(total_tokens)
 }
 
 
 #' Estimate API cost
-#' 
+#'
 #'
 #' @param prompt_tokens a number
 #' @param completion_tokens a number
@@ -292,7 +292,7 @@ turned_on <- function(x) {
 }
 
 
-#' Returns a data frame with some numeric columns with fewer levels 
+#' Returns a data frame with some numeric columns with fewer levels
 #' converted as factors
 #'
 #'
@@ -310,10 +310,10 @@ numeric_to_factor <- function(df, max_levels_factor, max_proportion_factor) {
     function(x) {
       if (
         (is.numeric(x) || is.character(x)) &&
-        # if there are few unique values compared to total values
-        length(unique(x)) / length(x) < max_proportion_factor &&
-        length(unique(x)) <= max_levels_factor  # less than 12 unique values
-          # relcassify numeric variable as categorical
+          # if there are few unique values compared to total values
+          length(unique(x)) / length(x) < max_proportion_factor &&
+          length(unique(x)) <= max_levels_factor  # less than 12 unique values
+        # relcassify numeric variable as categorical
       ) {
         return(TRUE)
       } else {
@@ -325,7 +325,7 @@ numeric_to_factor <- function(df, max_levels_factor, max_proportion_factor) {
   convert_var <- colnames(df)[convert_index]
   for (var in convert_var) {
     eval(
-      parse(   #df$cyl <- as.factor(df$cyl)
+      parse(  # df$cyl <- as.factor(df$cyl)
         text = paste0("df$", var, " <- as.factor(df$", var, ")")
       )
     )
@@ -341,12 +341,12 @@ numeric_to_factor <- function(df, max_levels_factor, max_proportion_factor) {
 
 
 #' Plot missing values
-#' 
+#'
 #'
 #' @param df a dataframe
 #'
 #' @return a plot
-#' 
+#'
 #ploting missing values
 missing_values_plot <- function(df) {
   req(!is.null(df))
@@ -384,38 +384,38 @@ missing_values_plot <- function(df) {
 
 # RMarkdown file's Header for knit python chunks
 Rmd_script_python <-
-"---
-output: html_fragment
-params:
-  df:
-printcode:
-  label: \"Display Code\"
-  value: TRUE
-  input: checkbox
----
+  "---
+  output: html_fragment
+  params:
+    df:
+  printcode:
+    label: \"Display Code\"
+    value: TRUE
+    input: checkbox
+  ---
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
-library(reticulate)
-df <- params$df
-```
+  ```{r, echo=FALSE, message=FALSE, warning=FALSE}
+  library(reticulate)
+  df <- params$df
+  ```
 
-```{python, echo = FALSE, message=FALSE}
-df = r.df
-```
+  ```{python, echo = FALSE, message=FALSE}
+  df = r.df
+  ```
 
-#### Results:"
+  #### Results:"
 
 
 #' Generate html file from Python code
-#' 
 #'
-#' @param python_code, a chunk of code 
+#'
+#' @param python_code, a chunk of code
 #' @param html_file file name for output
 #' @param select_data selected_dataset_name
 #' @param current_data   current_data()
 #'
 #' @return -1 if failed. If success, the the designated html file is written
-#' 
+#'
 python_html <- function(python_code, select_data, current_data) {
   withProgress(message = "Running Python...", {
     incProgress(0.2)
@@ -459,19 +459,19 @@ python_html <- function(python_code, select_data, current_data) {
       )
     )
   })  # progress bar
-    
-    if(file.exists(html_file)) {
-      return(html_file)       
-    } else {
-      return(-1)
-    }
+
+  if (file.exists(html_file)) {
+    return(html_file)
+  } else {
+    return(-1)
+  }
 }
 
 
 # #' Creates a SQLite database file for collecting user data
-# #' 
-# #' The data file should be stored in the ../../data folder inside 
-# #' the container. From outside in the RTutor_server folder, 
+# #'
+# #' The data file should be stored in the ../../data folder inside
+# #' the container. From outside in the RTutor_server folder,
 # #' it is in data folder.
 # #'  Only works on local machines. Not on linux.
 # #' @return nothing
@@ -513,7 +513,7 @@ python_html <- function(python_code, select_data, current_data) {
 # # sudo chmod a+w usage_data.db
 # # note that error column, 1 means error, 0 means no error, success.
 #' Saves user queries, code, and error status
-#' 
+#'
 #'
 #' @param date Date in the format of "2023-01-04"
 #' @param time Time "13:05:12"
@@ -525,7 +525,7 @@ python_html <- function(python_code, select_data, current_data) {
 #' @param tokens  total completion tokens
 #' @param filename name of the uploaded file
 #' @param filesize size
-#' 
+#'
 #' @return nothing
 # save_data <- function(
 #   date, time, request, code, error_status,
@@ -576,7 +576,7 @@ python_html <- function(python_code, select_data, current_data) {
 #        experience varchar(50),
 #        comments varchar(5000)); "
 #' Save user feedback
-#' 
+#'
 #'
 #' @param date Date in the format of "2023-01-04"
 #' @param time Time "13:05:12"

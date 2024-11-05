@@ -2,7 +2,7 @@
 % Please edit documentation in R/fct_helpers.R
 \name{numeric_to_factor}
 \alias{numeric_to_factor}
-\title{Returns a data frame with some numeric columns with fewer levels 
+\title{Returns a data frame with some numeric columns with fewer levels
 converted as factors}
 \usage{
 numeric_to_factor(df, max_levels_factor, max_proportion_factor)
@@ -18,6 +18,6 @@ numeric_to_factor(df, max_levels_factor, max_proportion_factor)
 Returns a data frame
 }
 \description{
-Returns a data frame with some numeric columns with fewer levels 
+Returns a data frame with some numeric columns with fewer levels
 converted as factors
 }
