@@ -177,6 +177,7 @@ app_server <- function(input, output, session) {
 
   # the current data
   current_data <- reactiveVal(NULL)
+  current_data_2 <- reactiveVal(NULL)
   original_data <- reactiveVal(NULL)
 
   # define a reactive variable that holds an R environment
@@ -281,6 +282,7 @@ app_server <- function(input, output, session) {
     run_env = run_env,
     run_env_start,
     current_data = current_data,
+    current_data_2 = current_data_2,
     original_data = original_data,
     logs = logs
   )

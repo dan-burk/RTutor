@@ -28,7 +28,7 @@ mod_15_data_types_ui <- function(id) {
 
 
 
-mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, current_data, original_data, logs) {
+mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, current_data, current_data_2, original_data, logs) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -83,7 +83,7 @@ mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, cur
               actionButton(ns("revert_data"), label = "Revert to Original Data")#,
               # conditionalPanel(
               #   condition = "output.column_type_ui_2 != null",  # Replace with your actual condition
-              #   actionButton("revert_data2", label = "Revert to Original Data2")
+              #   actionButton(ns("revert_data2"), label = "Revert to Original Data2")
               # )
             ),
             actionButton(ns("dismiss_modal"), label = "Dismiss")
@@ -151,9 +151,43 @@ mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, cur
       })
     })
 
+  # output$column_type_ui_2 <- renderUI({
+  #   req(current_data_2())
+  #   # req(input$select_data) #Not Implemented YET
+  #   column_names <- names(current_data_2())
+  #   examples <- capture.output(str(current_data_2()))
+  #   examples <- examples[-1]
+  #   examples <- gsub(" \\$ ", "", examples)
+
+  #   lapply(seq_along(column_names), function(i) {
+  #     column_name <- column_names[i]
+  #     fluidRow(
+  #       column(
+  #         width = 3,
+  #         selectInput(
+  #           inputId = ns(paste0("column_type_2_", i)),
+  #           label = NULL,
+  #           choices = c("Character" = "character",
+  #                       "Numeric" = "numeric",
+  #                       "Integer" = "integer",
+  #                       "Date" = "Date",
+  #                       "Factor" = "factor"),
+  #           selected = class(current_data_2()[[i]])
+  #         )
+  #       ),
+  #       column(
+  #         width = 9,
+  #         align = "left",
+  #         style = "margin-top: -5px;",
+  #         h5(examples[i])
+  #       )
+  #     )
+
+  #   })
+  # })
+
 
     observe({
-      # browser()
       req(current_data())
       req(input$revert_data == 0) #Negative: If we hit revert data button, we don't want to run all this junk
                                   #Positive: Run as long as we don't hit revert_data button
@@ -197,12 +231,48 @@ mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, cur
     })
 
 
+  # observe({
+  #   req(current_data_2())
+  #   req(input$revert_data2 == 0) #Negative: If we hit revert data button, we don't want to run all this junk
+  #   req(is.null(input$submit_button) || input$submit_button == 0 || as.integer(input$selected_chunk) == length(logs$code_history))
+  #   for (i in seq_along(current_data_2())) {
+  #     col_type <- input[[paste0("column_type_2_", i)]]
+  #     if (!is.null(col_type)) {
+  #       updated_data <- isolate(current_data_2())
+
+  #       # when converting to factor the as function gives an error
+  #       if(col_type == "factor") {
+  #         updated_data[[i]] <- as.factor(updated_data[[i]])
+  #       } else if (col_type == "Date") {
+  #         updated_data[[i]] <- lubridate::parse_date_time(
+  #           updated_data[[i]],
+  #           orders = c("mdy", "dmy", "ymd")
+  #         )
+  #         updated_data[[i]] <- as.Date(updated_data[[i]])
+  #       } else if(col_type == "numeric" & class(updated_data[[i]]) == "factor"){
+  #         updated_data[[i]] <- as(as.character(updated_data[[i]]), col_type)
+  #       } else {
+  #         updated_data[[i]] <- as(updated_data[[i]], col_type)
+  #       }
+  #       current_data_2(updated_data)
+  #       isolate({
+  #         # run_env(rlang::env(run_env(), df2 = current_data_2()))
+  #         # run_env_start(as.list(run_env()))
+
+  #         #Code to update environment and not overwrite
+  #         existing_vars <- as.list(run_env())
+  #         existing_vars$df2 <- current_data_2()
+  #         run_env(list2env(existing_vars))
+  #         run_env_start(as.list(run_env()))
+  #       })
+  #     }
+  #   }
+  # })
+
+
 
     observeEvent(input$revert_data, {
-      print("Observe 'Revert Data'")
-
-        # run_data_process(FALSE)
-        browser()
+      #Add some requirements??
         current_data(original_data()) #Update current_data() to be the original_data()
         column_names <- names(current_data())
         lapply(seq_along(column_names), function(i) {
@@ -240,6 +310,51 @@ mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, cur
         )
 
     })
+
+  # observeEvent(input$revert_data2,{
+  #   #Add some requirements??
+  #     # run_data_process(FALSE)
+  #     current_data_2(original_data_2()) #Update current_data() to be the original_data()
+  #     column_names <- names(current_data_2())
+  #     lapply(seq_along(column_names), function(i) {
+  #       column_name <- column_names[i]
+  #       updateSelectInput(
+  #         session = session,
+  #         inputId = ns(paste0("column_type_2_", i)),
+  #         label = NULL,
+  #         choices = c("Character" = "character",
+  #                     "Numeric" = "numeric",
+  #                     "Integer" = "integer",
+  #                     "Date" = "Date",
+  #                     "Factor" = "factor"),
+  #         selected = class(current_data_2()[[i]])
+  #       )
+
+  #     })
+
+  #     # run_env(rlang::env(run_env(), df2 = current_data_2()))
+  #     # run_env_start(as.list(run_env()))
+
+  #     existing_vars <- as.list(run_env())
+  #     run_env(list2env(existing_vars))
+  #     run_env_start(as.list(run_env()))
+
+
+  #   # Close modal
+  #   modal_closed(TRUE)
+  #   shiny::removeModal()
+
+  #   # Show message modal..or something
+
+  #     shiny::showModal(
+  #       shiny::modalDialog(
+  #         size = "s",
+  #         easyClose	= TRUE,
+  #         h5("Successfully Reverted df2 to Original Data")
+  #       )
+  #     )
+
+  # })
 
 
 
