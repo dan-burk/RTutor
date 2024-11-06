@@ -17,6 +17,7 @@ app_ui <- function(request) {
   tagList(
 
     golem_add_external_resources(),
+    shinyjs::useShinyjs(),
 
     ### Style Module ###
     mod_01_style_ui("mod_01_style_ui.R"),
