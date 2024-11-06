@@ -32,7 +32,8 @@ app_ui <- function(request) {
         sidebarLayout(
           ### Sidebar ###
           sidebarPanel(
-            mod_02_load_data_ui("load_data")
+            mod_02_load_data_ui("load_data"),
+            mod_15_data_types_ui("data_edit_modal")
           ),
 
           ### Main Panel ###

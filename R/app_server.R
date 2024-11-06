@@ -266,4 +266,22 @@ app_server <- function(input, output, session) {
   )
 
 
+  #                             10. Module 15??
+  #____________________________________________________________________________
+  #  Data Types Modal
+  #____________________________________________________________________________
+
+  modal_closed <- reactiveVal(FALSE)
+
+  mod_15 <- mod_15_data_types_serv(
+    id = "data_edit_modal",
+    modal_closed = modal_closed,
+    run_env = run_env,
+    run_env_start,
+    current_data = current_data,
+    logs = logs
+  )
+
+  modal_closed <- mod_15$modal_closed
+
 }
