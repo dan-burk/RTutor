@@ -28,7 +28,7 @@ mod_15_data_types_ui <- function(id) {
 
 
 
-mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, current_data, logs) {
+mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, current_data, original_data, logs) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -153,7 +153,7 @@ mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, cur
 
 
     observe({
-      browser()
+      # browser()
       req(current_data())
       req(input$revert_data == 0) #Negative: If we hit revert data button, we don't want to run all this junk
                                   #Positive: Run as long as we don't hit revert_data button
@@ -202,7 +202,8 @@ mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, cur
       print("Observe 'Revert Data'")
 
         # run_data_process(FALSE)
-        # current_data(original_data()) #Update current_data() to be the original_data()
+        browser()
+        current_data(original_data()) #Update current_data() to be the original_data()
         column_names <- names(current_data())
         lapply(seq_along(column_names), function(i) {
           column_name <- column_names[i]

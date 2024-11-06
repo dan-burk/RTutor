@@ -177,6 +177,7 @@ app_server <- function(input, output, session) {
 
   # the current data
   current_data <- reactiveVal(NULL)
+  original_data <- reactiveVal(NULL)
 
   # define a reactive variable that holds an R environment
   # This is needed for the Rmd chunk
@@ -199,7 +200,8 @@ app_server <- function(input, output, session) {
     logs = logs,
     use_python = use_python,
     selected_dataset_name = selected_dataset_name,
-    current_data = current_data
+    current_data = current_data,
+    original_data = original_data
   )
 
 
@@ -279,6 +281,7 @@ app_server <- function(input, output, session) {
     run_env = run_env,
     run_env_start,
     current_data = current_data,
+    original_data = original_data,
     logs = logs
   )
 

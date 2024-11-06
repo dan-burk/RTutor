@@ -7,7 +7,7 @@
 
 mod_07_run_code_serv <- function(id, run_env, run_env_start, run_result, submit_button,
                                  reverted, logs, use_python, selected_dataset_name,
-                                 current_data) {
+                                 current_data, original_data) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -82,6 +82,7 @@ mod_07_run_code_serv <- function(id, run_env, run_env_start, run_result, submit_
         df <- get(available_datasets[[selected_dataset_name()]])
       }
       current_data(df)
+      original_data(df) #Save a copy of the original data for reversion
 
       library(tidyverse)
       data <- current_data()
