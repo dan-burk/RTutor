@@ -42,7 +42,7 @@ mod_02_load_data_ui <- function(id) {
             width = 6,
             selectInput(
               inputId = ns("user_selected_dataset"),
-              label = "1. Select Dataset",
+              label = HTML("<span style='font-size: 18px; font-weight: bold;'>1. Select Dataset</span>"),
               choices = available_datasets, #names(available_datasets)
               selected = "Select a dataset:",
               multiple = FALSE
@@ -68,12 +68,15 @@ mod_02_load_data_ui <- function(id) {
     textAreaInput(
       inputId = ns("input_text"),
       label = NULL,  # or "Your Label" if you'd like
-      placeholder = "Hi! I am your AI assistant. Select a dataset first then ask questions. See examples below.",
+      placeholder = "Ask questions or request analyses in English or other languages. For general questions, briefly explain the data first. See examples below.",
       rows = 8
     ),
 
     # Example Prompts
-    uiOutput(ns("prompt_ui")),
+    conditionalPanel(
+      condition = "1",
+      uiOutput(ns("prompt_ui"))
+    ),
     hr(),
 
     fluidRow(
@@ -323,7 +326,7 @@ mod_02_load_data_serv <- function(id, chunk_selection,
 
     # Load demo prompts based on selected data
     observeEvent(input$demo_prompt, {
-      # req(available_datasets[[input$user_selected_dataset]])
+      req(input$demo_prompt != demo$requests[1]) #"Example requests"
 
       updateTextAreaInput(
         session,
@@ -335,6 +338,7 @@ mod_02_load_data_serv <- function(id, chunk_selection,
     # Display demo prompts (example requests)
     output$prompt_ui <- renderUI({
       req(input$user_selected_dataset)
+      req(is.null(input$user_file))
 
       choices <- switch(input$user_selected_dataset,
         "no_data" = demo$requests[demo$data == "No Data"],
@@ -362,15 +366,16 @@ mod_02_load_data_serv <- function(id, chunk_selection,
 
         fluidRow(
           column(
-            width = 3,
-            div("Examples:", class = "padding")
+            width = 5,
+            div("", class = "padding")
           ),
           column(
-            width = 9,
+            width = 7,
             align = "left",
             selectInput(
               inputId = ns("demo_prompt"),
               choices = choices,
+              selected = NULL,
               label = NULL
             )
           )

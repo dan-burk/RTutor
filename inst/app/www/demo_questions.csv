@@ -1,5 +1,5 @@
 ﻿data,R,Python,name,requests,memo
-Select a dataset:,1,1,Prompts,Example requests,
+Select a dataset:,1,1,Example Requests:,"Example requests",
 No Data,1,1,Random numbers,Generate 100 random numbers. Plot their distribution.,
 No Data,1,1,Hierarchical tree,Provide a demo for hierarchical clustering tree.,
 No Data,1,1,Heat map,Create a heatmap with hierarchical clustering tree.,

@@ -62,11 +62,11 @@ on_server <- "on_server.txt"
 #   "Chick Weights" = "ChickWeight"
 # )
 
-available_datasets <- c("Select a dataset:", user_upload, no_data, "iris", "mtcars", "airquality", "diamonds",
-  "CO2", "ToothGrowth", "pressure", "ChickWeight"
+available_datasets <- c("Select a dataset:", no_data, "iris", "mtcars", "airquality", "diamonds",
+  "CO2", "ToothGrowth", "pressure", "ChickWeight", user_upload
   )
-names(available_datasets) <- c("Select a dataset:", "User Upload", "No Data", "Iris", "MTCars",
-  "Air Quality", "Diamonds", "CO2", "Tooth Growth", "Pressure", "Chick Weights")
+names(available_datasets) <- c("Select a dataset:", "No Data", "Iris", "MTCars",
+  "Air Quality", "Diamonds", "CO2", "Tooth Growth", "Pressure", "Chick Weights", "User Upload")
 
 # load demo requests for different datasets (demo questions)
 demo <- read.csv(app_sys("app", "www", "demo_questions.csv"))
