@@ -13,6 +13,22 @@
 #' @noRd
 app_server <- function(input, output, session) {
 
+    ### Initialize reactives ###
+
+  # the current data
+  current_data <- reactiveVal(NULL)
+  current_data_2 <- reactiveVal(NULL)
+  original_data <- reactiveVal(NULL)
+
+  # define a reactive variable that holds an R environment
+  # This is needed for the Rmd chunk
+  run_env <- reactiveVal(new.env())
+
+  # a list stores all data objects before running the code
+  run_env_start <- reactiveVal(list())
+  # define a reactive variable. Reactive function not returning error
+  run_result <- reactiveVal(list())
+
 
   #                             1. Module 02
   #____________________________________________________________________________
@@ -22,7 +38,19 @@ app_server <- function(input, output, session) {
   # 'Load Data' module
   mod_02 <- mod_02_load_data_serv(
     id = "load_data",
-    chunk_selection = chunk_selection
+    chunk_selection = chunk_selection,
+    current_data = current_data,
+    original_data = original_data,
+    run_env = run_env,
+    run_env_start = run_env_start
+    #Arguments needed for mod_15_data_types_serv() called in mod_02
+    # modal_closed = modal_closed,
+    # run_env = run_env,
+    # run_env_start = run_env_start,
+    # current_data = current_data,
+    # current_data_2 = current_data_2,
+    # original_data = original_data,
+    # logs = logs
   )
 
   # (remove extra reactive wrap!!!)
@@ -32,6 +60,7 @@ app_server <- function(input, output, session) {
   submit_button <- reactive({ mod_02$submit_button()  })
   reset_button <- reactive({  mod_02$reset_button() })
   use_python <- reactive({  FALSE })
+  user_file <- mod_02$user_file
 
 
   #                             2. Module 03
@@ -173,23 +202,6 @@ app_server <- function(input, output, session) {
   #____________________________________________________________________________
 
 
-  ### Initialize reactives ###
-
-  # the current data
-  current_data <- reactiveVal(NULL)
-  current_data_2 <- reactiveVal(NULL)
-  original_data <- reactiveVal(NULL)
-
-  # define a reactive variable that holds an R environment
-  # This is needed for the Rmd chunk
-  run_env <- reactiveVal(new.env())
-
-  # a list stores all data objects before running the code
-  run_env_start <- reactiveVal(list())
-  # define a reactive variable. Reactive function not returning error
-  run_result <- reactiveVal(list())
-
-
   # "Run Code" module
   mod_07 <- mod_07_run_code_serv(
     id = "run_code",
@@ -280,13 +292,15 @@ app_server <- function(input, output, session) {
     id = "data_edit_modal",
     modal_closed = modal_closed,
     run_env = run_env,
-    run_env_start,
+    run_env_start = run_env_start,
     current_data = current_data,
     current_data_2 = current_data_2,
     original_data = original_data,
-    logs = logs
+    logs = logs,
+    user_file
   )
 
   modal_closed <- mod_15$modal_closed
+  show_pop_up <- mod_15$show_pop_up
 
 }

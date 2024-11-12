@@ -11,7 +11,7 @@ mod_08_misc_ui <- function(id) {
 
     tagList(
       hr(),
-      p("Developed by RTutor LLC for HeroMotor Corp."),
+      p("Developed by RTutor LLC"),
       p("RTutor uses ",
         a(
           "OpenAI's",
@@ -110,7 +110,7 @@ mod_08_misc_serv <- function(id, reset_button, submit_button, logs, use_python,
       isolate({
         python_html(
           python_code = logs$code,
-          select_data = available_datasets[[selected_dataset_name()]],
+          select_data = input$user_selected_dataset, #available_datasets[[selected_dataset_name()]]
           current_data = current_data()
         )
       })

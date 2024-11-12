@@ -17,7 +17,7 @@ mod_03_main_panel_ui <- function(id) {
       fluidRow(
         column(
           width = 9,
-          h3(style = "font-weight: bold;", "Hero MotoCorp Data Portal (v0.01)"),
+          h3(style = "font-weight: bold;", "Modularization RTutor"),
           h4("Based on the RTutor platform. Work in progress in proof of concept stage. Feedbacks welcome."),
           br(), br(),
           h4("Be aware of the limitations of the generative AI."),

@@ -33,7 +33,8 @@ app_ui <- function(request) {
         sidebarLayout(
           ### Sidebar ###
           sidebarPanel(
-            mod_02_load_data_ui("load_data"),
+            # Placeholder for Load Data Module
+            mod_02_load_data_ui("load_data"), #Split into Load and Chat box, then place load_data above data_edit_modal
             mod_15_data_types_ui("data_edit_modal")
           ),
 

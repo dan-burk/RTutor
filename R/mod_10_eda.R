@@ -139,7 +139,7 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
     ### EDA Report ###
 
     output$eda_report_ui <- renderUI({
-      req(available_datasets[[selected_dataset_name()]] != no_data)
+      req(input$user_selected_data != no_data) #available_datasets[[selected_dataset_name()]]
       req(!use_python())
       req(!is.null(current_data()))
       df <- ggpairs_data()
@@ -230,7 +230,7 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
     eda_file <- reactiveVal(NULL)
 
     observeEvent(input$render_eda_report_rtutor, {
-      req(available_datasets[[selected_dataset_name()]] != no_data)
+      req(input$user_selected_data != no_data) #available_datasets[[selected_dataset_name()]]
       req(!use_python())
       req(!is.null(current_data()))
 
@@ -332,7 +332,7 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
     })
 
     output$data_size <- renderText({
-      req(available_datasets[[selected_dataset_name()]] != no_data)
+      req(input$user_selected_data != no_data) #available_datasets[[selected_dataset_name()]]
       req(!is.null(current_data()))
       paste(
         dim(current_data())[1], "rows X ",
@@ -341,13 +341,13 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
     })
 
     output$data_structure <- renderPrint({
-      req(available_datasets[[selected_dataset_name()]] != no_data)
+      req(input$user_selected_data != no_data) #available_datasets[[selected_dataset_name()]]
       req(!is.null(current_data()))
       str(current_data())
     })
 
     output$data_summary <- renderText({
-      req(available_datasets[[selected_dataset_name()]] != no_data)
+      req(input$user_selected_data != no_data) #available_datasets[[selected_dataset_name()]]
       req(!is.null(current_data()))
       paste(
         capture.output(
@@ -359,7 +359,7 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
 
     # plot missing values
     output$missing_values <- plotly::renderPlotly({
-      req(available_datasets[[selected_dataset_name()]] != no_data)
+      req(input$user_selected_data != no_data) #available_datasets[[selected_dataset_name()]]
       req(!is.null(current_data()))
       p <- missing_values_plot(current_data())
       if(!is.null(p)) {
@@ -419,7 +419,7 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
     # })
 
     output$dfSummary <- renderText({
-      req(available_datasets[[selected_dataset_name()]] != no_data)
+      req(input$user_selected_data != no_data) #available_datasets[[selected_dataset_name()]]
       req(current_data())
       res <- capture.output(summarytools::dfSummary(current_data()))
       res <- paste(res, collapse = "\n")
@@ -427,7 +427,7 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
     })
 
     output$table1_inputs <- renderUI({
-      req(available_datasets[[selected_dataset_name()]] != no_data)
+      req(input$user_selected_data != no_data) #available_datasets[[selected_dataset_name()]]
       req(ggpairs_data())
       df <- ggpairs_data()
       selectInput(
@@ -439,7 +439,7 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
     })
 
     output$table1 <- renderText({
-      req(available_datasets[[selected_dataset_name()]] != no_data)
+      req(input$user_selected_data != no_data) #available_datasets[[selected_dataset_name()]]
       req(ggpairs_data())
       df <- ggpairs_data()
 
@@ -465,7 +465,7 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
     })
 
     output$distribution_category <- renderPlot({
-      req(available_datasets[[selected_dataset_name()]] != no_data)
+      req(input$user_selected_data != no_data) #available_datasets[[selected_dataset_name()]]
       withProgress(message = "Barplots of categorical variables ...", {
         incProgress(0.3)
         DataExplorer::plot_bar(current_data())
@@ -476,7 +476,7 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
     )
 
     output$distribution_numeric <- renderPlot({
-      req(available_datasets[[selected_dataset_name()]] != no_data)
+      req(input$user_selected_data != no_data) #available_datasets[[selected_dataset_name()]]
       withProgress(message = "Creating histograms ...", {
         incProgress(0.3)
         DataExplorer::plot_histogram(current_data())
@@ -484,7 +484,7 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
     })
 
     output$qq_numeric <- renderPlot({
-      req(available_datasets[[selected_dataset_name()]] != no_data)
+      req(input$user_selected_data != no_data) #available_datasets[[selected_dataset_name()]]
       withProgress(message = "Generating QQ plots ...", {
         incProgress(0.3)
         DataExplorer::plot_qq(current_data())
@@ -492,7 +492,7 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
     })
 
     output$corr_map <- renderPlot({
-      req(available_datasets[[selected_dataset_name()]] != no_data)
+      req(input$user_selected_data != no_data) #available_datasets[[selected_dataset_name()]]
       withProgress(message = "Generating correlation map ...", {
         incProgress(0.3)
         #GGally::ggpairs(current_data())
@@ -597,7 +597,7 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
     })
 
     output$ggpairs <- renderPlot({
-      req(available_datasets[[selected_dataset_name()]] != no_data)
+      req(input$user_selected_data != no_data) #available_datasets[[selected_dataset_name()]]
       req(ggpairs_data())
       req(input$ggpairs_submit)
       isolate({

@@ -28,7 +28,7 @@ mod_15_data_types_ui <- function(id) {
 
 
 
-mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, current_data, current_data_2, original_data, logs) {
+mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, current_data, current_data_2, original_data, logs, user_file) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -99,6 +99,11 @@ mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, cur
 
     })
 
+    observeEvent(user_file(), {
+      show_pop_up()
+
+    })
+
     observeEvent(input$dismiss_modal, {
       modal_closed(TRUE)
       shiny::removeModal()
@@ -115,7 +120,6 @@ mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, cur
 
 
     output$column_type_ui <- renderUI({
-      browser()
       req(current_data())
       # req(input$select_data) #Not Implemented YET
       column_names <- names(current_data())
@@ -364,9 +368,8 @@ mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, cur
     return(
       list(
         data_edit_modal = reactive(input$data_edit_modal),
-        modal_closed = modal_closed#, #Already Reactive, so wraping is likely redundant
-        # run_env = run_env,
-        # run_env_start = run_env_start
+        modal_closed = modal_closed, #Already Reactive, so wraping is likely redundant
+        show_pop_up = show_pop_up
       )
     )
 
