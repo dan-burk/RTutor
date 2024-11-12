@@ -23,7 +23,7 @@ app_ui <- function(request) {
     mod_01_style_ui("mod_01_style_ui.R"),
 
     navbarPage(
-      HTML('<span style="color: black;">HMCL</span>'),
+      HTML('<span style="color: black;">RTutor</span>'),
       id = "tabs",
 
       ### 'Home' Tab Panel ###
@@ -35,7 +35,8 @@ app_ui <- function(request) {
           sidebarPanel(
             # Placeholder for Load Data Module
             mod_02_load_data_ui("load_data"), #Split into Load and Chat box, then place load_data above data_edit_modal
-            mod_15_data_types_ui("data_edit_modal")
+            mod_15_data_types_ui("data_edit_modal"),
+            mod_16_send_request_ui("send_request")
           ),
 
           ### Main Panel ###

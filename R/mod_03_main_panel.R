@@ -13,7 +13,7 @@ mod_03_main_panel_ui <- function(id) {
 
     # Initial UI display
     conditionalPanel(
-      condition = "input['load_data-submit_button'] == 0",
+      condition = "input['send_request-submit_button'] == 0",
       fluidRow(
         column(
           width = 9,
@@ -40,7 +40,7 @@ mod_03_main_panel_ui <- function(id) {
 
     # After submit is clicked
     conditionalPanel(
-      condition = "input['load_data-submit_button'] != 0",
+      condition = "input['send_request-submit_button'] != 0",
       fluidRow(
         column(
           width = 4,

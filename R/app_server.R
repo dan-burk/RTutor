@@ -42,7 +42,8 @@ app_server <- function(input, output, session) {
     current_data = current_data,
     original_data = original_data,
     run_env = run_env,
-    run_env_start = run_env_start
+    run_env_start = run_env_start,
+    submit_button = submit_button
     #Arguments needed for mod_15_data_types_serv() called in mod_02
     # modal_closed = modal_closed,
     # run_env = run_env,
@@ -55,12 +56,24 @@ app_server <- function(input, output, session) {
 
   # (remove extra reactive wrap!!!)
   # Rename the reactive values for easier use
-  input_text <- reactive({  mod_02$input_text() })
+
   selected_dataset_name <- reactive({ mod_02$selected_dataset_name()  })
-  submit_button <- reactive({ mod_02$submit_button()  })
-  reset_button <- reactive({  mod_02$reset_button() })
+  # submit_button <- reactive({ mod_02$submit_button()  })
+  # reset_button <- reactive({  mod_02$reset_button() })
   use_python <- reactive({  FALSE })
   user_file <- mod_02$user_file
+
+
+  mod_16 <- mod_16_send_request_serv(
+    id = "send_request",
+    chunk_selection = chunk_selection,
+    user_file = user_file,
+    selected_dataset_name = selected_dataset_name
+  )
+
+  input_text <- reactive({  mod_16$input_text() })
+  submit_button <- reactive({ mod_16$submit_button()  })
+  reset_button <- reactive({  mod_16$reset_button() })
 
 
   #                             2. Module 03

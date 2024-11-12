@@ -16,27 +16,22 @@ mod_02_load_data_ui <- function(id) {
       .control-label[for='", ns("user_file"), "'] { font-size: 18px; font-weight: bold; }
 
       hr {border-top: 1px solid #90BD8C;}
-
-      textarea {width: 100%;background-color: #F6FFF5;border-color: #90BD8C;}
-
-      #", ns("submit_button"), " {font-size: 16px;color: blue !important;background-color: #F6FFF5;border-color: #90BD8C;}
-
-      #", ns("reset_button"), " {font-size: 16px;color: red;background-color: #F6FFF5;border-color: #90BD8C;}
     ")))),
 
     # Display selected dataset
     conditionalPanel(
-      condition = paste0("input['", ns("submit_button"), "'] >= 1"),
+      condition = paste0("output['", ns("show_selected_dataset"), "'] === 'show'"), #paste0("input['", ns("submit_button"), "'] >= 1")
       fluidRow(
         column(
           width = 12,
           # textOutput(ns("selected_dataset"))
           uiOutput(ns("selected_dataset"))
         )
-      )
+      ),
+      hr(class = "custom-hr")
     ),
     conditionalPanel(
-      condition = paste0("input['", ns("submit_button"), "'] == 0 || input['", ns("user_selected_dataset"), "'] === 'Select a dataset:'"),
+      condition = paste0("output['", ns("show_option1"), "'] === 'show'"), #paste0("input['", ns("submit_button"), "'] == 0 || input['", ns("user_selected_dataset"), "'] === 'Select a dataset:'")
       fluidRow(
           column(
             width = 6,
@@ -53,66 +48,8 @@ mod_02_load_data_ui <- function(id) {
             uiOutput(ns("data_upload_ui"))#,
             # uiOutput("data_upload_ui_2")
           )
-        )
-    ),
-    hr(class = "custom-hr"),
-    tags$label("3. Send Request",
-      style = "font-size: 18px;font-weight: bold;color: #333;display: block;margin-bottom: 5px;"),
-
-    # User Input Text Box
-    # tags$textarea(
-    #   id = ns("input_text"),
-    #   placeholder = "Hi! I am your AI assistant. Select a dataset first then ask questions. See examples below.",
-    #   rows = 8
-    # ),
-    textAreaInput(
-      inputId = ns("input_text"),
-      label = NULL,  # or "Your Label" if you'd like
-      placeholder = "Ask questions or request analyses in English or other languages. For general questions, briefly explain the data first. See examples below.",
-      rows = 8
-    ),
-
-    # Example Prompts
-    conditionalPanel(
-      condition = "1",
-      uiOutput(ns("prompt_ui"))
-    ),
-    hr(),
-
-    fluidRow(
-      column(
-        width = 12,
-        div(
-          style = "display: flex; justify-content: space-between;",
-          div(
-            # Submit Button
-            actionButton(ns("submit_button"), strong("Submit")),
-
-            tippy::tippy_this(
-              "submit_button",
-              "ChatGPT can return different results for the same request.",
-              theme = "light-border"
-            )
-          ),
-          div(
-            # Reset Button
-            actionButton(ns("reset_button"), strong("Reset")),
-
-            tippy::tippy_this(
-              "reset_button",
-              "Reset before asking a new question. Clears data objects, chat history, & code chunks.",
-              theme = "light-border"
-            )
-          )
-        )
-      )
-    ),
-
-    fluidRow(
-      column(
-        width = 12,
-        hr()
-      )
+        ),
+        hr(class = "custom-hr")
     )
   )
 }
@@ -123,7 +60,8 @@ mod_02_load_data_serv <- function(id, chunk_selection,
   current_data,
   original_data,
   run_env,
-  run_env_start
+  run_env_start,
+  submit_button
   # modal_closed,
   # run_env,
   # run_env_start,
@@ -140,7 +78,7 @@ mod_02_load_data_serv <- function(id, chunk_selection,
     output$data_upload_ui <- renderUI({
 
       # Hide this input box after the first run.
-      req(input$submit_button == 0 || !is.null(input$user_selected_dataset)) #RHS is for when accidental hit submit
+      req(submit_button() == 0 || !is.null(input$user_selected_dataset)) #RHS is for when accidental hit submit
       # req(is.null(input$user_file))
       fileInput(
         inputId = ns("user_file"),
@@ -292,7 +230,7 @@ mod_02_load_data_serv <- function(id, chunk_selection,
     # })
 
     output$selected_dataset <- renderUI({
-      req(input$submit_button)
+      req(submit_button())
       # when submit is clicked, but no data is uploaded.
 
       if (input$user_selected_dataset == user_upload) {
@@ -312,119 +250,31 @@ mod_02_load_data_serv <- function(id, chunk_selection,
                         white-space: nowrap;'>", txt, "</span>")))
     })
 
-
-    # Load previous prompts based on selected chunk
-    observeEvent(chunk_selection$selected_chunk, {
-      req(chunk_selection$past_prompt)
-
-      updateTextAreaInput(
-        session,
-        inputId = "input_text",
-        value = chunk_selection$past_prompt
-      )
-    })
-
-    # Load demo prompts based on selected data
-    observeEvent(input$demo_prompt, {
-      req(input$demo_prompt != demo$requests[1]) #"Example requests"
-
-      updateTextAreaInput(
-        session,
-        inputId = "input_text",
-        value = input$demo_prompt
-      )
-    })
-
-    # Display demo prompts (example requests)
-    output$prompt_ui <- renderUI({
-      req(input$user_selected_dataset)
-      req(is.null(input$user_file))
-
-      choices <- switch(input$user_selected_dataset,
-        "no_data" = demo$requests[demo$data == "No Data"],
-        "iris" = demo$requests[demo$data == "Iris"],
-        "mtcars" = demo$requests[demo$data == "MTCars"],
-        "airquality" = demo$requests[demo$data == "Air Quality"],
-        "diamonds" = demo$requests[demo$data == "Diamonds"],
-        "CO2" = demo$requests[demo$data == "CO2"],
-        "ToothGrowth" = demo$requests[demo$data == "Tooth Growth"],
-        "pressure" = demo$requests[demo$data == "Pressure"],
-        "ChickWeight" = demo$requests[demo$data == "Chick Weights"],
-        demo$requests[demo$data == "Select a dataset:"]
-      )
-
-      names(choices) <- demo$name[match(choices, demo$requests)]
-
-      tagList(
-        # CSS Styles
-        tags$head(tags$style(HTML(paste0("
-          .padding {padding-top: 10px;padding-left: 10px;padding-bottom: 10px;}
-
-          #", ns("demo_prompt"), "+div .selectize-input {background-color: #F6FFF5 !important;border-color: #90BD8C !important;color: #000 !important;}
-          #", ns("demo_prompt"), "+div .selectize-dropdown {background-color: #F6FFF5 !important;border-color: #90BD8C !important;color: #000 !important;}            
-        ")))),
-
-        fluidRow(
-          column(
-            width = 5,
-            div("", class = "padding")
-          ),
-          column(
-            width = 7,
-            align = "left",
-            selectInput(
-              inputId = ns("demo_prompt"),
-              choices = choices,
-              selected = NULL,
-              label = NULL
-            )
-          )
-        )
-      )
-    })
-
-    # User Request Handling
-    observeEvent(input$submit_button, {
-      # if user's request too short, do not send
-      if (nchar(input$input_text) < min_query_length) {
-        showNotification(
-          paste(
-            "Request too short! Should be more than ",
-            min_query_length,
-            " characters."
-          ),
-          duration = 10
-        )
-      }
-      # if user's request too long, do not send
-      if (nchar(input$input_text) > max_query_length) {
-        showNotification(
-          paste(
-            "Request too long! Should be less than ",
-            max_query_length,
-            " characters."
-          ),
-          duration = 10
-        )
-      }
-
-      # if no file is selected, do not send
-      if (input$user_selected_dataset == "Select a dataset:") { #Old: is.null(available_datasets[[input$user_selected_dataset]])
-        showNotification(
-          paste("No file found. Please select a dataset and try again."),
-          duration = 10
-        )
+    #Creating a condition based on input from mod_16
+    output$show_selected_dataset <- renderText({
+      if(submit_button() >= 1){
+        return("show")
+      }else{
+        return("hide")
       }
     })
+    outputOptions(output, "show_selected_dataset", suspendWhenHidden = FALSE)
+
+    output$show_option1 <- renderText({
+      # Check both conditions: submit_button() from mod_16 and user_selected_dataset from this module
+      if(submit_button() == 0 || input$user_selected_dataset == "Select a dataset:"){
+        return("show")
+      }else{
+        return("hide")
+      }
+    })
+    outputOptions(output, "show_option1", suspendWhenHidden = FALSE)
 
 
     # Return all reactive values so they can be used outside the module
     return(
       list(
-        input_text = reactive(input$input_text),
         selected_dataset_name = reactive(input$user_selected_dataset),
-        submit_button = reactive(input$submit_button),
-        reset_button = reactive(input$reset_button),
         user_file = reactive(input$user_file)
       )
     )
