@@ -75,7 +75,7 @@ app_ui <- function(request) {
         title = "Settings",
         value = "Settings",
         ### Settings Module ###
-        #mod_11_settings_ui("sett")
+        mod_11_settings_ui("sett")
       ),
 
       ### 'About' Tab Panel ###

@@ -2,10 +2,11 @@
 
 
 mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_name,
-                             api_key_session, sample_temp, selected_model, logs,
+                             api_key, sample_temp, selected_model, logs,
                              counter, api_error_modal, code_error, current_data,
                              run_env, run_env_start, run_result, use_python,
-                             convert_to_factor, max_proportion_factor, max_levels_factor) {
+                             send_head) {
+
   moduleServer(id, function(input, output, session) {
 
     # Store dataset name
@@ -16,7 +17,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
       req(submit_button(), dataset_name(), input_text())
 
       isolate({  # so it does not run twice with each submit
-        prep_input(input_text(), selected_dataset_name(), current_data(), use_python())
+        prep_input(input_text(), selected_dataset_name(), current_data(), use_python(), logs$id, send_head())
       })
     })
 
@@ -44,7 +45,6 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
           update_environment()
 
           prompt_total <- build_history(prepared_request)
-
 
           # Send request
           if (relevancy_agent()) {  # if prompt is relevant (or rel. agent not needed)
@@ -266,7 +266,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
     openAI_agent <- function(messages) {
       openai::create_chat_completion(
         model = selected_model(),
-        openai_api_key = api_key_session()$api_key,
+        openai_api_key = api_key$key,
         temperature = sample_temp(),
         messages = messages
       )

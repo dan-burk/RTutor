@@ -28,10 +28,9 @@ app_server <- function(input, output, session) {
   # (remove extra reactive wrap!!!)
   # Rename the reactive values for easier use
   input_text <- reactive({  mod_02$input_text() })
-  selected_dataset_name <- reactive({ mod_02$selected_dataset_name()  })
-  submit_button <- reactive({ mod_02$submit_button()  })
+  selected_dataset_name <- reactive({ mod_02$selected_dataset_name() })
+  submit_button <- reactive({ mod_02$submit_button() })
   reset_button <- reactive({  mod_02$reset_button() })
-  use_python <- reactive({  FALSE })
 
 
   #                             2. Module 03
@@ -64,24 +63,6 @@ app_server <- function(input, output, session) {
   )
 
 
-  #                             3. Module 04
-  #____________________________________________________________________________
-  #   LLM Component Management
-  #____________________________________________________________________________
-
-  # 'LLM Mgmt' module
-  mod_04 <- mod_04_llm_mgmt_serv(
-    id = "llm_mgmt",
-    submit_button = submit_button,
-    input_text = input_text,
-    selected_dataset_name = selected_dataset_name
-  )
-
-  # Rename the reactive values for easier use
-  api_key_session <- reactive({  mod_04$api_key_session() })
-  sample_temp <- reactive({  mod_04$sample_temp() })
-  selected_model <- reactive({  mod_04$selected_model() })
-
 
   #                             4. Module 5
   #____________________________________________________________________________
@@ -93,7 +74,7 @@ app_server <- function(input, output, session) {
     submit_button = submit_button,
     input_text = input_text,
     selected_dataset_name = selected_dataset_name,
-    api_key_session = api_key_session,
+    api_key = api_key,
     sample_temp = sample_temp,
     selected_model = selected_model,
     logs = logs,
@@ -105,9 +86,7 @@ app_server <- function(input, output, session) {
     run_env_start = run_env_start,
     run_result = run_result,
     use_python = use_python,
-    convert_to_factor = TRUE,
-    max_proportion_factor = unique_ratio,
-    max_levels_factor = max_levels_factor_conversion
+    send_head = send_head
   )
 
   # Rename the reactive values for easier use
@@ -199,7 +178,10 @@ app_server <- function(input, output, session) {
     logs = logs,
     use_python = use_python,
     selected_dataset_name = selected_dataset_name,
-    current_data = current_data
+    current_data = current_data,
+    convert_to_factor = convert_to_factor,
+    max_proportion_factor = max_proportion_factor,
+    max_levels_factor = max_levels_factor
   )
 
 
@@ -265,5 +247,30 @@ app_server <- function(input, output, session) {
     logs = logs
   )
 
+
+  #                             9. Module 11
+  #____________________________________________________________________________
+  #  Settings Tab
+  #____________________________________________________________________________
+
+  # 'Settings' module
+  mod_11 <- mod_11_settings_serv(
+    id = "sett",
+    submit_button = submit_button,
+    logs = logs,
+    current_data = current_data,
+    llm_prompt = llm_prompt,
+    code_error = code_error
+  )
+
+  # Rename the reactive values for easier use
+  api_key <- mod_11$api_key
+  sample_temp <- mod_11$sample_temp
+  selected_model <- mod_11$selected_model
+  use_python <- mod_11$use_python
+  convert_to_factor <- mod_11$convert_to_factor
+  max_proportion_factor <- mod_11$max_proportion_factor
+  max_levels_factor <- mod_11$max_levels_factor
+  send_head <- mod_11$send_head
 
 }

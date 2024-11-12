@@ -7,7 +7,8 @@
 
 mod_07_run_code_serv <- function(id, run_env, run_env_start, run_result, submit_button,
                                  reverted, logs, use_python, selected_dataset_name,
-                                 current_data) {
+                                 current_data, convert_to_factor, max_proportion_factor,
+                                 max_levels_factor) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -88,14 +89,14 @@ mod_07_run_code_serv <- function(id, run_env, run_env_start, run_result, submit_
       eval(parse(text = paste0("df <- data")))
 
       # Convert to factor, if checked in settings
-      # if (#convert_to_factor() &&
-      #     available_datasets[[selected_dataset_name()]] != no_data) {
-      #   df <- numeric_to_factor(
-      #     df,
-      #     max_levels_factor_conversion, #max_levels_factor(),
-      #     unique_ratio, #max_proportion_factor()
-      #   )
-      # }
+      if (convert_to_factor() &&
+            available_datasets[[selected_dataset_name()]] != no_data) {
+        df <- numeric_to_factor(
+          df,
+          max_levels_factor(),
+          max_proportion_factor()
+        )
+      }
 
       # if the first column looks like id
       if (
