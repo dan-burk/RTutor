@@ -23,12 +23,12 @@ app_ui <- function(request) {
     mod_01_style_ui("mod_01_style_ui.R"),
 
     navbarPage(
-      HTML('<span style="color: black;">RTutor</span>'),
+      title = HTML('<span style="color: black;font-size: 20px;">RTutor</span>'),
       id = "tabs",
 
       ### 'Home' Tab Panel ###
       tabPanel(
-        title = "Home",
+        title = HTML('<span style="color: black;font-size: 18px;">Home</span>'),
 
         sidebarLayout(
           ### Sidebar ###
@@ -46,23 +46,9 @@ app_ui <- function(request) {
         )
       ), #tabPanel
 
-      ### 'Report' Tab Panel ###
-      tabPanel(
-        title = "Report",
-        value = "Report",
-        tippy::tippy_this(
-          "report_tab",
-          "Download a Results Report",
-          theme = "light-border"
-        ),
-
-        ### Report Module ###
-        mod_09_report_ui("report")
-      ),
-
       ### 'EDA' Tab Panel ###
       tabPanel(
-        title = "EDA",
+        title = HTML('<span style="color: black;font-size: 18px;">EDA</span>'),
         value = "EDA",
         tippy::tippy_this(
           "eda_tab",
@@ -74,21 +60,51 @@ app_ui <- function(request) {
         mod_10_eda_ui("eda")
       ),
 
-      ### 'Settings' Tab Panel ###
+      ### 'Report' Tab Panel ###
       tabPanel(
-        title = "Settings",
-        value = "Settings",
-        ### Settings Module ###
-        #mod_11_settings_ui("sett")
+        title = HTML('<span style="color: black;font-size: 18px;">Report</span>'),
+        value = "Report",
+        tippy::tippy_this(
+          "report_tab",
+          "Download a Results Report",
+          theme = "light-border"
+        ),
+
+        ### Report Module ###
+        mod_09_report_ui("report")
       ),
 
-      ### 'About' Tab Panel ###
-      tabPanel(
-        title = "About",
-        value = "About",
+      navbarMenu(
+        title = HTML('<span style="color: black;font-size: 18px;">More</span>'),
 
-        ### Miscellaneous Module ###
-        mod_08_misc_ui("misc")
+        tabPanel(
+          title = HTML('<span style="color: black;font-size: 18px;">First Time User</span>'),
+          value = "first-time-user",
+          mod_14_first_time_user_ui("first_time_user")
+        ),
+
+        ### 'About' Tab Panel ###
+        tabPanel(
+          title = HTML('<span style="color: black;font-size: 18px;">About</span>'),
+          value = "About",
+
+          ### Miscellaneous Module ###
+          mod_08_misc_ui("misc")
+        ),
+
+        tabPanel(
+          title = HTML('<span style="color: black;font-size: 18px;">FAQ</span>'),
+          value = "FAQ",
+          mod_13_faq_ui("faq")
+        ),
+
+        ### 'Settings' Tab Panel ###
+        tabPanel(
+          title = HTML('<span style="color: black;font-size: 18px;">Settings</span>'),
+          value = "Settings",
+          ### Settings Module ###
+          #mod_11_settings_ui("sett")
+        )
       )
     ),
 

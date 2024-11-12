@@ -10,28 +10,31 @@ mod_03_main_panel_ui <- function(id) {
 
   tagList(
     # shinyjs::useShinyjs(), #Moved to app_ui.R
+    tags$head(tags$style(HTML("
+      .first-user{font-size: 16px;color: #000;background-color: #90BD8C;
+      transition: background-color 0.3s, box-shadow 0.3s;}
+      .first-user:hover {background-color: #66AFFF;box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    "))),
+
+          # 'First Time User' tab redirect
+    tags$script(HTML("
+      $(document).on('click', '#first_user', function() {
+        // Update the active tab to 'First Time User' within the 'More' navbarMenu
+        $('#tabs a[data-value=\"first-time-user\"]').tab('show');
+      });
+    ")),
 
     # Initial UI display
     conditionalPanel(
       condition = "input['send_request-submit_button'] == 0",
       fluidRow(
         column(
-          width = 9,
-          h3(style = "font-weight: bold;", "Modularization RTutor"),
-          h4("Based on the RTutor platform. Work in progress in proof of concept stage. Feedbacks welcome."),
-          br(), br(),
-          h4("Be aware of the limitations of the generative AI."),
-          br(),
-          h4("Start by watching a short ",
-            a("video!",
-              href = "https://youtu.be/a-bZW26nK9k",
-              target = "_blank"
-            )
-          ),
+          width = 5,
+          actionButton("first_user", strong("Quick start"), class = "first-user"),
           align = "left"
         ),
         column(
-          width = 3,
+          width = 7,
           img(src = "www/logo.png", width = "155", height = "77"),
           align = "left"
         )

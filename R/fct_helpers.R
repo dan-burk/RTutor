@@ -781,6 +781,8 @@ python_html <- function(python_code, select_data, current_data) {
 #        helpfulness varchar(50),
 #        experience varchar(50),
 #        comments varchar(5000)); "
+
+
 #' Save user feedback
 #'
 #'
@@ -791,34 +793,34 @@ python_html <- function(python_code, select_data, current_data) {
 #' @param experience  R experience
 #'
 #' @return nothing
-# save_comments <- function(date, time, comments, helpfulness, experience) {
-#   # if db does not exist, create one
-#   if (file.exists(sqlitePath)) {
-#     # Connect to the database
-#     db <- RSQLite::dbConnect(RSQLite::SQLite(), sqlitePath, flags = RSQLite::SQLITE_RW)
-#     # Construct the update query by looping over the data fields
-#     txt <- sprintf(
-#       "INSERT INTO %s (%s) VALUES ('%s')",
-#       "feedback",
-#       "date, time, comments, helpfulness, experience",
-#       paste(
-#         c(
-#           as.character(date),
-#           as.character(time),
-#           clean_txt(comments),
-#           helpfulness,
-#           experience
-#         ),
-#         collapse = "', '"
-#       )
-#     )
-#     # Submit the update query and disconnect
-#     try(
-#       RSQLite::dbExecute(db, txt)
-#     )
-#     RSQLite::dbDisconnect(db)
-#   }
-# }
+save_comments <- function(date, time, comments, helpfulness, experience) {
+  # if db does not exist, create one
+  if (file.exists(sqlitePath)) {
+    # Connect to the database
+    db <- RSQLite::dbConnect(RSQLite::SQLite(), sqlitePath, flags = RSQLite::SQLITE_RW)
+    # Construct the update query by looping over the data fields
+    txt <- sprintf(
+      "INSERT INTO %s (%s) VALUES ('%s')",
+      "feedback",
+      "date, time, comments, helpfulness, experience",
+      paste(
+        c(
+          as.character(date),
+          as.character(time),
+          clean_txt(comments),
+          helpfulness,
+          experience
+        ),
+        collapse = "', '"
+      )
+    )
+    # Submit the update query and disconnect
+    try(
+      RSQLite::dbExecute(db, txt)
+    )
+    RSQLite::dbDisconnect(db)
+  }
+}
 
 
 # Create a data frame with questions and answers for FAQ section

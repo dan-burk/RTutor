@@ -294,6 +294,11 @@ app_server <- function(input, output, session) {
   )
 
 
+
+  mod_13 <- mod_13_faq_serv(
+    id = 'faq'
+  )
+
   #                             10. Module 15??
   #____________________________________________________________________________
   #  Data Types Modal
