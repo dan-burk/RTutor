@@ -193,6 +193,11 @@ mod_16_send_request_serv <- function(id, chunk_selection,
       }
     })
 
+    observeEvent(input$reset_button, {
+      # reset session
+      session$reload()
+    })
+
 
 
     # Return all reactive values so they can be used outside the module

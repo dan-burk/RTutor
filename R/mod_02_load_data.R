@@ -61,7 +61,10 @@ mod_02_load_data_serv <- function(id, chunk_selection,
   original_data,
   run_env,
   run_env_start,
-  submit_button
+  submit_button,
+  convert_to_factor,
+  max_proportion_factor,
+  max_levels_factor
   # modal_closed,
   # run_env,
   # run_env_start,
@@ -73,6 +76,13 @@ mod_02_load_data_serv <- function(id, chunk_selection,
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
+
+    ## limit max file size to 10MB, if it is running on server
+    # if (file.exists(on_server)) { # server
+    #   options(shiny.maxRequestSize = 50 * 1024^2) # 50 MB
+    # } else { # local
+    #   options(shiny.maxRequestSize = 10000 * 1024^2) # 10 GB
+    # }
 
 
     output$data_upload_ui <- renderUI({
@@ -180,13 +190,13 @@ mod_02_load_data_serv <- function(id, chunk_selection,
       #   df <- rna_seq_data()
       # } 
 
-      # if (convert_to_factor()) { #Not impleented Yet
-      #   df <- numeric_to_factor(
-      #     df,
-      #     max_levels_factor(),
-      #     max_proptortion_factor()
-      #   )
-      # }
+      if (convert_to_factor()) { #Not impleented Yet
+        df <- numeric_to_factor(
+          df,
+          max_levels_factor(),
+          max_proportion_factor()
+        )
+      }
 
       # if the first column looks like id? Tbh rudamentary logic.
       if(!is.null(df)){
@@ -258,6 +268,7 @@ mod_02_load_data_serv <- function(id, chunk_selection,
         return("hide")
       }
     })
+    # Ensures this runs in background even when not called in UI
     outputOptions(output, "show_selected_dataset", suspendWhenHidden = FALSE)
 
     output$show_option1 <- renderText({
@@ -268,6 +279,7 @@ mod_02_load_data_serv <- function(id, chunk_selection,
         return("hide")
       }
     })
+    # Ensures this runs in background even when not called in UI
     outputOptions(output, "show_option1", suspendWhenHidden = FALSE)
 
 

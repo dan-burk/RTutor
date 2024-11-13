@@ -7,8 +7,7 @@
 
 mod_07_run_code_serv <- function(id, run_env, run_env_start, run_result, submit_button,
                                  reverted, logs, use_python, selected_dataset_name,
-                                 current_data, convert_to_factor, max_proportion_factor,
-                                 max_levels_factor) {
+                                 current_data) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns

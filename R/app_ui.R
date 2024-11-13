@@ -90,14 +90,6 @@ app_ui <- function(request) {
           mod_12_about_ui("about")
         ),
 
-        ### 'Settings' Tab Panel ###
-        tabPanel(
-          title = "Settings",
-          value = "Settings",
-          ### Settings Module ###
-          mod_11_settings_ui("sett")
-        ),
-
         tabPanel(
           title = HTML('<span style="color: black;font-size: 18px;">FAQ</span>'),
           value = "FAQ",
@@ -109,7 +101,7 @@ app_ui <- function(request) {
           title = HTML('<span style="color: black;font-size: 18px;">Settings</span>'),
           value = "Settings",
           ### Settings Module ###
-          #mod_11_settings_ui("sett")
+          mod_11_settings_ui("sett")
         )
       )
     ),

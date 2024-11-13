@@ -13,6 +13,8 @@
 #' @noRd
 app_server <- function(input, output, session) {
 
+  pdf(NULL) # otherwise, base R plots sometimes do not show
+
     ### Initialize reactives ###
 
   # the current data
@@ -43,7 +45,10 @@ app_server <- function(input, output, session) {
     original_data = original_data,
     run_env = run_env,
     run_env_start = run_env_start,
-    submit_button = submit_button
+    submit_button = submit_button,
+    convert_to_factor = convert_to_factor,
+    max_proportion_factor = max_proportion_factor,
+    max_levels_factor = max_levels_factor
     #Arguments needed for mod_15_data_types_serv() called in mod_02
     # modal_closed = modal_closed,
     # run_env = run_env,
@@ -205,34 +210,8 @@ app_server <- function(input, output, session) {
     logs = logs,
     use_python = use_python,
     selected_dataset_name = selected_dataset_name,
-    current_data = current_data,
-    convert_to_factor = convert_to_factor,
-    max_proportion_factor = max_proportion_factor,
-    max_levels_factor = max_levels_factor
+    current_data = current_data
   )
-
-
-  #                             7. Module 08
-  #____________________________________________________________________________
-  #  Miscellaneous
-  #____________________________________________________________________________
-
-  # 'Misc' module
-  mod_08 <- mod_08_misc_serv(
-    id = "misc",
-    reset_button = reset_button,
-    submit_button = submit_button,
-    logs = logs,
-    use_python = use_python,
-    current_data = current_data,
-    selected_dataset_name = selected_dataset_name
-  )
-
-  # Rename the reactive values for easier use
-  python_to_html <- reactive({  mod_08$python_to_html() })
-
-  pdf(NULL) # otherwise, base R plots sometimes do not show
-
 
   #                             8. Module 09
   #____________________________________________________________________________
@@ -330,5 +309,22 @@ app_server <- function(input, output, session) {
 
   modal_closed <- mod_15$modal_closed
   show_pop_up <- mod_15$show_pop_up
+
+
+
+  # File is rendered and stored in the html_file variable in logs$code_history
+  python_to_html <- reactive({
+    req(submit_button())
+    req(logs$language == "Python")
+    req(use_python())
+
+    isolate({
+      python_html(
+        python_code = logs$code,
+        select_data = selected_dataset_name(),
+        current_data = current_data()
+      )
+    })
+  })
 
 }
