@@ -70,56 +70,5 @@ mod_07_run_code_serv <- function(id, run_env, run_env_start, run_result, submit_
       })
     })
 
-
-    ### Data Prep ###
-
-    observeEvent(available_datasets[[selected_dataset_name()]], {
-      req(available_datasets[[selected_dataset_name()]])
-
-      df <- NULL  # initialize df as null for no_data selection
-
-      # Load built-in data, if selected
-      if (available_datasets[[selected_dataset_name()]] != no_data) { # or user upload!!!
-        df <- get(available_datasets[[selected_dataset_name()]])
-      }
-      current_data(df)
-
-      library(tidyverse)
-      data <- current_data()
-      eval(parse(text = paste0("df <- data")))
-
-      # Convert to factor, if checked in settings
-      if (convert_to_factor() &&
-            available_datasets[[selected_dataset_name()]] != no_data) {
-        df <- numeric_to_factor(
-          df,
-          max_levels_factor(),
-          max_proportion_factor()
-        )
-      }
-
-      # if the first column looks like id
-      if (
-        length(unique(df[, 1])) == nrow(df)  # all unique
-        && is.character(df[, 1])  # first column is character
-      ) {
-        row.names(df) <- df[, 1]
-        df <- df[, -1]
-      }
-
-      # sometimes no row is left after processing
-      if (is.null(df)) {  # no_data
-        current_data(NULL)
-      } else if (nrow(df) == 0) {
-        current_data(NULL)
-      } else {  # there is data in the dataframe
-        current_data(df)
-      }
-
-      # add the data to the current environment
-      run_env(rlang::env(run_env(), df = current_data()))
-      run_env_start(as.list(run_env()))
-    })
-
   })
 }

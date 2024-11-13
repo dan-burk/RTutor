@@ -9,8 +9,8 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
 
   moduleServer(id, function(input, output, session) {
 
-    # Store dataset name
-    dataset_name <- reactive({ available_datasets[[selected_dataset_name()]] })
+    # Store dataset name (Jenna, Why duplicated?? -- Daniel)
+    dataset_name <- reactive({ selected_dataset_name()}) #available_datasets[[selected_dataset_name()]]
 
     # LLM prompt
     llm_prompt <- reactive({
@@ -147,14 +147,20 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
     relevancy_agent <- function() {
 
       # If user selects preloaded data,    '&& != user_upload'
-      if (dataset_name() != no_data) {
-        dataset_details <- paste("the built-in R dataset", selected_dataset_name())
-      } #else if (dataset_name() == user_upload) {
-      #  dataset_details <- metadata you create
-      #}
+      # if (dataset_name() != no_data) {
+      #   dataset_details <- paste("the built-in R dataset", selected_dataset_name())
+      # } #else if (dataset_name() == user_upload) {
+      # #  dataset_details <- metadata you create
+      # #}
 
       # If user selects preloaded data
-      if (dataset_name() != no_data) {
+      if (dataset_name() == no_data){ # Skip relevancy agent if user selects 'no data'
+        return(TRUE)
+      } else if (dataset_name() == user_upload){
+        return(TRUE)
+      } else {
+
+        dataset_details <- paste("the built-in R dataset", selected_dataset_name())
 
         base_prompt <- paste(
           "Current prompt:",
@@ -194,8 +200,6 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
         # TRUE if response is true, else FALSE
         is_relevant <- tolower(response$choices$message.content) == "true"
         return(is_relevant)
-      } else {  # Skip relevancy agent if user selects 'no data'
-        return(TRUE)
       }
     }
 
@@ -203,18 +207,17 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
     # Request agent
     send_request <- function(prompt_total, prepared_request, is_relevant) {
 
-      dataset_details <- ""  # initialize char string
 
-      if (dataset_name() != no_data) {  #  && != user_upload
-        dataset_details <- paste("Available dataset: the built-in R dataset",
-                                 selected_dataset_name())
-      } #else if (dataset_name() == user_upload) {
-      #  dataset_details <- metadata you create
-      #}
+      # if (dataset_name() != no_data) {  #  && != user_upload
+      #   dataset_details <- paste("Available dataset: the built-in R dataset",
+      #                            selected_dataset_name())
+      # } #else if (dataset_name() == user_upload) {
+      # #  dataset_details <- metadata you create
+      # #}
 
       # If prompt is relevant, send request
       prompt_total <- if (is_relevant) {
-        append(prompt_total, list(list(role = "user", content = paste(prepared_request, dataset_details))))
+        append(prompt_total, list(list(role = "user", content = prepared_request))) #paste0(prepared_request, dataset_details)
       } else {   # if prompt is not relevant, send message
         list(list(role = "user", content = paste(
           "Return this exact statement: print('Please ask a question related to dataset",
@@ -225,6 +228,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
 
 
       # Send request
+      # browser()
       response <- openAI_agent(prompt_total)
       response$choices[1, 1] <- response$choices$message.content
 

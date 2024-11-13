@@ -9,29 +9,32 @@ mod_03_main_panel_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
-    shinyjs::useShinyjs(),
+    # shinyjs::useShinyjs(), #Moved to app_ui.R
+    tags$head(tags$style(HTML("
+      .first-user{font-size: 16px;color: #000;background-color: #90BD8C;
+      transition: background-color 0.3s, box-shadow 0.3s;}
+      .first-user:hover {background-color: #66AFFF;box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    "))),
+
+          # 'First Time User' tab redirect
+    tags$script(HTML("
+      $(document).on('click', '#first_user', function() {
+        // Update the active tab to 'First Time User' within the 'More' navbarMenu
+        $('#tabs a[data-value=\"first-time-user\"]').tab('show');
+      });
+    ")),
 
     # Initial UI display
     conditionalPanel(
-      condition = "input['load_data-submit_button'] == 0",
+      condition = "input['send_request-submit_button'] == 0",
       fluidRow(
         column(
-          width = 9,
-          h3(style = "font-weight: bold;", "Hero MotoCorp Data Portal (v0.01)"),
-          h4("Based on the RTutor platform. Work in progress in proof of concept stage. Feedbacks welcome."),
-          br(), br(),
-          h4("Be aware of the limitations of the generative AI."),
-          br(),
-          h4("Start by watching a short ",
-            a("video!",
-              href = "https://youtu.be/a-bZW26nK9k",
-              target = "_blank"
-            )
-          ),
+          width = 5,
+          actionButton("first_user", strong("Quick start"), class = "first-user"),
           align = "left"
         ),
         column(
-          width = 3,
+          width = 7,
           img(src = "www/logo.png", width = "155", height = "77"),
           align = "left"
         )
@@ -40,7 +43,7 @@ mod_03_main_panel_ui <- function(id) {
 
     # After submit is clicked
     conditionalPanel(
-      condition = "input['load_data-submit_button'] != 0",
+      condition = "input['send_request-submit_button'] != 0",
       fluidRow(
         column(
           width = 4,
@@ -111,6 +114,31 @@ mod_03_main_panel_ui <- function(id) {
         # Display helpful tips on interactive plots
         uiOutput(ns("tips_interactive"))
       )
+    ),
+    conditionalPanel(
+      condition = "1",
+      hr(class = "custom-hr"),
+      h4("Selected Dataset"),
+      textOutput(ns("data_size")),
+      tags$head(
+        tags$style(HTML("
+          .dataTables_wrapper {background-color: #f8fcf8;border-color: #90BD8C;padding: 10px;border-radius: 5px;}
+          .dataTables_wrapper table.dataTable tbody tr:nth-child(odd) {background-color: #f3faf3;}
+          .dataTables_wrapper table.dataTable tbody tr:nth-child(even) {background-color: #fff;}
+        "))
+      ),
+      DT::dataTableOutput(ns("data_table_DT"))
+
+    # shinyjs::hidden(
+    #   div(
+    #     id = "second_file",
+    #     hr(class = "custom-hr"),
+    #     h4("2nd dataset: df2     (Must specify, e.g. 'create a piechart of X in df2.')"),
+    #     textOutput("data_size_2"),
+    #     DT::dataTableOutput("data_table_DT_2")
+
+    #   )
+    # )
     )
   )
 }
@@ -373,6 +401,29 @@ mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
       ) {
         shinyjs::showElement(id = "make_cx_interactive")
       }
+    })
+
+
+    output$data_table_DT <- DT::renderDataTable({
+      req(current_data())
+      DT::datatable(
+        current_data(),
+        options = list(
+          lengthMenu = c(5, 20, 50, 100),
+          pageLength = 10,
+          dom = "ftp",
+          scrollX = "400px"
+        ),
+        rownames = FALSE
+      )
+    })
+
+    output$data_size <- renderText({
+      req(!is.null(current_data()))
+      paste(
+        dim(current_data())[1], "rows X ",
+        dim(current_data())[2], "columns"
+      )
     })
 
 

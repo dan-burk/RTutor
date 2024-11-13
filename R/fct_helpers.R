@@ -10,9 +10,10 @@
 # Global Variables
 ###################################################
 
-release <- "0.98" # RTutor
-no_data <- "No Data" # no data is uploaded or selected
-user_upload <- "user_upload" # data is uploaded by user
+
+release <- "2.00" # RTutor
+no_data <- "no_data" #'No Data' # no data is uploaded or selected
+user_upload <- "User Upload" # data is uploaded by user, used to be called uploaded_data
 min_query_length <- 6  # minimum # of characters
 max_query_length <- 2000 # max # of characters
 language_models <- c("gpt-4o-2024-08-06",  "gpt-4o-mini", "gpt-3.5-turbo")
@@ -20,9 +21,9 @@ names(language_models) <- c("GPT-4o", "GPT-4o mini", "GPT-3.5 Turbo")
 default_model <- "GPT-4o"  # "GPT-4 Turbo"   # "ChatGPT"   # "GPT-4 (03/23)"
 max_content_length <- 3000 # max tokens:  Change according to model !!!!
 default_temperature <- 0.2
-pre_text <- "Write correct, efficient R code to answer this prompt:"
-after_text <- "Use the df data frame."
+pre_text <- "Write correct, efficient R code to analyze data."
 pre_text_python <- "Write correct, efficient Python code."
+after_text <- "Use the df data frame."
 max_data_points <- 10000  # max number of data points for interactive plot
 max_levels_factor_conversion <- 5 # Numeric columns will be converted to factor if less than or equal to this many levels
 # if a column is numeric but only have a few unique values, treat as categorical
@@ -33,8 +34,11 @@ sqlitePath <- "../../data/usage_data.db" # folder to store the user queries, gen
 sqltable <- "usage"
 
 # additional prompts to send to ChatGPT
-system_role <- "Act as an experienced data scientist and statistician. You will write R code following instructions. Do not provide explanation.
-Try to produce a plot when possible. ggplot2 is preferred. Make the plot visually appealing. If multiple plots are generated, try to combine them into one."
+# system_role <- "Act as an experienced data scientist and statistician. You will write R code following instructions. Do not provide explanation.
+# Try to produce a plot when possible. ggplot2 is preferred. Make the plot visually appealing. If multiple plots are generated, try to combine them into one."
+system_role <- "Act as a experienced data scientist and statistician. You will write code following instructions. Do not provide explanation. 
+If the goal can be achieved by showing quantitative results, do not produce a plot. When a plot is required, ggplot2 is preferred. 
+If multiple plots are generated, try to combine them into one."
 
 # If this file exists, running on the server. Otherwise local. This is used to change app behavior.
 on_server <- "on_server.txt"
@@ -48,19 +52,25 @@ on_server <- "on_server.txt"
 ######### Load Built-In Data with Base R #########
 
 # Create a list of available datasets to print on the sidebar
-available_datasets <- list(
-  "Select a dataset:" = NULL,
-  #"User Upload" = user_upload,
-  "No Data" = no_data,
-  "Iris" = "iris",
-  "MTCars" = "mtcars",
-  "Air Quality" = "airquality",
-  "Diamonds" = "diamonds",
-  "CO2" = "CO2",
-  "Tooth Growth" = "ToothGrowth",
-  "Pressure" = "pressure",
-  "Chick Weights" = "ChickWeight"
-)
+# available_datasets <- list(
+#   "Select a dataset:" = NULL,
+#   "User Upload" = NULL, #user_upload
+#   "No Data" = no_data,
+#   "Iris" = "iris",
+#   "MTCars" = "mtcars",
+#   "Air Quality" = "airquality",
+#   "Diamonds" = "diamonds",
+#   "CO2" = "CO2",
+#   "Tooth Growth" = "ToothGrowth",
+#   "Pressure" = "pressure",
+#   "Chick Weights" = "ChickWeight"
+# )
+
+available_datasets <- c("Select a dataset:", no_data, "iris", "mtcars", "airquality", "diamonds",
+  "CO2", "ToothGrowth", "pressure", "ChickWeight", user_upload
+  )
+names(available_datasets) <- c("Select a dataset:", "No Data", "Iris", "MTCars",
+  "Air Quality", "Diamonds", "CO2", "Tooth Growth", "Pressure", "Chick Weights", "User Upload")
 
 # load demo requests for different datasets (demo questions)
 demo <- read.csv(app_sys("app", "www", "demo_questions.csv"))
@@ -89,7 +99,7 @@ jokes <- demo[
 #' @param send_head  send 5 rows of data (& data desc.) to LLM? default of TRUE
 #'
 #' @return Returns a cleaned up version, so that it could be sent to GPT.
-prep_input <- function(txt, selected_data, df, use_python, chunk_id, send_head) {
+prep_input <- function(txt, selected_data, df, use_python, chunk_id, send_head) { #df2 = NULL, df2_name = NULL
 
   if (is.null(txt) || is.null(selected_data)) {
     return(NULL)
@@ -701,6 +711,8 @@ python_html <- function(python_code, select_data, current_data) {
 #        helpfulness varchar(50),
 #        experience varchar(50),
 #        comments varchar(5000)); "
+
+
 #' Save user feedback
 #'
 #'
@@ -711,34 +723,34 @@ python_html <- function(python_code, select_data, current_data) {
 #' @param experience  R experience
 #'
 #' @return nothing
-# save_comments <- function(date, time, comments, helpfulness, experience) {
-#   # if db does not exist, create one
-#   if (file.exists(sqlitePath)) {
-#     # Connect to the database
-#     db <- RSQLite::dbConnect(RSQLite::SQLite(), sqlitePath, flags = RSQLite::SQLITE_RW)
-#     # Construct the update query by looping over the data fields
-#     txt <- sprintf(
-#       "INSERT INTO %s (%s) VALUES ('%s')",
-#       "feedback",
-#       "date, time, comments, helpfulness, experience",
-#       paste(
-#         c(
-#           as.character(date),
-#           as.character(time),
-#           clean_txt(comments),
-#           helpfulness,
-#           experience
-#         ),
-#         collapse = "', '"
-#       )
-#     )
-#     # Submit the update query and disconnect
-#     try(
-#       RSQLite::dbExecute(db, txt)
-#     )
-#     RSQLite::dbDisconnect(db)
-#   }
-# }
+save_comments <- function(date, time, comments, helpfulness, experience) {
+  # if db does not exist, create one
+  if (file.exists(sqlitePath)) {
+    # Connect to the database
+    db <- RSQLite::dbConnect(RSQLite::SQLite(), sqlitePath, flags = RSQLite::SQLITE_RW)
+    # Construct the update query by looping over the data fields
+    txt <- sprintf(
+      "INSERT INTO %s (%s) VALUES ('%s')",
+      "feedback",
+      "date, time, comments, helpfulness, experience",
+      paste(
+        c(
+          as.character(date),
+          as.character(time),
+          clean_txt(comments),
+          helpfulness,
+          experience
+        ),
+        collapse = "', '"
+      )
+    )
+    # Submit the update query and disconnect
+    try(
+      RSQLite::dbExecute(db, txt)
+    )
+    RSQLite::dbDisconnect(db)
+  }
+}
 
 
 # Create a data frame with questions and answers for FAQ section
@@ -747,24 +759,101 @@ faqs <- data.frame(
   question = c(
     "What is RTutor.ai?",
     "How does RTutor.ai work?",
+    "Is my data uploaded to OpenAI?",
     "Who is it for?",
     "How do you make sure the results are correct?",
+    "Can you use RTutor to do R coding homework?",
+    "Can private companies use RTutor?",
+    "Can you run RTutor locally?",
     "Why do I get different results with the same request?",
     "Can people without R coding experience use RTutor for statistical analysis?",
     "Can this replace statisticians or data scientists?",
     "How do I write my request effectively?",
-    "Can I install R packages in the AI generated code?"
+    "Can I install R packages in the AI generated code?",
+    "Can I upload big files to the site?",
+    "Voice input does not work!"
   ),
   answer = c(
     "RTutor.ai is an artificial intelligence (AI)-based app that enables users to interact with their data via natural language. Users ask questions about or request analyses in English. The app generates and runs R code to answer that question with plots and numeric results.",  #After uploading a dataset, users ask questions about or request analyses in English. The app generates and runs R code to answer that question with plots and numeric results.",
     "The requests are structured and sent to OpenAI’s AI system, which returns R code. The R code is cleaned up and executed in a Shiny environment, showing results or error messages. Multiple requests are logged to produce an R Markdown file, which can be knitted into an HTML report. This enables record keeping and reproducibility.",
+    "By default, 5 randomly selected rows are sent to OpenAI to provide precise code results. You may opt out of this in the settings tab. All of the column names of your data are sent to OpenAI as a prompt to generate R code as well. Your data is not stored on our server after the session.",
     "The primary goal is to help people with some R experience to learn R or be more productive. RTutor can be used to quickly speed up the coding process using R. It gives you a draft code to test and refine. Be wary of bugs and errors.",
     "Try to word your question differently and try the same request several times. Then users can double-check to see if they get the same results from different runs.",  #A higher temperature parameter will give diverse choices. Then users can double-check to see if they get the same results from different runs.",
+    "No. That would defeat the purpose. You need to learn R coding properly to be able to tell if the generated R coding is correct.",
+    "No. It can be tried as a demo. RTutor website and source code are freely available for non-profit organizations only and distributed using the CC NC 3.0 license.",
+    "Yes. Download the R package and install it locally. Then you need to obtain an API key from OpenAI.",
     "OpenAI’s language model has a certain degree of randomness when giving results, controlled by a 'temperature' parameter. Though this is set low, the app still may produce varying results.", #"OpenAI’s language model has a certain degree of randomness that could be adjusted by parameters called 'temperature'. Set this in Settings.",
     "Not entirely. This is because the generated code can be wrong. However, it could be used to quickly conduct data visualization and exploratory data analysis (EDA). Just be mindful of this experimental technology.",
     "No. But RTutor can make them more efficient.",
     "Imagine you have a summer intern, a college student who took one semester of statistics and R. You send the intern emails with instructions, and he/she sends back code and results. The intern is not experienced, thus error-prone, but is hard-working. Thanks to AI, this intern is lightning-fast and nearly free.",
-    "No. But we are working to pre-install all the top 5000 most frequently used R packages on the server. Chances are that your favorite package is already installed."#,
+    "No. But we are working to pre-install all the top 5000 most frequently used R packages on the server. Chances are that your favorite package is already installed.",
+    "Not if it is more than 10MB. Try to get a small portion of your data. Upload it to the site to get the code, which can be run locally on your laptop. Alternatively, download the RTutor R package and use it from your computer.",
+    "One of the main reasons is that your browser blocks the website from accessing the microphone. Make sure you access the site using https://RTutor.ai. With http, microphone access is automatically blocked in Chrome. Speak closer to the mic. Make sure there is only one browser tab using the mic."
   ),
   stringsAsFactors = FALSE
+)
+
+
+
+
+# Create a data frame with update versions and descriptions
+# Used in site_updates_table component
+site_updates_df <- data.frame(
+  Version = c(
+    "V1.02",
+    "V1.01", "V1.0", "V0.99",
+    "V0.98.3", "V0.98.2", "V0.98",
+    "V0.97", "V0.96", "V0.95",
+    "V0.94", "V0.93", "V0.92",
+    "V0.91", "V0.90", "V0.8.6",
+    "V0.8.5", "V0.8.4", "V0.8.3",
+    "V0.8.2", "V0.8.1", "V0.8.0",
+    "V0.7.6", "V0.7.5", "V0.7",
+    "V0.6", "V0.5", "V0.4",
+    "V0.3", "V0.2", "V0.1"
+  ),
+  Date = c("10/8/2024",
+    "8/30/2024","8/20/2024", "7/30/2024",
+    "11/1/2023","11/1/2023","10/28/2023",
+           "10/23/2023","9/26/2023","6/11/2023",
+           "4/21/2023","3/26/2023","3/8/2023",
+           "2/6/2023","1/15/2023","1/8/2023",
+           "1/6/2023","1/5/2023","1/5/2023",
+           "1/4/2023","1/3/2023","1/3/2023",
+           "12/31/2022","12/31/2022","12/27/2022",
+           "12/27/2022","12/24/2022","12/23/2022",
+           "12/20/2022","12/16/2022","12/11/2022"),
+  Description = c(
+    "Add option to delete code chunks",
+    "Bug Fixes: API Key Validation, EDA Report Download",
+    "Redesign UI; Create Privacy Policy, Terms & Conditions; Fix Data Types Bug; Add Data Revert Option",
+    "Fix Rplots.pdf error",
+    "Fix issue with EDA report when the target variable is categorical or not specified.",
+    "Comprehensive EDA report!",
+    "Ask questions about code, error. Second data file upload.",
+    "GPT-4 becomes the default. Make ggplot2 a preferred method for plotting. Use R environment to enable successive data manipulation.",
+    "Include column names in all requests. GPT-4 is available.",
+    "ChatGPT(gpt-3.5-turbo) becomes default model.",
+    "Interactive plots using CanvasXpress.",
+    "Change data types. Add data description. Improve voice input.",
+    "Includes description of data structure in prompt.",
+    "Voice input is improved. Just enable microphone and say Tutor...",
+    "Generates and runs Python code in addition to R!",
+    "Add description of the levels in factors.",
+    "Demo in many foreign languages.",
+    "Collect user feedback.",
+    "Collect some user data for improvement.",
+    "Auto-convert first column as row names.",
+    "Option to convert some numeric columns with few unique levels to factors.",
+    "Add description of columns (numeric vs. categorical).",
+    "Add RNA-seq data and example requests.",
+    "Redesigned UI.",
+    "Add EDA tab.",
+    "Keeps record of all code chunks for reuse and report.",
+    "Keep current code and continue.",
+    "Interactive plot. Voice input optional.",
+    "Add voice recognition.",
+    "Add temperature control. Server reboot reminder.",
+    "Initial launch"
+  )
 )

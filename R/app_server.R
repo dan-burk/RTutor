@@ -1,5 +1,5 @@
 ###################################################
-# RTutor.AI, a Shiny app for chating with your data
+# RTutor.AI, a Siny app for chating with your data
 # Author: Xijin Ge    gexijin@gmail.com
 # Dec. 6-12, 2022.
 # No warranty and not for commercial use.
@@ -13,6 +13,22 @@
 #' @noRd
 app_server <- function(input, output, session) {
 
+    ### Initialize reactives ###
+
+  # the current data
+  current_data <- reactiveVal(NULL)
+  current_data_2 <- reactiveVal(NULL)
+  original_data <- reactiveVal(NULL)
+
+  # define a reactive variable that holds an R environment
+  # This is needed for the Rmd chunk
+  run_env <- reactiveVal(new.env())
+
+  # a list stores all data objects before running the code
+  run_env_start <- reactiveVal(list())
+  # define a reactive variable. Reactive function not returning error
+  run_result <- reactiveVal(list())
+
 
   #                             1. Module 02
   #____________________________________________________________________________
@@ -22,15 +38,41 @@ app_server <- function(input, output, session) {
   # 'Load Data' module
   mod_02 <- mod_02_load_data_serv(
     id = "load_data",
-    chunk_selection = chunk_selection
+    chunk_selection = chunk_selection,
+    current_data = current_data,
+    original_data = original_data,
+    run_env = run_env,
+    run_env_start = run_env_start,
+    submit_button = submit_button
+    #Arguments needed for mod_15_data_types_serv() called in mod_02
+    # modal_closed = modal_closed,
+    # run_env = run_env,
+    # run_env_start = run_env_start,
+    # current_data = current_data,
+    # current_data_2 = current_data_2,
+    # original_data = original_data,
+    # logs = logs
   )
 
   # (remove extra reactive wrap!!!)
   # Rename the reactive values for easier use
-  input_text <- reactive({  mod_02$input_text() })
-  selected_dataset_name <- reactive({ mod_02$selected_dataset_name() })
-  submit_button <- reactive({ mod_02$submit_button() })
-  reset_button <- reactive({  mod_02$reset_button() })
+  selected_dataset_name <- reactive({ mod_02$selected_dataset_name()  })
+  # submit_button <- reactive({ mod_02$submit_button()  })
+  # reset_button <- reactive({  mod_02$reset_button() })
+  use_python <- reactive({  FALSE })
+  user_file <- mod_02$user_file
+
+
+  mod_16 <- mod_16_send_request_serv(
+    id = "send_request",
+    chunk_selection = chunk_selection,
+    user_file = user_file,
+    selected_dataset_name = selected_dataset_name
+  )
+
+  input_text <- reactive({  mod_16$input_text() })
+  submit_button <- reactive({ mod_16$submit_button()  })
+  reset_button <- reactive({  mod_16$reset_button() })
 
 
   #                             2. Module 03
@@ -152,21 +194,6 @@ app_server <- function(input, output, session) {
   #____________________________________________________________________________
 
 
-  ### Initialize reactives ###
-
-  # the current data
-  current_data <- reactiveVal(NULL)
-
-  # define a reactive variable that holds an R environment
-  # This is needed for the Rmd chunk
-  run_env <- reactiveVal(new.env())
-
-  # a list stores all data objects before running the code
-  run_env_start <- reactiveVal(list())
-  # define a reactive variable. Reactive function not returning error
-  run_result <- reactiveVal(list())
-
-
   # "Run Code" module
   mod_07 <- mod_07_run_code_serv(
     id = "run_code",
@@ -248,6 +275,7 @@ app_server <- function(input, output, session) {
   )
 
 
+
   #                             9. Module 11
   #____________________________________________________________________________
   #  Settings Tab
@@ -272,5 +300,35 @@ app_server <- function(input, output, session) {
   max_proportion_factor <- mod_11$max_proportion_factor
   max_levels_factor <- mod_11$max_levels_factor
   send_head <- mod_11$send_head
+
+  mod_12 <- mod_12_about_serv(
+    id = 'about'
+  )
+
+  mod_13 <- mod_13_faq_serv(
+    id = 'faq'
+  )
+
+  #                             10. Module 15??
+  #____________________________________________________________________________
+  #  Data Types Modal
+  #____________________________________________________________________________
+
+  modal_closed <- reactiveVal(FALSE)
+
+  mod_15 <- mod_15_data_types_serv(
+    id = "data_edit_modal",
+    modal_closed = modal_closed,
+    run_env = run_env,
+    run_env_start = run_env_start,
+    current_data = current_data,
+    current_data_2 = current_data_2,
+    original_data = original_data,
+    logs = logs,
+    user_file
+  )
+
+  modal_closed <- mod_15$modal_closed
+  show_pop_up <- mod_15$show_pop_up
 
 }
