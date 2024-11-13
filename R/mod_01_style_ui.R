@@ -79,11 +79,11 @@ mod_01_style_ui <- function(id) {
     }
 
     .faq-answer {
-      display: none;padding-left: 10px;
+      display: none;padding-left: 10px; font-size: 18px;
     }
     
     .faq-question {
-      cursor: pointer;padding: 5px;border: 1px solid #ccc;background-color: #f3faf3;
+      cursor: pointer;padding: 7px;border: 1px solid #90BD8C;background-color: #F6FFF5;font-size: 18px;
     }
   ")))
   

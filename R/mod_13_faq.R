@@ -13,20 +13,15 @@ mod_13_faq_ui <- function(id) {
             uiOutput(ns("faq_list")),
             style = "padding-left: 20px;padding-right: 20px;"
             ),
-            tags$style(HTML("
-            .faq-answer {display: none;padding-left: 10px;font-size: 18px;}
-            .faq-question {cursor: pointer;padding: 7px;border: 1px solid
-                #90BD8C;background-color: #F6FFF5;font-size: 18px;}
-            ")),
             tags$script(HTML('
-            $(document).on("click", ".faq-question", function() {
-                var answer = $(this).next(".faq-answer");
-                if (answer.is(":visible")) {
-                answer.hide();
-                } else {
-                answer.show();
-                }
-            });
+                $(document).on("click", ".faq-question", function() {
+                    var answer = $(this).next(".faq-answer");
+                    if (answer.is(":visible")) {
+                    answer.show();
+                    } else {
+                    answer.hide();
+                    }
+                });
             '))
         ),
         column(
