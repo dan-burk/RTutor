@@ -10,8 +10,9 @@
 # Global Variables
 ###################################################
 
+
 release <- "2.00" # RTutor
-no_data <- "no_data" # no data is uploaded or selected
+no_data <- "no_data" #'No Data' # no data is uploaded or selected
 user_upload <- "User Upload" # data is uploaded by user, used to be called uploaded_data
 min_query_length <- 6  # minimum # of characters
 max_query_length <- 2000 # max # of characters
@@ -95,9 +96,10 @@ jokes <- demo[
 #' @param df the data frame
 #' @param use_python  whether or not using python instead of R
 #' @param chunk_id  first or not? First chunk add data description
+#' @param send_head  send 5 rows of data (& data desc.) to LLM? default of TRUE
 #'
 #' @return Returns a cleaned up version, so that it could be sent to GPT.
-prep_input <- function(txt, selected_data, df, use_python, chunk_id, send_head = TRUE) { #df2 = NULL, df2_name = NULL
+prep_input <- function(txt, selected_data, df, use_python, chunk_id, send_head) { #df2 = NULL, df2_name = NULL
 
   if (is.null(txt) || is.null(selected_data)) {
     return(NULL)
@@ -119,7 +121,6 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, send_head =
 
   if (!is.null(selected_data)) {
     if (selected_data != no_data) {
-
       # variables mentioned in request
       relevant_var <- sapply(
         colnames(df),
@@ -140,26 +141,24 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, send_head =
       relevant_var <- names(relevant_var)[relevant_var]
 
       data_info <- describe_df(
-        df, 
-        list_levels = TRUE, 
+        df,
+        list_levels = TRUE,
         relevant_var = relevant_var,
         send_head = send_head
       )
-      # # Always add 'use the df data frame.'
-      txt <- paste(txt, after_text)
 
+      txt <- paste(txt, after_text)  # Always add 'use the df data frame.'
+
+      # in a session, sometimes the first chunk has the id of 0. sometimes 1?????
+
+      # add data description
+      # if it is not the first chunk and data description is long, do not add
       n_words <- tokens(data_info)
-      # #if it is the first chunk;  or if data description is short
       more_info <- chunk_id <= 1 || n_words < 200
-
-      # # in a session, sometimes the first chunk has the id of 0. sometimes 1?????
-
-      # # add data descrdiption
-      # # if it is not the first chunk and data description is long, do not add.
       if (more_info && !(chunk_id > 1 && n_words > 600)) {
         txt <- paste(txt, data_info)
       }
-      
+
       # # if there is a second data frame, add that too.
       # if(!is.null(df2)) {
       #   if(is.null(df2_name)) {
@@ -201,159 +200,87 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, send_head =
 }
 
 
+
 #' Describe data frame
 #'
-#' Returns information on data frame describing columns.
+#' Returns information on data frame describing columns
 #'
 #' @param df a data frame
 #' @param list_levels whether to list levels for factors
 #' @param relevant_var  a list of variables mentioned by the user
-#' @return Returns a cleaned up version, so that it could be executed as R command.
+#' @return Returns a cleaned up version, so that it can be executed as an R command
 describe_df <- function(df, list_levels = FALSE, relevant_var = NULL, send_head = TRUE) {
+  # Get column types
+  is_numeric <- sapply(df, is.numeric)
+  numeric_var <- names(is_numeric)[is_numeric]
+  cat_var <- names(is_numeric)[!is_numeric]
 
-  data_info <- ""
-  numeric_index <- sapply(
-    df,
-    function(x) {
-      if (is.numeric(x)) {
-        return(TRUE)
-      } else {
-        return(FALSE)
-      }
-    }
-  )
+  # Filter categorical variables based on unique values
+  cat_var <- cat_var[vapply(df[cat_var], function(x) length(unique(x)) < nrow(df) * 0.8, logical(1))]
 
-  numeric_var <- colnames(df)[numeric_index]
-  cat_var <- colnames(df)[!numeric_index]
 
-  # calculate total number of unique levels
-  total_levels <- sapply(cat_var, function(x) {length(unique(df[, x]))})
-  # remove columns that are names, strings, etc
-  cat_var <- cat_var[total_levels < nrow(df) * 0.8]
+  # Build data info string
+  data_info <- c()
 
-  # numeric variables
-  if (length(numeric_var) == 1) {
-    data_info <- paste0(
-      data_info,
-      "The df data frame has a column ",
-      numeric_var,
-      " that contains a numeric variable. "
-    )
-  } else if (length(numeric_var) > 1) {
-    data_info <- paste0(
-      data_info,
-      "The df data frame contains these numeric variables: ",
-      paste0(
-        numeric_var[1:(length(numeric_var) - 1)],
-        collapse = ", "
-      ),
-      ", and ",
-      numeric_var[length(numeric_var)],
-      ". "
-    )
+  # Add numeric variables info
+  if (length(numeric_var) > 0) {
+    data_info <- c(data_info, sprintf(
+      "The df data frame %s %s: %s. ",
+      if (length(numeric_var) == 1) "has a column" else "contains these numeric variables",
+      if (length(numeric_var) == 1) "that contains a numeric variable" else "",
+      paste(numeric_var, collapse = ", ")
+    ))
   }
-  # Categorical variables-----------------------------
-  # numeric variables
-  if (length(cat_var) == 1) {
-    data_info <- paste0(
-      data_info,
-      "The df data frame has a column ",
-      cat_var,
-      " that contains a categorical variable. "
-    )
-  } else if (length(cat_var) > 1) {
-    data_info <- paste0(
-      data_info,
-      "The df data frame contains these categorical variables: ",
-      paste0(
-        cat_var[1:(length(cat_var) - 1)],
-        collapse = ", "
-      ),
-      ", and ",
-      cat_var[length(cat_var)],
-      ". "
-    )
-  }
-  
-  if(list_levels & length(relevant_var) > 0) {
 
-    # only list for categorical variables specified in user prompt
+  # Add categorical variables info
+  if (length(cat_var) > 0) {
+    data_info <- c(data_info, sprintf(
+      "The df data frame %s %s: %s. ",
+      if (length(cat_var) == 1) "has a column" else "contains these categorical variables",
+      if (length(cat_var) == 1) "that contains a categorical variable" else "",
+      paste(cat_var, collapse = ", ")
+    ))
+  }
+
+  # Add levels info if requested
+  if (list_levels && length(relevant_var) > 0) {
     relevant_cat_var <- intersect(relevant_var, cat_var)
-  # describe the levels in categorical variable
     for (var in relevant_cat_var) {
-      max_lelvels_description <- 4
-      ix <- match(var, colnames(df))
-      factor_levels <- sort(table(df[, ix]), decreasing = TRUE)
-      factor_levels <- names(factor_levels)
+      levels_freq <- sort(table(df[[var]]), decreasing = TRUE)
+      max_levels <- min(length(levels_freq), 4)
+      levels_str <- paste(names(levels_freq)[1:max_levels], collapse = "', '")
 
-      # have more than 6 levels?
-      many_levels <- FALSE
-
-      if (length(factor_levels) > max_lelvels_description) {
-        many_levels <- TRUE
-        factor_levels <- factor_levels[1:max_lelvels_description]
-      }
-
-      last_level <- factor_levels[length(factor_levels)]
-      factor_levels <- factor_levels[-1 * length(factor_levels)]
-      tem <- paste0(
-        factor_levels,
-        collapse = "', '"
-      )
-      if (!many_levels) { # less than 6 levels
-        factor_levels <- paste0("'", tem, "', and '", last_level, "'")
-      } else { # more than 6 levels
-        factor_levels <- paste0(
-          "'",
-          tem,
-          "', '",
-          last_level,
-          "', etc"
-        )
-      }
-      data_info <- paste0(
-        data_info,
-        "The categorical variable ",
+      data_info <- c(data_info, sprintf(
+        "The categorical variable %s has these levels: '%s'%s. ",
         var,
-        " has these levels: ",
-        factor_levels,
-        ". "
-      )
+        levels_str,
+        if (length(levels_freq) > 4) ", etc" else ""
+      ))
     }
   }
-  
-  if(send_head) {
-    #randomly select 5 rows, print out, convert to string
-    sample_rows <- paste0(
-      capture.output(as.data.frame(df[sample(nrow(df), 5),])), 
-      collapse = "\n"
-    )
-    # if too long, use only 2 rows
-    if(nchar(sample_rows) > 1000) {
-      sample_rows <- paste0(
-        capture.output(as.data.frame(df[sample(nrow(df), 2),])), 
-        collapse = "\n"
-      )
-    }
-    sample_rows <- paste(
-      "The df data frame looks like this: \n",
-      sample_rows
-    )
-    
-    # if still too long, skip
-    if(nchar(sample_rows) > 2000) {
-      sample_rows <- ""
+
+  # Add sample rows if requested
+  if (send_head) {
+    n_samples <- 5
+    sample_rows <- capture.output(as.data.frame(df[sample(nrow(df), n_samples), ]))
+
+    # Reduce samples if output is too long
+    if (sum(nchar(sample_rows)) > 1000) {
+      n_samples <- 2
+      sample_rows <- capture.output(as.data.frame(df[sample(nrow(df), n_samples), ]))
     }
 
-    data_info <- paste0(
-      data_info,
-      sample_rows    
-    )
+    # Only add if not too long
+    if (sum(nchar(sample_rows)) <= 2000) {
+      data_info <- c(data_info,
+                     "The df data frame looks like this: \n",
+                     paste(sample_rows, collapse = "\n"))
+    }
   }
 
-
-  return(data_info)
+  paste(data_info, collapse = "")
 }
+
 
 
 #' Clean up R commands generated by GTP

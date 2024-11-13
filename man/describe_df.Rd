@@ -14,8 +14,8 @@ describe_df(df, list_levels = FALSE, relevant_var = NULL, send_head = TRUE)
 \item{relevant_var}{a list of variables mentioned by the user}
 }
 \value{
-Returns a cleaned up version, so that it could be executed as R command.
+Returns a cleaned up version, so that it can be executed as an R command
 }
 \description{
-Returns information on data frame describing columns.
+Returns information on data frame describing columns
 }
