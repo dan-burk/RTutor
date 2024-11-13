@@ -228,7 +228,6 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
 
 
       # Send request
-      # browser()
       response <- openAI_agent(prompt_total)
       response$choices[1, 1] <- response$choices$message.content
 

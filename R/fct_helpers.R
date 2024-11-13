@@ -225,9 +225,8 @@ describe_df <- function(df, list_levels = FALSE, relevant_var = NULL, send_head 
   # Add numeric variables info
   if (length(numeric_var) > 0) {
     data_info <- c(data_info, sprintf(
-      "The df data frame %s %s: %s. ",
-      if (length(numeric_var) == 1) "has a column" else "contains these numeric variables",
-      if (length(numeric_var) == 1) "that contains a numeric variable" else "",
+      "The df data frame %s %s. ",
+      if (length(numeric_var) == 1) "has a column that contains a numeric variable" else "contains these numeric variables:",
       paste(numeric_var, collapse = ", ")
     ))
   }
@@ -235,9 +234,8 @@ describe_df <- function(df, list_levels = FALSE, relevant_var = NULL, send_head 
   # Add categorical variables info
   if (length(cat_var) > 0) {
     data_info <- c(data_info, sprintf(
-      "The df data frame %s %s: %s. ",
-      if (length(cat_var) == 1) "has a column" else "contains these categorical variables",
-      if (length(cat_var) == 1) "that contains a categorical variable" else "",
+      "The df data frame %s %s. ",
+      if (length(cat_var) == 1) "has a column that contains a categorical variable" else "contains these categorical variables:",
       paste(cat_var, collapse = ", ")
     ))
   }
