@@ -27,27 +27,6 @@ mod_08_misc_ui <- function(id) {
         Please use the auto-generated code as a starting 
         point for further refinement and validation."
       ),
-      hr(),
-
-      # FAQ drop down component
-      fluidRow(
-        column(
-          width = 8,
-
-          h4(style = "font-weight: bold;", "Frequently Asked Questions"),
-          uiOutput(ns("faq_list")),
-          tags$script(HTML('
-            $(document).on("click", ".faq-question", function() {
-            var answer = $(this).next(".faq-answer");
-            if (answer.is(":visible")) {
-                answer.hide();
-            } else {
-                answer.show();
-            }
-            });
-          '))
-        )
-      ),
       hr()
     )
 }
@@ -71,35 +50,6 @@ mod_08_misc_serv <- function(id, reset_button, submit_button, logs, use_python,
       session$reload()
     })
 
-    # # Display RTutor Version
-    # output$RTutor_version <- renderUI({
-    #   h4(paste("RTutor Version", release))
-    # })
-
-    # # Display RTutor Version
-    # output$RTutor_version_main <- renderUI({
-    #   tagList(
-    #     h3(paste("RTutor.ai ", release))
-    #   )
-    # })
-
-    # 'About' tab FAQ's and answers
-    output$faq_list <- renderUI({
-      faq_items <- lapply(seq_len(nrow(faqs)), function(i) {
-        tags$div(
-          class = "faq-item",
-          tags$h5(
-            class = "faq-question",
-            faqs$question[i]
-          ),
-          tags$p(
-            class = "faq-answer",
-            faqs$answer[i]
-          )
-        )
-      })
-      tagList(faq_items)
-    })
 
     # File is rendered and stored in the html_file variable in logs$code_history
     python_to_html <- reactive({

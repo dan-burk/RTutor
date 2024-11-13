@@ -17,9 +17,9 @@ mod_13_faq_ui <- function(id) {
                 $(document).on("click", ".faq-question", function() {
                     var answer = $(this).next(".faq-answer");
                     if (answer.is(":visible")) {
-                    answer.show();
-                    } else {
                     answer.hide();
+                    } else {
+                    answer.show();
                     }
                 });
             '))

@@ -294,6 +294,9 @@ app_server <- function(input, output, session) {
   )
 
 
+  mod_12 <- mod_12_about_serv(
+    id = 'about'
+  )
 
   mod_13 <- mod_13_faq_serv(
     id = 'faq'

@@ -87,9 +87,10 @@ app_ui <- function(request) {
         tabPanel(
           title = HTML('<span style="color: black;font-size: 18px;">About</span>'),
           value = "About",
+          mod_12_about_ui("about")
 
           ### Miscellaneous Module ###
-          mod_08_misc_ui("misc")
+          # mod_08_misc_ui("misc")
         ),
 
         tabPanel(
