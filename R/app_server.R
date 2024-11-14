@@ -15,7 +15,7 @@ app_server <- function(input, output, session) {
 
   pdf(NULL) # otherwise, base R plots sometimes do not show
 
-    ### Initialize reactives ###
+  ### Initialize reactives ###
 
   # the current data
   current_data <- reactiveVal(NULL)
@@ -225,7 +225,7 @@ app_server <- function(input, output, session) {
     logs = logs,
     selected_model = selected_model,
     llm_response = llm_response,
-    llm_prompt = llm_prompt,
+    input_text = input_text,
     use_python = use_python,
     counter = counter,
     sample_temp = sample_temp,

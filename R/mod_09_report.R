@@ -68,7 +68,7 @@ mod_09_report_ui <- function(id) {
 }
 
 mod_09_report_serv <- function(id, submit_button, logs, selected_model,
-                               llm_response, llm_prompt, use_python,
+                               llm_response, input_text, use_python,
                                counter, sample_temp, code_error, python_to_html,
                                current_data) {
 
@@ -160,7 +160,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
 
     # RMarkdown chunk for the current request
     Rmd_chunk <- reactive({
-      req(llm_response()$cmd, llm_prompt())
+      req(llm_response()$cmd)
 
       # Initialize Rmd_script
       Rmd_script <- if (use_python()) {   # add necessary setup when using Python
@@ -169,20 +169,10 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
         ""
       }
 
-      # User's request
-      # remove unnecessary commands (pre_text) from the prompt
-      request_text <- gsub(
-        paste0("\n|", pre_text, "|.*"),
-        "",
-        llm_prompt()
-      )
-      # Collapse the result into a single string
-      request_text <- paste(request_text, collapse = " ")
-
-      # Append request & model info to RMarkdown script
+      # Append user's request & model info to RMarkdown script
       Rmd_script <- paste0(
         Rmd_script,
-        "\n### ", counter$requests, ". ", request_text,
+        "\n### ", counter$requests, ". ", input_text(),
         "\n", names(language_models)[language_models == selected_model()],
         " (Temperature = ", sample_temp(), ")\n"
       )
@@ -267,7 +257,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
     report_file <- reactiveVal(NULL)
 
     observeEvent(input$report, {
-      req(!use_python(), llm_response()$cmd, llm_prompt())
+      req(!use_python(), llm_response()$cmd)
 
       withProgress(message = "Generating Report (5 minutes)", {
         incProgress(0.2)
@@ -361,7 +351,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
           tempReport <- file.path(tempdir(), "report.Rmd")
           tempReport <- gsub("\\", "/", tempReport, fixed = TRUE)
 
-          req(llm_response()$cmd, llm_prompt())
+          req(llm_response()$cmd)
 
           # Create RMarkdown header & content
           Rmd_script <- paste0(
