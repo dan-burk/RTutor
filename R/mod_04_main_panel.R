@@ -4,7 +4,7 @@
 #____________________________________________________________________________
 
 
-mod_03_main_panel_ui <- function(id) {
+mod_04_main_panel_ui <- function(id) {
 
   ns <- NS(id)
 
@@ -143,7 +143,7 @@ mod_03_main_panel_ui <- function(id) {
   )
 }
 
-mod_03_main_panel_serv <- function(id, llm_response, logs, code_error,
+mod_04_main_panel_serv <- function(id, llm_response, logs, code_error,
                                    run_result, run_env_start, submit_button,
                                    use_python, tabs, current_data, selected_dataset_name,
                                    chunk_selection) {

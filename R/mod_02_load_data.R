@@ -260,7 +260,7 @@ mod_02_load_data_serv <- function(id, chunk_selection,
                         white-space: nowrap;'>", txt, "</span>")))
     })
 
-    #Creating a condition based on input from mod_16
+    #Creating a condition based on input from mod_03
     output$show_selected_dataset <- renderText({
       if(submit_button() >= 1){
         return("show")
@@ -272,7 +272,7 @@ mod_02_load_data_serv <- function(id, chunk_selection,
     outputOptions(output, "show_selected_dataset", suspendWhenHidden = FALSE)
 
     output$show_option1 <- renderText({
-      # Check both conditions: submit_button() from mod_16 and user_selected_dataset from this module
+      # Check both conditions: submit_button() from mod_03 and user_selected_dataset from this module
       if(submit_button() == 0 || input$user_selected_dataset == "Select a dataset:"){
         return("show")
       }else{

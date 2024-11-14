@@ -68,19 +68,25 @@ app_server <- function(input, output, session) {
   user_file <- mod_02$user_file
 
 
-  mod_16 <- mod_16_send_request_serv(
+  #                             2. Module 03
+  #____________________________________________________________________________
+  #   Send Request
+  #____________________________________________________________________________
+
+  # 'Send Request' module
+  mod_03 <- mod_03_send_request_serv(
     id = "send_request",
     chunk_selection = chunk_selection,
     user_file = user_file,
     selected_dataset_name = selected_dataset_name
   )
 
-  input_text <- reactive({  mod_16$input_text() })
-  submit_button <- reactive({ mod_16$submit_button()  })
-  reset_button <- reactive({  mod_16$reset_button() })
+  input_text <- reactive({  mod_03$input_text() })
+  submit_button <- reactive({ mod_03$submit_button()  })
+  reset_button <- reactive({  mod_03$reset_button() })
 
 
-  #                             2. Module 03
+  #                             3. Module 04
   #____________________________________________________________________________
   #   Main Panel
   #____________________________________________________________________________
@@ -94,7 +100,7 @@ app_server <- function(input, output, session) {
     past_prompt = NULL
   )
 
-  mod_03 <- mod_03_main_panel_serv(
+  mod_04 <- mod_04_main_panel_serv(
     id = "main_panel",
     llm_response = llm_response,
     logs = logs,

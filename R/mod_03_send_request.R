@@ -1,9 +1,9 @@
 #____________________________________________________________________________
-#  Loading Data
+#  Send Request
 #____________________________________________________________________________
 
 
-mod_16_send_request_ui <- function(id) {
+mod_03_send_request_ui <- function(id) {
 
   ns <- NS(id)
 
@@ -80,7 +80,7 @@ mod_16_send_request_ui <- function(id) {
 
 
 
-mod_16_send_request_serv <- function(id, chunk_selection,
+mod_03_send_request_serv <- function(id, chunk_selection,
   user_file,
   selected_dataset_name
   ) { #, show_pop_up, modal_closed
