@@ -76,23 +76,58 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
     ns <- session$ns
 
     # Dropdown to pick what chunks to include in report
-    observeEvent(submit_button(), {
-      req(logs$code != "")
+    # observeEvent(submit_button(), {
+    #   req(logs$code != "")
+
+    #   choices <- seq_along(logs$code_history)
+    #   names(choices) <- paste0("Chunk #", choices)
+
+    #   updateSelectInput(
+    #     session = session,
+    #     inputId = "selected_chunk_report",
+    #     label = "Chunks to include (Use backspace to delete):",
+    #     selected = "All chunks without errors",
+    #     choices = c(
+    #       "All chunks",
+    #       "All chunks without errors",
+    #       choices
+    #     )
+    #   )
+    # })
+
+    observe({
+      # req(logs$code != "")
 
       choices <- seq_along(logs$code_history)
-      names(choices) <- paste0("Chunk #", choices)
 
-      updateSelectInput(
-        session = session,
-        inputId = "selected_chunk_report",
-        label = "Chunks to include (Use backspace to delete):",
-        selected = "All chunks without errors",
-        choices = c(
-          "All chunks",
-          "All chunks without errors",
-          choices
+      if(length(choices) == 0){
+        updateSelectInput(
+          session = session,
+          inputId = "selected_chunk_report",
+          label = "Chunks to include (Use backspace to delete):",
+          selected = "All chunks without errors",
+          choices = c(
+            "All chunks",
+            "All chunks without errors"
+          )
         )
-      )
+
+      }else{
+        names(choices) <- paste0("Chunk #", choices)
+
+        updateSelectInput(
+          session = session,
+          inputId = "selected_chunk_report",
+          label = "Chunks to include (Use backspace to delete):",
+          selected = "All chunks without errors",
+          choices = c(
+            "All chunks",
+            "All chunks without errors",
+            choices
+          )
+        )
+      }
+
     })
 
     # collect all RMarkdown chunks
