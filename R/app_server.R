@@ -1,9 +1,9 @@
-###################################################
-# RTutor.AI, a Siny app for chating with your data
-# Author: Xijin Ge    gexijin@gmail.com
-# Dec. 6-12, 2022.
-# No warranty and not for commercial use.
-###################################################
+##########################################################
+# RTutor.AI | A Shiny app for chatting with your data.
+# Author: Xijin Ge | ge@orditus.com
+# © 2024 Orditus LLC
+# No warranty & not for commercial use without a license.
+##########################################################
 
 #' The application server-side
 #'
@@ -15,8 +15,42 @@ app_server <- function(input, output, session) {
 
   pdf(NULL) # otherwise, base R plots sometimes do not show
 
-  ### Initialize reactives ###
 
+  #                    Initialize Reactives
+  #________________________________________________________________
+
+  ## Module 04
+  tabs <- reactive({ input$tabs })
+
+  chunk_selection <- reactiveValues(
+    chunk_choices = NULL,
+    selected_chunk = NULL,
+    past_prompt = NULL
+  )
+
+
+  ## Module 06
+  logs <- reactiveValues(
+    id = 0, # 1, 2, 3, id for code chunk
+    code = "", # cumulative code
+    raw = "",  # cumulative orginal code for print out
+    last_code = "", # last code for Rmarkdown
+    language = "", # Python or R
+    code_history = list(), # keep all code chunks
+  )
+
+  counter <- reactiveValues(
+    costs_total = 0, # cummulative cost
+    requests = 0, # cummulative requests
+    tokens_current = 0,  # tokens for current query
+    time = 0 # response time for current
+  )
+
+  # change value when a previous code chunk is selected
+  reverted <- reactiveVal(0)
+
+
+  ## Module 07
   # the current data
   current_data <- reactiveVal(NULL)
   current_data_2 <- reactiveVal(NULL)
@@ -32,12 +66,16 @@ app_server <- function(input, output, session) {
   run_result <- reactiveVal(list())
 
 
-  #                             1. Module 02
-  #____________________________________________________________________________
-  #  Loading data
-  #____________________________________________________________________________
+  ## Module 15
+  modal_closed <- reactiveVal(FALSE)
 
-  # 'Load Data' module
+
+
+  #                    Modules and Outputs
+  #________________________________________________________________
+
+  #     Module 02 - 'Load Data'
+  # __________________________________
   mod_02 <- mod_02_load_data_serv(
     id = "load_data",
     chunk_selection = chunk_selection,
@@ -59,21 +97,15 @@ app_server <- function(input, output, session) {
     # logs = logs
   )
 
-  # (remove extra reactive wrap!!!)
-  # Rename the reactive values for easier use
-  selected_dataset_name <- reactive({ mod_02$selected_dataset_name()  })
-  # submit_button <- reactive({ mod_02$submit_button()  })
-  # reset_button <- reactive({  mod_02$reset_button() })
-  use_python <- reactive({  FALSE })
+  # Module 02 - Outputs
+  selected_dataset_name <- mod_02$selected_dataset_name
   user_file <- mod_02$user_file
+  use_python <- FALSE
 
 
-  #                             2. Module 03
-  #____________________________________________________________________________
-  #   Send Request
-  #____________________________________________________________________________
 
-  # 'Send Request' module
+  #    Module 03 - 'Send Request'
+  # __________________________________
   mod_03 <- mod_03_send_request_serv(
     id = "send_request",
     chunk_selection = chunk_selection,
@@ -81,25 +113,15 @@ app_server <- function(input, output, session) {
     selected_dataset_name = selected_dataset_name
   )
 
-  input_text <- reactive({  mod_03$input_text() })
-  submit_button <- reactive({ mod_03$submit_button()  })
-  reset_button <- reactive({  mod_03$reset_button() })
+  # Module 03 - Outputs
+  input_text <- mod_03$input_text
+  submit_button <- mod_03$submit_button
+  reset_button <- mod_03$reset_button
 
 
-  #                             3. Module 04
-  #____________________________________________________________________________
-  #   Main Panel
-  #____________________________________________________________________________
 
-  # 'Main Panel' module
-  tabs <- reactive({ input$tabs })
-
-  chunk_selection <- reactiveValues(
-    chunk_choices = NULL,
-    selected_chunk = NULL,
-    past_prompt = NULL
-  )
-
+  #     Module 04 - 'Main Panel'
+  # __________________________________
   mod_04 <- mod_04_main_panel_serv(
     id = "main_panel",
     llm_response = llm_response,
@@ -117,11 +139,8 @@ app_server <- function(input, output, session) {
 
 
 
-  #                             4. Module 5
-  #____________________________________________________________________________
-  #   LLMs
-  #____________________________________________________________________________
-
+  #         Module 05 - 'LLMs'
+  # __________________________________
   mod_05 <- mod_05_llms_serv(
     id = "llms",
     submit_button = submit_button,
@@ -142,39 +161,14 @@ app_server <- function(input, output, session) {
     send_head = send_head
   )
 
-  # Rename the reactive values for easier use
-  llm_prompt <- reactive({  mod_05$llm_prompt() })
-  llm_response <- reactive({  mod_05$llm_response() })
+  # Module 05 - Outputs
+  llm_prompt <- mod_05$llm_prompt
+  llm_response <- mod_05$llm_response
 
 
-  #                             5. Module 06
-  #____________________________________________________________________________
-  #  Error handling, record keeping/chunk history
-  #____________________________________________________________________________
 
-
-  # Defining & initializing the reactiveValues object
-  logs <- reactiveValues(
-    id = 0, # 1, 2, 3, id for code chunk
-    code = "", # cumulative code
-    raw = "",  # cumulative orginal code for print out
-    last_code = "", # last code for Rmarkdown
-    language = "", # Python or R
-    code_history = list(), # keep all code chunks
-  )
-
-  # Defining & initializing the reactiveValues object
-  counter <- reactiveValues(
-    costs_total = 0, # cummulative cost
-    requests = 0, # cummulative requests
-    tokens_current = 0,  # tokens for current query
-    time = 0 # response time for current
-  )
-
-  # Intitialize, change value when a previous code chunk is selected
-  reverted <- reactiveVal(0)
-
-  # "Errors & History" module
+  #   Module 06 - 'Errors & History'
+  # __________________________________
   mod_06 <- mod_06_error_hist_serv(
     id = "errors_and_history",
     submit_button = submit_button,
@@ -193,19 +187,14 @@ app_server <- function(input, output, session) {
     Rmd_chunk = Rmd_chunk
   )
 
-  # Rename the reactive values for easier use
-  api_error_modal <- reactive({  mod_06$api_error_modal() })
-  code_error <- reactive({  mod_06$code_error() })
+  # Module 06 - Outputs
+  api_error_modal <- mod_06$api_error_modal
+  code_error <- mod_06$code_error
 
 
 
-  #                            6. Module 07
-  #____________________________________________________________________________
-  # Run the code, data prep, show code
-  #____________________________________________________________________________
-
-
-  # "Run Code" module
+  #       Module 07 - 'Run Code'
+  # __________________________________
   mod_07 <- mod_07_run_code_serv(
     id = "run_code",
     run_env = run_env,
@@ -219,12 +208,10 @@ app_server <- function(input, output, session) {
     current_data = current_data
   )
 
-  #                             8. Module 09
-  #____________________________________________________________________________
-  #  Report Tab
-  #____________________________________________________________________________
 
-  # 'Report' module
+
+  #        Module 09 - 'Report'
+  # __________________________________
   mod_09 <- mod_09_report_serv(
     id = "report",
     submit_button = submit_button,
@@ -240,17 +227,13 @@ app_server <- function(input, output, session) {
     current_data = current_data
   )
 
-  # Rename the reactive values for easier use
-  Rmd_chunk <- reactive({  mod_09$Rmd_chunk() })
+  # Module 09 - Outputs
+  Rmd_chunk <- mod_09$Rmd_chunk
 
 
 
-  #                             9. Module 10
-  #____________________________________________________________________________
-  #  Exploratory Data Analysis Tab
-  #____________________________________________________________________________
-
-  # 'EDA' module
+  #         Module 10 - 'EDA'
+  # __________________________________
   mod_10 <- mod_10_eda_serv(
     id = "eda",
     selected_dataset_name = selected_dataset_name,
@@ -261,12 +244,8 @@ app_server <- function(input, output, session) {
 
 
 
-  #                             9. Module 11
-  #____________________________________________________________________________
-  #  Settings Tab
-  #____________________________________________________________________________
-
-  # 'Settings' module
+  #       Module 11 - 'Settings'
+  # __________________________________
   mod_11 <- mod_11_settings_serv(
     id = "sett",
     submit_button = submit_button,
@@ -276,7 +255,7 @@ app_server <- function(input, output, session) {
     code_error = code_error
   )
 
-  # Rename the reactive values for easier use
+  # Module 11 - Outputs
   api_key <- mod_11$api_key
   sample_temp <- mod_11$sample_temp
   selected_model <- mod_11$selected_model
@@ -286,21 +265,26 @@ app_server <- function(input, output, session) {
   max_levels_factor <- mod_11$max_levels_factor
   send_head <- mod_11$send_head
 
+
+
+  #      Module 12 - 'About Tab'
+  # __________________________________
   mod_12 <- mod_12_about_serv(
-    id = 'about'
+    id = "about"
   )
 
+
+
+  #       Module 13 - 'FAQ Tab'
+  # __________________________________
   mod_13 <- mod_13_faq_serv(
-    id = 'faq'
+    id = "faq"
   )
 
-  #                             10. Module 15??
-  #____________________________________________________________________________
-  #  Data Types Modal
-  #____________________________________________________________________________
 
-  modal_closed <- reactiveVal(FALSE)
 
+  #   Module 15 - 'Data Types Modal'
+  # __________________________________
   mod_15 <- mod_15_data_types_serv(
     id = "data_edit_modal",
     modal_closed = modal_closed,
@@ -313,10 +297,15 @@ app_server <- function(input, output, session) {
     user_file
   )
 
+  # Module 15 - Outputs
   modal_closed <- mod_15$modal_closed
   show_pop_up <- mod_15$show_pop_up
 
 
+
+
+  #                    Miscellaneous Functions
+  #________________________________________________________________
 
   # File is rendered and stored in the html_file variable in logs$code_history
   python_to_html <- reactive({

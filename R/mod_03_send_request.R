@@ -80,10 +80,8 @@ mod_03_send_request_ui <- function(id) {
 
 
 
-mod_03_send_request_serv <- function(id, chunk_selection,
-  user_file,
-  selected_dataset_name
-  ) { #, show_pop_up, modal_closed
+mod_03_send_request_serv <- function(id, chunk_selection, user_file,
+                                     selected_dataset_name) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -102,7 +100,7 @@ mod_03_send_request_serv <- function(id, chunk_selection,
 
     # Load demo prompts based on selected data
     observeEvent(input$demo_prompt, {
-      req(input$demo_prompt != demo$requests[1]) #"Example requests"
+      req(input$demo_prompt != demo$requests[1]) # "Example requests"
 
       updateTextAreaInput(
         session,
@@ -113,10 +111,9 @@ mod_03_send_request_serv <- function(id, chunk_selection,
 
     # Display demo prompts (example requests)
     output$prompt_ui <- renderUI({
-      req(selected_dataset_name()) #Might be a useles requirement. It's always something.
       req(is.null(user_file()))
 
-      choices <- switch(selected_dataset_name(), #input$user_selected_dataset
+      choices <- switch(selected_dataset_name(),
         "no_data" = demo$requests[demo$data == "No Data"],
         "iris" = demo$requests[demo$data == "Iris"],
         "mtcars" = demo$requests[demo$data == "MTCars"],
@@ -185,7 +182,7 @@ mod_03_send_request_serv <- function(id, chunk_selection,
       }
 
       # if no file is selected, do not send
-      if (selected_dataset_name() == "Select a dataset:") { #Old: is.null(available_datasets[[input$user_selected_dataset]])
+      if (selected_dataset_name() == "Select a dataset:") {
         showNotification(
           paste("No file found. Please select a dataset and try again."),
           duration = 10
@@ -197,7 +194,6 @@ mod_03_send_request_serv <- function(id, chunk_selection,
       # reset session
       session$reload()
     })
-
 
 
     # Return all reactive values so they can be used outside the module

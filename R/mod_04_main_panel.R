@@ -9,14 +9,13 @@ mod_04_main_panel_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
-    # shinyjs::useShinyjs(), #Moved to app_ui.R
     tags$head(tags$style(HTML("
       .first-user{font-size: 16px;color: #000;background-color: #90BD8C;
       transition: background-color 0.3s, box-shadow 0.3s;}
       .first-user:hover {background-color: #66AFFF;box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     "))),
 
-          # 'First Time User' tab redirect
+    # 'First Time User' tab redirect
     tags$script(HTML("
       $(document).on('click', '#first_user', function() {
         // Update the active tab to 'First Time User' within the 'More' navbarMenu
