@@ -6,6 +6,9 @@ mod_01_style_ui <- function(id) {
 
   # Add color to UI
   tags$head(tags$style(HTML("
+
+    body {padding-bottom: 55px;}
+
     /* navbar */
     .navbar {
         background-color: #C1E2BE;border-color: #90BD8C; color: #181818;font-weight: bold;
@@ -44,16 +47,6 @@ mod_01_style_ui <- function(id) {
 
     /* tippy this pop-ups */
     .tippy-content {font-size: 15px !important;}
-
-    /* policy styles */
-    .policy {background-color: #ededed;background-size: cover;background-position: center;
-      min-height: 500px;margin: 0 !important;padding-top: 0px;display: flex;justify-content: center;
-      border: 50px solid #bedbb7;color: #262626;text-align: left;flex-direction: column;}
-    .policy h1 {font-size: 40px;padding-top: 90px;margin-left: 125px;font-weight: bold;}
-    .policy h2 {font-size: 25px;padding-top: 40px;margin-left: 125px;font-weight: bold;}
-    .policy h3 {font-size: 20px;padding-top: 20px;margin-left: 125px;font-weight: bold;}
-    .policy p {font-size: 17px;margin-top: 20px;margin-right: 125px;margin-left: 125px;}
-    body {padding-bottom: 50px;}
 
     /* Responsive styles, for mobile browsing */
     @media (max-width: 1000px) {

@@ -22,6 +22,17 @@ app_ui <- function(request) {
     ### Style Module ###
     mod_01_style_ui("mod_01_style_ui.R"),
 
+    tags$footer(
+      style = "position: fixed;bottom: 0;width: 100%;background-color: #F6FFF5;
+        padding: 10px;text-align: center;z-index: 99;",
+      span("© 2024 Orditus LLC | "),
+      a("Privacy Policy", href = "www/privacypolicyRTutor.pdf", target = "_blank"),
+      span(" | "),
+      a("Terms of Use", href = "www/termsofuseRTutor.pdf", target = "_blank"),
+      span(" | "),
+      a("Orditus.com", href = "https://orditus.com/", target = "_blank")
+    ), # footer
+
     navbarPage(
       title = HTML('<span style="color: black;font-size: 20px;">RTutor</span>'),
       id = "tabs",
