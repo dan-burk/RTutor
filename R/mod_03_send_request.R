@@ -115,14 +115,14 @@ mod_03_send_request_serv <- function(id, chunk_selection, user_file,
 
       choices <- switch(selected_dataset_name(),
         "no_data" = demo$requests[demo$data == "No Data"],
-        "iris" = demo$requests[demo$data == "Iris"],
-        "mtcars" = demo$requests[demo$data == "MTCars"],
-        "airquality" = demo$requests[demo$data == "Air Quality"],
-        "diamonds" = demo$requests[demo$data == "Diamonds"],
-        "CO2" = demo$requests[demo$data == "CO2"],
-        "ToothGrowth" = demo$requests[demo$data == "Tooth Growth"],
-        "pressure" = demo$requests[demo$data == "Pressure"],
-        "ChickWeight" = demo$requests[demo$data == "Chick Weights"],
+        "iris" = demo$requests[demo$data == "Iris (examples)"],
+        "mtcars" = demo$requests[demo$data == "MTCars (examples)"],
+        "airquality" = demo$requests[demo$data == "Air Quality (examples)"],
+        "diamonds" = demo$requests[demo$data == "Diamonds (examples)"],
+        "CO2" = demo$requests[demo$data == "CO2 (examples)"],
+        "ToothGrowth" = demo$requests[demo$data == "Tooth Growth (examples)"],
+        "pressure" = demo$requests[demo$data == "Pressure (examples)"],
+        "ChickWeight" = demo$requests[demo$data == "Chick Weights (examples)"],
         demo$requests[demo$data == "Select a dataset:"]
       )
 
