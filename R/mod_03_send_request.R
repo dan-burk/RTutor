@@ -10,35 +10,31 @@ mod_03_send_request_ui <- function(id) {
   tagList(
     # CSS Styles
     tags$head(tags$style(HTML(paste0("
-      hr {border-top: 1px solid #90BD8C;}
+      /* Custom UI Elements */
+      #", ns("submit_button"), " {font-size: 18px;color: blue !important;
+        background-color: #F6FFF5;border-color: #90BD8C;}
 
-      textarea {width: 100%;background-color: #F6FFF5;border-color: #90BD8C;}
+      #", ns("reset_button"), " {font-size: 18px;color: red;
+        background-color: #F6FFF5;border-color: #90BD8C;}
 
-      #", ns("submit_button"), " {font-size: 16px;color: blue !important;background-color: #F6FFF5;border-color: #90BD8C;}
-
-      #", ns("reset_button"), " {font-size: 16px;color: red;background-color: #F6FFF5;border-color: #90BD8C;}
+      #", ns("input_text"), " {width: 100%;background-color: #F6FFF5;
+        border-color: #90BD8C;font-size: 16px;resize: vertical;}      
     ")))),
 
     hr(class = "custom-hr"),
     tags$label("3. Send Request",
       style = "font-size: 18px;font-weight: bold;color: #333;display: block;margin-bottom: 5px;"),
 
-    # User Input Text Box
-    # tags$textarea(
-    #   id = ns("input_text"),
-    #   placeholder = "Hi! I am your AI assistant. Select a dataset first then ask questions. See examples below.",
-    #   rows = 8
-    # ),
     textAreaInput(
       inputId = ns("input_text"),
-      label = NULL,  # or "Your Label" if you'd like
+      label = NULL,
       placeholder = "Ask questions or request analyses in English or other languages. For general questions, briefly explain the data first. See examples below.",
-      rows = 8
+      rows = 6
     ),
 
     # Example Prompts
     uiOutput(ns("prompt_ui")),
-    hr(),
+    hr(class = "custom-hr"),
 
     fluidRow(
       column(
@@ -72,7 +68,7 @@ mod_03_send_request_ui <- function(id) {
     fluidRow(
       column(
         width = 12,
-        hr()
+        hr(class = "custom-hr")
       )
     )
   )

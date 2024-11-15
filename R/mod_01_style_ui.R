@@ -35,15 +35,15 @@ mod_01_style_ui <- function(id) {
 
     /* selectInput extra customization */
     .selectize-input, .selectize-dropdown {background-color: #F6FFF5 !important;
-      border-color: #90BD8C !important;color: #000 !important; font-size: 16px;}
+      border-color: #90BD8C !important;color: #000 !important; font-size: 18px;}
+
+    /* textarea, textInput, numericInput */
+    textarea, input[type = 'text'], input[type='number']
+      {width: 100%;background-color: #F6FFF5;border-color: #90BD8C;font-size: 18px;}
 
     /* horizontal line (hr()) */
     .custom-hr{border-top: 1px solid #90BD8C;}
     .custom-hr-thick{border-top: 3px solid #90BD8C;}
-
-    /* textarea, textInput, numericInput */
-    textarea, input[type = 'text'], input[type='number']
-      {width: 100%;background-color: #F6FFF5;border-color: #90BD8C;font-size: 16px;}
 
     /* tippy this pop-ups */
     .tippy-content {font-size: 15px !important;}
@@ -70,6 +70,19 @@ mod_01_style_ui <- function(id) {
     .modal-dialog {
       position: absolute;bottom: 0;
     }
+
+    /* EDA Tab */
+    /* Background color - tab headers */
+    .nav-tabs {background-color: #D9EDD8;}
+    /* Text color - tab headers */
+    .nav-tabs > li > a {color: #5b5b5b;font-size: 16px;
+      border: 1px solid #D9EDD8;border-radius: 4px;}
+    /* Hover color - tab headers */
+    .nav-tabs > li > a:hover {background-color: #90BD8C;
+      color: #000;}
+    /* Background color - active tab */
+    .nav-tabs > li.active > a {background-color: #f3faf3;
+      color: #000;border: 1px solid #D9EDD8;border-bottom-color: transparent;}
 
     .faq-answer {
       display: none;padding-left: 10px; font-size: 18px;
