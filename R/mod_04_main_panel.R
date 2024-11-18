@@ -57,9 +57,19 @@ mod_04_main_panel_ui <- function(id) {
             )
           ),
           div(
-            style = "display: inline-block; vertical-align: top; margin-top: 25px;",  # Align button next to dropdown
-            actionButton(ns("delete_chunk"), "Delete Chunk")
+            style = "display: inline-block;vertical-align: top;
+              padding-top: 10px;padding-bottom: 15px;",  # Align button next to dropdown
+            actionButton(
+              ns("delete_chunk"),
+              "Delete Chunk"
+            )
           ),
+          tags$head(tags$style(  # Button styling
+            sprintf(
+              "#%s {font-size: 14px; color: #000; background-color: #F6FFF5; border-color: #90BD8C;}",
+              ns("delete_chunk")
+            )
+          )),
           tippy::tippy_this(
             ns("selected_chunk"),
             "You can go back to any previous code chunk and continue from there. The data will also be reverted to that point.",
