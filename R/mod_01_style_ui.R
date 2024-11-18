@@ -7,11 +7,12 @@ mod_01_style_ui <- function(id) {
   # Add color to UI
   tags$head(tags$style(HTML("
 
-    body {padding-bottom: 55px;}
+    body {padding-bottom: 80px;}
 
     /* navbar */
     .navbar {
-        background-color: #C1E2BE;border-color: #90BD8C; color: #181818;font-weight: bold;
+        background-color: #C1E2BE;border-color: #90BD8C;
+        color: #181818;font-weight: bold;
     }
 
     /* tabs */
@@ -31,15 +32,22 @@ mod_01_style_ui <- function(id) {
 
     /* selectInput & actionButton */
     .custom-select-input, .custom-action-button, .custom-download-button
-      {font-size: 24px;color: #000;background-color: #C1E2BE;border-color: #90BD8C;}
+    { font-size: 24px;color: #000;background-color: #C1E2BE;
+      border-color: #90BD8C;
+    }
 
     /* selectInput extra customization */
     .selectize-input, .selectize-dropdown {background-color: #F6FFF5 !important;
       border-color: #90BD8C !important;color: #000 !important; font-size: 18px;}
 
+    /* selectInput font size specification */
+    .select-input-font {font-size: 18px;}
+
     /* textarea, textInput, numericInput */
     textarea, input[type = 'text'], input[type='number']
-      {width: 100%;background-color: #F6FFF5;border-color: #90BD8C;font-size: 18px;}
+    { width: 100%;background-color: #F6FFF5;border-color: #90BD8C;
+      font-size: 18px;
+    }
 
     /* horizontal line (hr()) */
     .custom-hr{border-top: 1px solid #90BD8C;}
@@ -52,11 +60,15 @@ mod_01_style_ui <- function(id) {
     @media (max-width: 1000px) {
       .productIntro h2{margin: 25px;font-size: 40px;}
       .productIntro p {margin: 25px;}
-      .twocol .column.left {margin: 25px !important;padding: 20px !important;align-items: flex-start;}
+      .twocol .column.left {
+        margin:25px !important;padding: 20px !important;align-items: flex-start;
+      }
       .twocol .column.right {margin: 25px !important;padding: 0px;}
       .twocol .column.left h1 {font-size: 40px !important;}
       .twocol .column.left h2 {font-size: 25px !important;}
-      .policy h1, .policy h2, .policy h3 {margin: 25px !important;padding: 10px !important;}
+      .policy h1, .policy h2, .policy h3 {
+        margin: 25px !important;padding: 10px !important;
+      }
       .policy h1 {font-size: 35px;}
       .policy h2 {font-size: 28px;}
       .policy h3 {font-size: 21px;}
@@ -89,7 +101,8 @@ mod_01_style_ui <- function(id) {
     }
     
     .faq-question {
-      cursor: pointer;padding: 7px;border: 1px solid #90BD8C;background-color: #F6FFF5;font-size: 18px;
+      cursor: pointer;padding: 7px;border: 1px solid #90BD8C;
+      background-color: #F6FFF5;font-size: 18px;
     }
   ")))
   
