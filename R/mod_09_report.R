@@ -22,7 +22,8 @@ mod_09_report_ui <- function(id) {
     fluidRow(
       column(
         width = 5,
-        div(
+        tags$div(
+          class = "select-input-font",
           selectInput(
             inputId = ns("selected_chunk_report"),
             label = "Code chunks to include:",
