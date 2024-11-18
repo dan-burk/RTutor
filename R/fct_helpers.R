@@ -14,6 +14,7 @@
 release <- "2.00" # RTutor
 no_data <- "no_data" #'No Data' # no data is uploaded or selected
 user_upload <- "User Upload" # data is uploaded by user, used to be called uploaded_data
+rna_seq <- "rna_seq"
 min_query_length <- 6  # minimum # of characters
 max_query_length <- 2000 # max # of characters
 language_models <- c("gpt-4o-2024-08-06",  "gpt-4o-mini", "gpt-3.5-turbo")
@@ -51,26 +52,59 @@ on_server <- "on_server.txt"
 
 ######### Load Built-In Data with Base R #########
 
-# Create a list of available datasets to print on the sidebar
-# available_datasets <- list(
-#   "Select a dataset:" = NULL,
-#   "User Upload" = NULL, #user_upload
-#   "No Data" = no_data,
-#   "Iris" = "iris",
-#   "MTCars" = "mtcars",
-#   "Air Quality" = "airquality",
-#   "Diamonds" = "diamonds",
-#   "CO2" = "CO2",
-#   "Tooth Growth" = "ToothGrowth",
-#   "Pressure" = "pressure",
-#   "Chick Weights" = "ChickWeight"
-# )
+# Prepare a list of available built-in datasets
+available_datasets <- data()$results[, 3] # name of datasets
+available_datasets <- sort(gsub(" .*", "", available_datasets)) # clean and sort
 
-available_datasets <- c("Select a dataset:", no_data, "iris", "mtcars", "airquality", "diamonds",
-  "CO2", "ToothGrowth", "pressure", "ChickWeight", user_upload
-  )
-names(available_datasets) <- c("Select a dataset:", "No Data", "Iris", "MTCars",
-  "Air Quality", "Diamonds", "CO2", "Tooth Growth", "Pressure", "Chick Weights", "User Upload")
+# Filter to include only data frames & matrices
+available_datasets <- Filter(function(x)
+  is.data.frame(get(x, envir = .GlobalEnv)) ||
+  is.matrix(get(x, envir = .GlobalEnv)), 
+  available_datasets
+)
+
+# Function to move specified items to the front in order
+move_front <- function(v, elements) {
+  found <- intersect(elements, v)
+  v <- c(found, setdiff(v, elements))
+  return(v)
+}
+
+# Add diamonds df to list
+available_datasets <- c(available_datasets, "diamonds")
+
+# Move important datasets to the front in order & add custom entries
+available_datasets <- move_front(available_datasets, c("iris", "mtcars",
+ "diamonds", "airquality", "CO2", "ToothGrowth", "pressure", "ChickWeight")
+)
+
+# Append dummy values for user-uploaded data & no data
+available_datasets <- c("Select a dataset:", no_data, available_datasets,
+  user_upload
+)
+
+# Define the datasets to rename & their desired display names
+rename_map <- c(
+  "no_data" = "No Data",
+  "iris" = "Iris (examples)",
+  "mtcars" = "MTCars (examples)",
+  "diamonds" = "Diamonds (examples)",
+  "airquality" = "Air Quality (examples)",
+  "CO2" = "CO2 (examples)",
+  "ToothGrowth" = "Tooth Growth (examples)",
+  "pressure" = "Pressure (examples)",
+  "ChickWeight" = "Chick Weights (examples)",
+  "User Upload" = "User Upload"
+)
+
+# Update the names of `available_datasets` using the mapping
+available_datasets <- setNames(
+  available_datasets,
+  ifelse(available_datasets %in% names(rename_map),
+         rename_map[available_datasets],
+         available_datasets)  # Keep the original name if not in rename_map
+)
+
 
 # load demo requests for different datasets (demo questions)
 demo <- read.csv(app_sys("app", "www", "demo_questions.csv"))

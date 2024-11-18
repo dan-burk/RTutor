@@ -128,7 +128,7 @@ mod_04_main_panel_ui <- function(id) {
     ),
     conditionalPanel(
       condition = "1",
-      hr(class = "custom-hr"),
+      hr(class = "custom-hr-thick"),
       h4("Selected Dataset"),
       textOutput(ns("data_size")),
       tags$head(

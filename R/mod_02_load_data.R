@@ -145,7 +145,7 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
       updateSelectInput(
         session,
         inputId = "user_selected_dataset", #Used to be select_data, do NOT NOT NOT put ns() around this ID. It screws up everything!
-        choices = available_datasets, #names(available_datasets)
+        choices = available_datasets,
         selected = user_upload
       )
     }, ignoreInit = TRUE, once = TRUE)
@@ -167,7 +167,7 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
         df <- NULL #as.data.frame("No data selected or uploaded.")
       } else {
         # otherwise built-in data is unavailable when running from R package.
-        df <- get(input$user_selected_dataset) #available_datasets[[input$user_selected_dataset]]
+        df <- get(input$user_selected_dataset)
       }
 
       #  else if(input$select_data == rna_seq){
@@ -222,7 +222,7 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
         if (is.null(input$user_file)) {
           txt <- "No file uploaded! Please Reset and upload your data first."
         } else {
-          txt <- "Dataset: Uploaded."
+          txt <- "Dataset: User Upload"
         }
       } else if (input$user_selected_dataset == "Select a dataset:") {
         # txt <- "Data Set Not Selected! Please Reset and Select a Dataset."

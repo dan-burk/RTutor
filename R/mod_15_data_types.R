@@ -16,10 +16,15 @@ mod_15_data_types_ui <- function(id) {
     br(),
     column(
       width = 12,
-      actionButton(ns("data_edit_modal"), "Data Types"),
-      align = "left",
+      div(
+        actionButton(ns("data_edit_modal"), "Data Types"),
+        align = "left"
+      ),
       tags$head(tags$style(
-        "#data_edit_modal{font-size: 18px;color: #000;background-color: #F6FFF5;border-color: #90BD8C}"
+        sprintf(
+          "#%s {font-size: 17px; color: #000; background-color: #F6FFF5; border-color: #90BD8C;}",
+          ns("data_edit_modal")
+        )
       ))
     )
   )

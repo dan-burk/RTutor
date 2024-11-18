@@ -66,13 +66,14 @@ mod_11_settings_ui <- function(id) {
             fluidRow(
               column(
                 width = 12,
-                h3(strong("Use your own API Key"), style = common_styles$right_div_style),
+                h3(strong("Use your own API Key"),
+                   style = "padding-left: 85px; padding-right: 20px;padding-bottom: 10px;"),
                 h4("We pay a small fee to use the AI for every request. If you use this regularly, 
                   please take a few minutes to create your own API key: ",
                    style = common_styles$right_div_style),
                 div(
                   tags$ul(
-                    tags$li("Create a personal account at", 
+                    tags$li("Create a personal account at",
                           a("OpenAI.", href = "https://openai.com/api/", target = "_blank")),
                     tags$li("Once logged in, click \"Personal\" from top right."),
                     tags$li("Click \"Manage Account\", then \"Billing\", where you can add 
