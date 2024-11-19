@@ -108,7 +108,7 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
           )
           df <- as.data.frame(df)
         } else {
-          #CSV --------------------
+          # CSV --------------------
           try(
             df <- read.csv(in_file)
           )
@@ -172,7 +172,7 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
 
       #  else if(input$select_data == rna_seq){
       #   df <- rna_seq_data()
-      # } 
+      # }
 
       if (convert_to_factor()) {
         df <- numeric_to_factor(
@@ -183,7 +183,7 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
       }
 
       # if the first column looks like id? Tbh rudamentary logic.
-      if (!is.null(df) ){
+      if (!is.null(df)) {
         if (
           length(unique(df[, 1])) == nrow(df) &&  # all unique
             is.character(df[, 1])  # first column is character
@@ -199,7 +199,6 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
       } else if (nrow(df) == 0) {
         current_data(NULL)
       } else { # there are data in the dataframe
-
         current_data(df)
         original_data(df)
       }

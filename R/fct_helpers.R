@@ -470,36 +470,27 @@ turned_on <- function(x) {
 #'
 #' @return Returns a data frame
 numeric_to_factor <- function(df, max_levels_factor, max_proportion_factor) {
-  # some columns looks like numbers but have few levels
-  # convert these to factors
-
-  convert_index <- sapply(
-    df,
-    function(x) {
-      if (
-        (is.numeric(x) || is.character(x)) &&
-          # if there are few unique values compared to total values
+  # Identify columns to convert
+  convert_index <- sapply(df, function(x) {
+    # Check if numeric or character
+    if ((is.numeric(x) || is.character(x)) &&
+          # Few unique values compared to total values
           length(unique(x)) / length(x) < max_proportion_factor &&
-          length(unique(x)) <= max_levels_factor  # less than 12 unique values
-        # relcassify numeric variable as categorical
-      ) {
-        return(TRUE)
-      } else {
-        return(FALSE)
-      }
+          # Less than specified max levels
+          length(unique(x)) <= max_levels_factor) {
+      return(TRUE)
+    } else {
+      return(FALSE)
     }
-  )
+  })
 
-  convert_var <- colnames(df)[convert_index]
+  # Convert identified columns to factors
+  convert_var <- names(df)[convert_index]
   for (var in convert_var) {
-    eval(
-      parse(  # df$cyl <- as.factor(df$cyl)
-        text = paste0("df$", var, " <- as.factor(df$", var, ")")
-      )
-    )
+    df[[var]] <- factor(df[[var]])
   }
-  return(df)
 
+  return(df)
 }
 
 
