@@ -139,8 +139,7 @@ mod_04_main_panel_ui <- function(id) {
     conditionalPanel(
       condition = "1",
       hr(class = "custom-hr-thick"),
-      h4("Selected Dataset"),
-      textOutput(ns("data_size")),
+      uiOutput(ns("data_size")),
       tags$head(
         tags$style(HTML("
           .dataTables_wrapper {background-color: #f8fcf8;border-color: #90BD8C;padding: 10px;border-radius: 5px;}
@@ -470,15 +469,16 @@ mod_04_main_panel_serv <- function(id, llm_response, logs, code_error,
       )
     })
 
-    output$data_size <- renderText({
+    output$data_size <- renderUI({
       req(!is.null(current_data()))
-      paste(
-        dim(current_data())[1], "rows X ",
-        dim(current_data())[2], "columns"
+      tagList(
+        h4("Selected Dataset"),
+        paste(
+          dim(current_data())[1], "rows X",
+          dim(current_data())[2], "columns"
+        )
       )
     })
-
-
 
 
     observeEvent(input$delete_chunk, {
@@ -514,12 +514,11 @@ mod_04_main_panel_serv <- function(id, llm_response, logs, code_error,
               logs$raw <- logs$code_history[[max_id]]$raw
               logs$last_code <- logs$code_history[[max_id]]$last_code
               logs$language <- logs$code_history[[max_id]]$language
-              
+
 
               choices <- 1:length(logs$code_history)
               names(choices) <- paste0("Chunk #", choices)
               chunk_selection$chunk_choices <- choices
-              # browser()
 
               # update chunk choices
               updateSelectInput(
@@ -530,7 +529,7 @@ mod_04_main_panel_serv <- function(id, llm_response, logs, code_error,
                 selected = logs$id
               )
 
-            }else{
+            } else {
               # Defining & initializing the reactiveValues object
               # logs <- reactiveValues(
               #   id = 0, # 1, 2, 3, id for code chunk
@@ -565,11 +564,7 @@ mod_04_main_panel_serv <- function(id, llm_response, logs, code_error,
           }
         }
       )
-    
-
     })
-
-
 
 
   })
