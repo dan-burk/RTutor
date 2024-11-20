@@ -33,7 +33,9 @@ mod_15_data_types_ui <- function(id) {
 
 
 
-mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, current_data, current_data_2, original_data, logs, user_file) {
+mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start,
+                                   current_data, current_data_2, original_data,
+                                   logs, user_file, user_file_2) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -101,12 +103,15 @@ mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, cur
     # Trigger the pop-up when a file is uploaded or when button is clicked
     observeEvent(input$data_edit_modal, {
       show_pop_up()
-
     })
 
     observeEvent(user_file(), {
       show_pop_up()
+    })
 
+    observeEvent(user_file_2(), {
+      showNotification("2nd file uploaded! To use it, specify with its name 'df2'.")
+      show_pop_up()
     })
 
     observeEvent(input$dismiss_modal, {
@@ -232,6 +237,7 @@ mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, cur
 
             #Code to update environment and not overwrite
             existing_vars <- as.list(run_env())
+            existing_vars$df <- current_data() #?
             run_env(list2env(existing_vars))
             run_env_start(as.list(run_env()))
           })
@@ -373,8 +379,7 @@ mod_15_data_types_serv <- function(id, modal_closed, run_env, run_env_start, cur
     return(
       list(
         data_edit_modal = reactive(input$data_edit_modal),
-        modal_closed = modal_closed, #Already Reactive, so wraping is likely redundant
-        show_pop_up = show_pop_up
+        modal_closed = modal_closed
       )
     )
 

@@ -131,9 +131,10 @@ jokes <- demo[
 #' @param use_python  whether or not using python instead of R
 #' @param chunk_id  first or not? First chunk add data description
 #' @param send_head  send 5 rows of data (& data desc.) to LLM? default of TRUE
+#' @param df2 the second data frame
 #'
 #' @return Returns a cleaned up version, so that it could be sent to GPT.
-prep_input <- function(txt, selected_data, df, use_python, chunk_id, send_head) { #df2 = NULL, df2_name = NULL
+prep_input <- function(txt, selected_data, df, use_python, chunk_id, send_head, df2) {
 
   if (is.null(txt) || is.null(selected_data)) {
     return(NULL)
@@ -183,7 +184,7 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, send_head) 
 
       txt <- paste(txt, after_text)  # Always add 'use the df data frame.'
 
-      # in a session, sometimes the first chunk has the id of 0. sometimes 1?????
+      # in a session, sometimes the first chunk has the id of 0. sometimes 1???
 
       # add data description
       # if it is not the first chunk and data description is long, do not add
@@ -193,28 +194,26 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, send_head) 
         txt <- paste(txt, data_info)
       }
 
-      # # if there is a second data frame, add that too.
-      # if(!is.null(df2)) {
-      #   if(is.null(df2_name)) {
-      #     df2_name <- "df2"
-      #   } 
+      # if there is a second data frame, add that too.
+      if (!is.null(df2)) {
+        df2_name <- "df2"
 
-      #   # 2nd data must be specificall called
-      #   if(grepl(df2_name, txt)) {
-      #     data_info_2 <- describe_df(
-      #       df2, 
-      #       list_levels = TRUE, 
-      #       relevant_var = relevant_var,
-      #       send_head = send_head
-      #     )
-      #     data_info_2 <- gsub("df data frame", paste0(df2_name, " data frame"), data_info_2)
+        # 2nd data must be specifically called
+        if (grepl(df2_name, txt)) {
+          data_info_2 <- describe_df(
+            df2,
+            list_levels = TRUE,
+            relevant_var = relevant_var,
+            send_head = send_head
+          )
+          data_info_2 <- gsub("df data frame", paste0(df2_name, " data frame"), data_info_2)
 
-      #     n_words <- tokens(data_info_2)
-      #     if (more_info && !(chunk_id > 1 && n_words > 600)) {
-      #       txt <- paste(txt, data_info_2)
-      #     }
-      #   }
-      # }
+          n_words <- tokens(data_info_2)
+          if (more_info && !(chunk_id > 1 && n_words > 600)) {
+            txt <- paste(txt, data_info_2)
+          }
+        }
+      }
 
     }
   }

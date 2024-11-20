@@ -138,35 +138,30 @@ mod_04_main_panel_ui <- function(id) {
     ),
     conditionalPanel(
       condition = "1",
+      # First dataset
       hr(class = "custom-hr-thick"),
       uiOutput(ns("data_size")),
+      DT::dataTableOutput(ns("data_table_DT")),
+      # Second dataset
+      hr(class = "custom-hr-thick"),
+      uiOutput(ns("data_size_2")),
+      DT::dataTableOutput(ns("data_table_DT_2")),
+      # Data tables styling
       tags$head(
         tags$style(HTML("
           .dataTables_wrapper {background-color: #f8fcf8;border-color: #90BD8C;padding: 10px;border-radius: 5px;}
           .dataTables_wrapper table.dataTable tbody tr:nth-child(odd) {background-color: #f3faf3;}
           .dataTables_wrapper table.dataTable tbody tr:nth-child(even) {background-color: #fff;}
         "))
-      ),
-      DT::dataTableOutput(ns("data_table_DT"))
-
-    # shinyjs::hidden(
-    #   div(
-    #     id = "second_file",
-    #     hr(class = "custom-hr"),
-    #     h4("2nd dataset: df2     (Must specify, e.g. 'create a piechart of X in df2.')"),
-    #     textOutput("data_size_2"),
-    #     DT::dataTableOutput("data_table_DT_2")
-
-    #   )
-    # )
+      )
     )
   )
 }
 
 mod_04_main_panel_serv <- function(id, llm_response, logs, code_error,
                                    run_result, run_env_start, submit_button,
-                                   use_python, tabs, current_data, selected_dataset_name,
-                                   chunk_selection) {
+                                   use_python, tabs, current_data, current_data_2,
+                                   selected_dataset_name, chunk_selection) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -454,7 +449,7 @@ mod_04_main_panel_serv <- function(id, llm_response, logs, code_error,
       }
     })
 
-
+    # First Dataset Table
     output$data_table_DT <- DT::renderDataTable({
       req(current_data())
       DT::datatable(
@@ -476,6 +471,32 @@ mod_04_main_panel_serv <- function(id, llm_response, logs, code_error,
         paste(
           dim(current_data())[1], "rows X",
           dim(current_data())[2], "columns"
+        )
+      )
+    })
+
+    # Second Dataset Table
+    output$data_table_DT_2 <- DT::renderDataTable({
+      req(current_data_2())
+      DT::datatable(
+        current_data_2(),
+        options = list(
+          lengthMenu = c(5, 20, 50, 100),
+          pageLength = 10,
+          dom = "ftp",
+          scrollX = "400px"
+        ),
+        rownames = FALSE
+      )
+    })
+
+    output$data_size_2 <- renderUI({
+      req(!is.null(current_data_2()))
+      tagList(
+        h4("2nd Dataset (Must specify, e.g. 'create a piechart of X in df2.')"),
+        paste(
+          dim(current_data_2())[1], "rows X",
+          dim(current_data_2())[2], "columns"
         )
       )
     })

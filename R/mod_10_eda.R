@@ -16,23 +16,36 @@ mod_10_eda_ui <- function(id) {
         tabPanel(
           title = "Basic",
           div(style = "margin-left: 20px;",
+            # First dataset
             hr(class = "custom-hr-thick"),
             h4(strong("Data Structure: df")),
-            verbatimTextOutput(ns("data_structure")),
-            hr(class = "custom-hr-thick"),
-            h4(strong("Data Summary: df")),
-            verbatimTextOutput(ns("data_summary")),
-            plotly::plotlyOutput(ns("missing_values"), width = "60%"),
-            shinyjs::hidden(
-              div(
-                id = "second_file_summary",
-                br(), hr(class = "custom-hr"),
-                h4(strong("Data Structure: df2")),
-                # verbatimTextOutput(ns("data_structure_2")),
-                # br(), hr(class = "custom-hr"),
-                # h4(strong("Data Summary: df2")),
-                # verbatimTextOutput(ns("data_summary_2")),
-                # plotly::plotlyOutput(ns("missing_values_2"), width = "60%")
+            fluidRow(
+              column(width = 6,
+                verbatimTextOutput(ns("data_structure")),
+                h4(strong("Data Summary: df")),
+                verbatimTextOutput(ns("data_summary"))
+              ),
+              column(width = 6,
+                plotly::plotlyOutput(ns("missing_values"),
+                width = "100%")
+              )
+            ),
+
+            # Second dataset
+            conditionalPanel(
+              condition = "output.data_structure_2 != null",
+              br(), 
+              hr(class = "custom-hr-thick"),
+              h4(strong("Data Structure: df2")),
+              fluidRow(
+                column(width = 6,
+                  verbatimTextOutput(ns("data_structure_2")),
+                  h4(strong("Data Summary: df2")),
+                  verbatimTextOutput(ns("data_summary_2"))
+                ),
+                column(width = 6,
+                  plotly::plotlyOutput(ns("missing_values_2"), width = "100%")
+                )
               )
             )
           )
@@ -147,7 +160,9 @@ mod_10_eda_ui <- function(id) {
           title = "EDA Reports",
           div(style = "margin-left: 20px;",
             hr(class = "custom-hr-thick"),
-            h4(strong("Comprehensive EDA (Exploratory Data Analysis)"), style = "font-size: 24px;"),
+            h4(strong("Comprehensive EDA (Exploratory Data Analysis)"),
+              style = "font-size: 24px;"
+            ),
             uiOutput(ns("eda_report_ui"))
           )
         )
@@ -158,202 +173,57 @@ mod_10_eda_ui <- function(id) {
 }
 
 
-mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data, logs) {
+mod_10_eda_serv <- function(id, selected_dataset_name, use_python,
+                            current_data, current_data_2, logs) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-    ### EDA Report ###
+    # GGPairs Data used for EDA
+    ggpairs_data <- reactive({
 
-    output$eda_report_ui <- renderUI({
-      req(selected_dataset_name() != no_data)
-      req(!use_python())
-      req(!is.null(current_data()))
-      df <- ggpairs_data()
-      tagList(
-        br(),
-        fluidRow(
-          column(
-            width = 3,
-            actionButton(
-              inputId = ns("render_eda_report_rtutor"),
-              label = strong("Render Report"),
-              class = "custom-action-button"
+      df <- current_data()
+      # if analyses are run, use the original data
+      if (length(logs$code_history) > 0) {
+        df <- logs$code_history[[1]]$env$df
+      }
+      #df <- na.omit(df) # remove missing values
+      cat_variables <- colnames(df)[!sapply(df, is.numeric)]
+      # ggpairs does not tolerate variables with too many levels
+      for (v in cat_variables) {
+        counts <- sort(table(df[, v]), decreasing = TRUE)
+        # more than 12 levels?
+        if (length(counts) > max_eda_levels) {
+          # if the top 12 levels represent more than 30% of the observations
+          if (sum(counts[1:max_eda_levels]) / dim(df)[1] > 0.30) {
+
+            df[, v] <- unlist(
+              sapply(
+                1:dim(df)[1],
+                function(x) {
+                  if (df[x, v] %in% names(counts)[1:max_eda_levels]) {
+                    return(df[x, v])
+                  } else {
+                    return("Other")
+                  }
+                }
+              )
             )
-          )
-        ),
-        br(),
-        tags$div(
-          class = "select-input-font",
-          selectInput(
-            inputId = ns("eda_target_variable"),
-            label = "Select a target variable (optional):",
-            choices = c("<None>", colnames(df)),
-            multiple = FALSE
-          )
-        ),
-        br(),
-        tags$div(
-          class = "select-input-font",
-          checkboxGroupInput(
-            inputId = ns("eda_variables"),
-            label = "Select up to 20 variables:",
-            choices = colnames(df),
-            selected = colnames(df)
-          )
-        )
-      )
-
-    })
-    # when user uploads a file and has more than 20 columns, only the first 20 is selected by eda_variables.
-    # observeEvent(input$user_file, {
-    #   req(!is.null(input$user_file))
-    #   req(available_datasets[[selected_dataset_name()]] == uploaded_data)
-    #   req(!input$use_python)
-    #   req(!is.null(ggpairs_data()))
-    #   df <- ggpairs_data()
-    #   if(ncol(df) > max_eda_var) {
-    #     updateCheckboxGroupInput(
-    #       session = session,
-    #       inputId = ns("eda_variables"),
-    #       label = "Deselect variables to ignore(optional):",
-    #       choices = colnames(df),
-    #       selected = colnames(df)[1:max_eda_var]
-    #     )
-    #   }
-    # })
-
-    # if user selects more than 20 columns for the eda_variables,
-    # only the first 20 is selected by eda_variables. Show a warning.
-    observeEvent(c(input$eda_variables, input$eda_target_variable), {
-      req(!use_python())
-      req(!is.null(ggpairs_data()))
-
-      selected_var <- input$eda_variables
-      update_selection <- FALSE
-      # if the selected target variable is not included in the eda_variables,
-      # add it to the top of the list.
-      if (input$eda_target_variable != "<None>" && 
-            !(input$eda_target_variable %in% selected_var)) {
-        selected_var <- c(input$eda_target_variable, selected_var)
-        update_selection <- TRUE
+          } else {
+            # too many levels, remove this column. Likely names
+            df <- df[, !(colnames(df) %in% v)]
+          }
+        }
       }
-
-      if(length(selected_var) > max_eda_var) {
-        selected_var <- selected_var[1:max_eda_var]
-
-        showNotification(
-          ui = paste("Only the first 20 variables are selected for EDA.
-          Please deselect some variables to continue."),
-          id = "eda_variables_warning",
-          duration = 5,
-          type = "error"
-        )
-        update_selection <- TRUE
-      }
-
-      # if target variable is selected, add to it;
-      # if too many, only keep the first 20
-      if (update_selection) {
-        updateCheckboxGroupInput(
-          session = session,
-          inputId = ns("eda_variables"),
-          label = "Deselect variables to ignore(optional):",
-          choices = colnames(ggpairs_data()),
-          selected = selected_var
-        )
-      }
+      return(df)
     })
 
-    eda_file <- reactiveVal(NULL)
-
-    observeEvent(input$render_eda_report_rtutor, {
-      req(selected_dataset_name() != no_data)
-      req(!use_python())
-      req(!is.null(current_data()))
-
-
-      withProgress(message = "Generating Report (5 minutes)", {
-        incProgress(0.2)
-        # Copy the report file to a temporary directory before processing it, in
-        # case we don't have write permissions to the current working dir (which
-        # can happen when deployed).
-        tempReport <- file.path(tempdir(), "RTutor_EDA.Rmd")
-        # tempReport
-        tempReport <- gsub("\\", "/", tempReport, fixed = TRUE)
-        output_file <- gsub("Rmd$", "html", tempReport)
-        # This should retrieve the project location on your device:
-        # "C:/Users/bdere/Documents/GitHub/idepGolem"
-        # wd <- getwd()
-
-        markdown_location <- app_sys("app/www/eda.Rmd")
-        file.copy(from = markdown_location, to = tempReport, overwrite = TRUE)
-
-        # Set up parameters to pass to Rmd document
-        params <- list(
-          df = ggpairs_data()[, input$eda_variables],
-          target = input$eda_target_variable
-        )
-        req(params)
-        # Knit the document, passing in the `params` list, and eval it in a
-        # child of the global environment (this isolates the code in the
-        # document from the code in this app).
-        tryCatch({
-          rmarkdown::render(
-            input = tempReport, # markdown_location,
-            output_file = output_file,
-            params = params,
-            envir = new.env(parent = globalenv())
-          )
-        },
-        error = function(e) {
-          showNotification(
-            ui = paste("Error when generating the report. Please try again."),
-            id = "eda_report_error",
-            duration = 5,
-            type = "error"
-          )
-        },
-        finally = {
-          eda_file(output_file)
-          # show modal with download button
-          showModal(modalDialog(
-            title = "Successfully rendered the report!",
-            downloadButton(
-              outputId = ns("eda_report_rtutor"),
-              label = "Download"
-            ),
-            easyClose = TRUE
-          ))
-        })
-      })
-    })
-
-
-    # Markdown report
-    output$eda_report_rtutor <- downloadHandler(
-      # For PDF output, change this to "report.pdf"
-      filename = "RTutor_EDA.html",
-      content = function(file) {
-        validate(
-          need(!is.null(eda_file()), "File not found.")
-        )
-        file.copy(from = eda_file(), to = file, overwrite = TRUE)
-      }
-    )
 
 
     ### EDA Visualizations ###
 
-    output$data_size <- renderText({
-      req(selected_dataset_name() != no_data)
-      req(!is.null(current_data()))
-      paste(
-        dim(current_data())[1], "rows X ",
-        dim(current_data())[2], "columns"
-      )
-    })
-
+    ## Basic Panel ##
+    # First Dataset
     output$data_structure <- renderPrint({
       req(selected_dataset_name() != no_data)
       req(!is.null(current_data()))
@@ -373,65 +243,127 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
 
     # plot missing values
     output$missing_values <- plotly::renderPlotly({
-      req(selected_dataset_name() != no_data)
       req(!is.null(current_data()))
-      p <- missing_values_plot(current_data())
-      if(!is.null(p)) {
-        plotly::ggplotly(p)
+      
+      # Check for missing values
+      missing_count <- sum(is.na(current_data()))
+      
+      if (missing_count == 0) {
+        # Create a plotly text plot when no missing values exist
+        plotly::plot_ly() %>%
+          plotly::add_text(
+            x = 0.5,
+            y = 0.5,
+            text = "No Missing Values Detected",
+            textfont = list(size = 20, color = "green")
+          ) %>%
+          plotly::layout(
+            xaxis = list(
+              showticklabels = FALSE,
+              showgrid = FALSE,
+              zeroline = FALSE
+            ),
+            yaxis = list(
+              showticklabels = FALSE,
+              showgrid = FALSE,
+              zeroline = FALSE
+            )
+          )
       } else {
-        return(NULL)
+        # Your existing missing values plot
+        p <- missing_values_plot(current_data())
+        if (!is.null(p)) {
+          plotly::ggplotly(p)
+        } else {
+          return(NULL)
+        }
       }
     })
 
-    # # second file
-    # output$data_table_DT_2 <- DT::renderDataTable({
-    #   req(current_data_2())
-    #   DT::datatable(
-    #     current_data_2(),
-    #     options = list(
-    #       lengthMenu = c(5, 20, 50, 100),
-    #       pageLength = 10,
-    #       dom = 'ftp',
-    #       scrollX = "400px"
-    #     ),
-    #     rownames = FALSE
-    #   )
-    # })
+    # Second Dataset
+    output$data_structure_2 <- renderPrint({
+      req(!is.null(current_data_2()))
+      str(current_data_2())
+    })
 
-    # output$data_size_2 <- renderText({
-    #   req(!is.null(current_data_2()))
-    #   paste(
-    #     dim(current_data_2())[1], "rows X ",
-    #     dim(current_data_2())[2], "columns"
-    #   )
-    # })
+    output$data_summary_2 <- renderText({
+      req(!is.null(current_data_2()))
+      paste(
+        capture.output(
+          summary(current_data_2())
+        ),
+        collapse = "\n"
+      )
+    })
 
-    # output$data_structure_2 <- renderPrint({
-    #   req(!is.null(current_data_2()))
-    #   str(current_data_2())
-    # })
+    # plot missing values
+    output$missing_values_2 <- plotly::renderPlotly({
+      req(!is.null(current_data_2()))
+      
+      # Check for missing values
+      missing_count <- sum(is.na(current_data_2()))
+      
+      if (missing_count == 0) {
+        # Create a plotly text plot when no missing values exist
+        plotly::plot_ly() %>%
+          plotly::add_text(
+            x = 0.5,
+            y = 0.5,
+            text = "No Missing Values Detected 👍",
+            textfont = list(size = 20, color = "green")
+          ) %>%
+          plotly::layout(
+            xaxis = list(
+              showticklabels = FALSE,
+              showgrid = FALSE,
+              zeroline = FALSE
+            ),
+            yaxis = list(
+              showticklabels = FALSE,
+              showgrid = FALSE,
+              zeroline = FALSE
+            )
+          )
+      } else {
+        # Your existing missing values plot
+        p <- missing_values_plot(current_data_2())
+        if (!is.null(p)) {
+          plotly::ggplotly(p)
+        } else {
+          return(NULL)
+        }
+      }
+    })
 
-    # output$data_summary_2 <- renderText({
-    #   req(!is.null(current_data_2()))
-    #   paste(
-    #     capture.output(
-    #       summary(current_data_2())
-    #     ),
-    #     collapse = "\n"
-    #   )
-    # })
+    ## Categorical Panel ##
+    output$distribution_category <- renderPlot({
+      req(selected_dataset_name() != no_data)
+      withProgress(message = "Barplots of categorical variables ...", {
+        incProgress(0.3)
+        DataExplorer::plot_bar(current_data())
+      })
+    })
 
-    # # plot missing values
-    # output$missing_values_2 <- plotly::renderPlotly({
-    #   req(!is.null(current_data_2()))
-    #   p <- missing_values_plot(current_data_2())
-    #   if(!is.null(p)) {
-    #     plotly::ggplotly(p)
-    #   } else {
-    #     return(NULL)
-    #   }
-    # })
 
+    ## Numerical Panel ##
+    output$distribution_numeric <- renderPlot({
+      req(selected_dataset_name() != no_data)
+      withProgress(message = "Creating histograms ...", {
+        incProgress(0.3)
+        DataExplorer::plot_histogram(current_data())
+      })
+    })
+
+    output$qq_numeric <- renderPlot({
+      req(selected_dataset_name() != no_data)
+      withProgress(message = "Generating QQ plots ...", {
+        incProgress(0.3)
+        DataExplorer::plot_qq(current_data())
+      })
+    })
+
+
+    ## Summary Panel ##
     output$dfSummary <- renderText({
       req(selected_dataset_name() != no_data)
       req(current_data())
@@ -440,6 +372,8 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
       return(res)
     })
 
+
+    ## Table1 Panel ##
     output$table1_inputs <- renderUI({
       req(selected_dataset_name() != no_data)
       req(ggpairs_data())
@@ -482,30 +416,8 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
       return(res)
     })
 
-    output$distribution_category <- renderPlot({
-      req(selected_dataset_name() != no_data)
-      withProgress(message = "Barplots of categorical variables ...", {
-        incProgress(0.3)
-        DataExplorer::plot_bar(current_data())
-      })
-    })
 
-    output$distribution_numeric <- renderPlot({
-      req(selected_dataset_name() != no_data)
-      withProgress(message = "Creating histograms ...", {
-        incProgress(0.3)
-        DataExplorer::plot_histogram(current_data())
-      })
-    })
-
-    output$qq_numeric <- renderPlot({
-      req(selected_dataset_name() != no_data)
-      withProgress(message = "Generating QQ plots ...", {
-        incProgress(0.3)
-        DataExplorer::plot_qq(current_data())
-      })
-    })
-
+    ## Correlation Panel ##
     output$corr_map <- renderPlot({
       req(selected_dataset_name() != no_data)
       withProgress(message = "Generating correlation map ...", {
@@ -518,61 +430,24 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
         corrplot::corrplot(
           M,
           p.mat = testRes$p,
-          method = 'circle',
-          type = 'lower',
-          insig = 'blank',
-          addCoef.col = 'black',
+          method = "circle",
+          type = "lower",
+          insig = "blank",
+          addCoef.col = "black",
           number.cex = 0.8,
-          order = 'AOE',
+          order = "AOE",
           diag = FALSE
         )
       })
     })
 
-    # data used for EDA
-    ggpairs_data <- reactive({
 
-      df <- current_data()
-      # if analyses are run, use the original data
-      if (length(logs$code_history) > 0) {
-        df <- logs$code_history[[1]]$env$df
-      }
-      #df <- na.omit(df) # remove missing values
-      cat_variables <- colnames(df)[!sapply(df, is.numeric)]
-      # ggpairs does not tolerate variables with too many levels
-      for (v in cat_variables) {
-        counts <- sort(table(df[, v]), decreasing = TRUE)
-        # more than 12 levels?
-        if (length(counts) > max_eda_levels) {
-          # if the top 12 levels represent more than 30% of the observations
-          if (sum(counts[1:max_eda_levels]) / dim(df)[1] > 0.30) {
-
-            df[, v] <- unlist(
-              sapply(
-                1:dim(df)[1],
-                function(x) {
-                  if (df[x, v] %in% names(counts)[1:max_eda_levels]) {
-                    return(df[x, v])
-                  } else {
-                    return("Other")
-                  }
-                }
-              )
-            )
-          } else {
-            # too many levels, remove this column. Likely names
-            df <- df[, !(colnames(df) %in% v)]
-          }
-        }
-      }
-      return(df)
-    })
-
+    ## GGPairs Panel ##
     output$ggpairs_inputs <- renderUI({
       req(ggpairs_data())
       df <- ggpairs_data()
       selected <- colnames(df)
-      if(length(selected) > 3) {
+      if (length(selected) > 3) {
         selected <- sample(selected, 3)
       }
       tagList(
@@ -648,6 +523,170 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python, current_data,
       })
     })
 
+
+    ## EDA Panel ##
+
+    # Variable Selection
+    output$eda_report_ui <- renderUI({
+      req(selected_dataset_name() != no_data)
+      req(!use_python())
+      req(!is.null(current_data()))
+      df <- ggpairs_data()
+      tagList(
+        br(),
+        fluidRow(
+          column(
+            width = 3,
+            actionButton(
+              inputId = ns("render_eda_report_rtutor"),
+              label = strong("Render Report"),
+              class = "custom-action-button"
+            )
+          )
+        ),
+        br(),
+        tags$div(
+          class = "select-input-font",
+          selectInput(
+            inputId = ns("eda_target_variable"),
+            label = "Select a target variable (optional):",
+            choices = c("<None>", colnames(df)),
+            multiple = FALSE
+          )
+        ),
+        br(),
+        tags$div(
+          class = "select-input-font",
+          checkboxGroupInput(
+            inputId = ns("eda_variables"),
+            label = "Select up to 20 variables:",
+            choices = colnames(df),
+            selected = colnames(df)
+          )
+        )
+      )
+    })
+
+    # Warning for User
+    # if user selects more than 20 columns for the eda_variables,
+    # only the first 20 is selected by eda_variables. Show a warning.
+    observeEvent(c(input$eda_variables, input$eda_target_variable), {
+      req(!use_python())
+      req(!is.null(ggpairs_data()))
+
+      selected_var <- input$eda_variables
+      update_selection <- FALSE
+      # if the selected target variable is not included in the eda_variables,
+      # add it to the top of the list.
+      if (input$eda_target_variable != "<None>" &&
+            !(input$eda_target_variable %in% selected_var)) {
+        selected_var <- c(input$eda_target_variable, selected_var)
+        update_selection <- TRUE
+      }
+
+      if (length(selected_var) > max_eda_var) {
+        selected_var <- selected_var[1:max_eda_var]
+
+        showNotification(
+          ui = paste("Only the first 20 variables are selected for EDA.
+          Please deselect some variables to continue."),
+          id = "eda_variables_warning",
+          duration = 5,
+          type = "error"
+        )
+        update_selection <- TRUE
+      }
+
+      # if target variable is selected, add to it;
+      # if too many, only keep the first 20
+      if (update_selection) {
+        updateCheckboxGroupInput(
+          session = session,
+          inputId = ns("eda_variables"),
+          label = "Deselect variables to ignore (optional):",
+          choices = colnames(ggpairs_data()),
+          selected = selected_var
+        )
+      }
+    })
+
+
+    # Write the EDA Report
+    eda_file <- reactiveVal(NULL)
+
+    observeEvent(input$render_eda_report_rtutor, {
+      req(selected_dataset_name() != no_data)
+      req(!use_python())
+      req(!is.null(current_data()))
+
+
+      withProgress(message = "Generating Report (5 minutes)", {
+        incProgress(0.2)
+        # Copy the report file to a temporary directory before processing it, in
+        # case we don't have write permissions to the current working dir (which
+        # can happen when deployed).
+        tempReport <- file.path(tempdir(), "RTutor_EDA.Rmd")
+        # tempReport
+        tempReport <- gsub("\\", "/", tempReport, fixed = TRUE)
+        output_file <- gsub("Rmd$", "html", tempReport)
+        # This should retrieve the project location on your device:
+        # "C:/Users/bdere/Documents/GitHub/idepGolem"
+        # wd <- getwd()
+
+        markdown_location <- app_sys("app/www/eda.Rmd")
+        file.copy(from = markdown_location, to = tempReport, overwrite = TRUE)
+
+        # Set up parameters to pass to Rmd document
+        params <- list(
+          df = ggpairs_data()[, input$eda_variables],
+          target = input$eda_target_variable
+        )
+        req(params)
+        # Knit the document, passing in the `params` list, and eval it in a
+        # child of the global environment (this isolates the code in the
+        # document from the code in this app).
+        tryCatch({
+          rmarkdown::render(
+            input = tempReport, # markdown_location,
+            output_file = output_file,
+            params = params,
+            envir = new.env(parent = globalenv())
+          )
+        },
+        error = function(e) {
+          showNotification(
+            ui = paste("Error when generating the report. Please try again."),
+            id = "eda_report_error",
+            duration = 5,
+            type = "error"
+          )
+        },
+        finally = {
+          eda_file(output_file)
+          # show modal with download button
+          showModal(modalDialog(
+            title = "Successfully rendered the report!",
+            downloadButton(
+              outputId = ns("eda_report_rtutor"),
+              label = "Download"
+            ),
+            easyClose = TRUE
+          ))
+        })
+      })
+    })
+
+    # Report Download Handler
+    output$eda_report_rtutor <- downloadHandler(
+      # For PDF output, change this to "report.pdf"
+      filename = "RTutor_EDA.html",
+      content = function(file) {
+        validate(
+          need(!is.null(eda_file()), "File not found.")
+        )
+        file.copy(from = eda_file(), to = file, overwrite = TRUE)
+      }
+    )
 
   })
 }
