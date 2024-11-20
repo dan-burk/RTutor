@@ -55,6 +55,7 @@ app_server <- function(input, output, session) {
   current_data <- reactiveVal(NULL)
   current_data_2 <- reactiveVal(NULL)
   original_data <- reactiveVal(NULL)
+  original_data_2 <- reactiveVal(NULL)
 
   # define a reactive variable that holds an R environment
   # This is needed for the Rmd chunk
@@ -80,26 +81,23 @@ app_server <- function(input, output, session) {
     id = "load_data",
     chunk_selection = chunk_selection,
     current_data = current_data,
+    current_data_2 = current_data_2,
     original_data = original_data,
+    original_data_2 = original_data_2,
     run_env = run_env,
     run_env_start = run_env_start,
     submit_button = submit_button,
     convert_to_factor = convert_to_factor,
     max_proportion_factor = max_proportion_factor,
     max_levels_factor = max_levels_factor
-    #Arguments needed for mod_15_data_types_serv() called in mod_02
-    # modal_closed = modal_closed,
-    # run_env = run_env,
-    # run_env_start = run_env_start,
-    # current_data = current_data,
-    # current_data_2 = current_data_2,
-    # original_data = original_data,
-    # logs = logs
   )
 
   # Module 02 - Outputs
   selected_dataset_name <- mod_02$selected_dataset_name
   user_file <- mod_02$user_file
+  user_file_2 <- mod_02$user_file_2
+  user_data <- mod_02$user_data
+  user_data_2 <- mod_02$user_data_2
   use_python <- FALSE
 
 
@@ -133,6 +131,7 @@ app_server <- function(input, output, session) {
     use_python = use_python,
     tabs = tabs,
     current_data = current_data,
+    current_data_2 = current_data_2,
     selected_dataset_name = selected_dataset_name,
     chunk_selection = chunk_selection
   )
@@ -154,6 +153,7 @@ app_server <- function(input, output, session) {
     api_error_modal = api_error_modal,
     code_error = code_error,
     current_data = current_data,
+    current_data_2 = current_data_2,
     run_env = run_env,
     run_env_start = run_env_start,
     run_result = run_result,
@@ -184,7 +184,9 @@ app_server <- function(input, output, session) {
     run_env = run_env,
     run_env_start = run_env_start,
     chunk_selection = chunk_selection,
-    Rmd_chunk = Rmd_chunk
+    Rmd_chunk = Rmd_chunk,
+    current_data = current_data,
+    current_data_2 = current_data_2
   )
 
   # Module 06 - Outputs
@@ -205,7 +207,8 @@ app_server <- function(input, output, session) {
     logs = logs,
     use_python = use_python,
     selected_dataset_name = selected_dataset_name,
-    current_data = current_data
+    current_data = current_data,
+    current_data_2 = current_data_2
   )
 
 
@@ -224,7 +227,13 @@ app_server <- function(input, output, session) {
     sample_temp = sample_temp,
     code_error = code_error,
     python_to_html = python_to_html,
-    current_data = current_data
+    current_data = current_data,
+    current_data_2 = current_data_2,
+    selected_dataset_name = selected_dataset_name,
+    user_data = user_data,
+    user_data_2 = user_data_2,
+    user_file = user_file,
+    user_file_2 = user_file_2
   )
 
   # Module 09 - Outputs
@@ -239,6 +248,7 @@ app_server <- function(input, output, session) {
     selected_dataset_name = selected_dataset_name,
     use_python = use_python,
     current_data = current_data,
+    current_data_2 = current_data_2,
     logs = logs
   )
 
@@ -250,7 +260,6 @@ app_server <- function(input, output, session) {
     id = "sett",
     submit_button = submit_button,
     logs = logs,
-    current_data = current_data,
     llm_prompt = llm_prompt,
     code_error = code_error
   )
@@ -293,13 +302,14 @@ app_server <- function(input, output, session) {
     current_data = current_data,
     current_data_2 = current_data_2,
     original_data = original_data,
+    original_data_2 = original_data_2,
     logs = logs,
-    user_file
+    user_file = user_file,
+    user_file_2 = user_file_2
   )
 
   # Module 15 - Outputs
   modal_closed <- mod_15$modal_closed
-  show_pop_up <- mod_15$show_pop_up
 
 
 

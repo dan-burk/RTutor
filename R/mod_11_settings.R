@@ -224,8 +224,8 @@ mod_11_settings_ui <- function(id) {
 }
 
 
-mod_11_settings_serv <- function(id, submit_button, logs, current_data,
-                                 llm_prompt, code_error, sample_temp) {
+mod_11_settings_serv <- function(id, submit_button, logs, llm_prompt,
+                                 code_error, sample_temp) {
 
   moduleServer(id, function(input, output, session) {
 

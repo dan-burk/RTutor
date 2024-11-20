@@ -1,8 +1,7 @@
 # HTML Style Module File
 
-# Define a UI module for the HTML styles
-mod_01_style_ui <- function(id) {
-  ns <- shiny::NS(id)
+# Define a UI module function for the HTML styles
+mod_01_styles <- function(ns) {
 
   # Add color to UI
   tags$head(tags$style(HTML("
@@ -104,6 +103,16 @@ mod_01_style_ui <- function(id) {
       cursor: pointer;padding: 7px;border: 1px solid #90BD8C;
       background-color: #F6FFF5;font-size: 18px;
     }
+
+
+    /* Specific Styling  -- (make sure to put an '*' after each 'for') */
+    /*                      (this ensures it's applied across all modules) */
+    /* Module 2 */
+    #user_selected_dataset", " {background-color: #F6FFF5;border-color: #90BD8C;color: #000;} 
+    .control-label[for*='user_selected_dataset'] { font-size: 18px; font-weight: bold; }
+
+    .control-label[for*='user_file'] { font-size: 18px; font-weight: bold; }
+    .control-label[for*='user_file_2'] { font-size: 18px; font-weight: bold; }
   ")))
-  
+
 }

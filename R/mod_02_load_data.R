@@ -8,15 +8,14 @@ mod_02_load_data_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
-    # CSS Styles
-    tags$head(tags$style(HTML(paste0("
-      #", ns("user_selected_dataset"), " {background-color: #F6FFF5;border-color: #90BD8C;color: #000;} 
-      .control-label[for='", ns("user_selected_dataset"), "'] { font-size: 18px; font-weight: bold; }
+    # # CSS Styles
+    # tags$head(tags$style(HTML(paste0("
+    #   #", ns("user_selected_dataset"), " {background-color: #F6FFF5;border-color: #90BD8C;color: #000;} 
+    #   .control-label[for='", ns("user_selected_dataset"), "'] { font-size: 18px; font-weight: bold; }
 
-      .control-label[for='", ns("user_file"), "'] { font-size: 18px; font-weight: bold; }
-
-      hr {border-top: 1px solid #90BD8C;}
-    ")))),
+    #   .control-label[for='", ns("user_file"), "'] { font-size: 18px; font-weight: bold; }
+    #   .control-label[for='", ns("user_file_2"), "'] { font-size: 18px; font-weight: bold; }
+    # ")))),
 
     # Display selected dataset
     conditionalPanel(
@@ -44,8 +43,8 @@ mod_02_load_data_ui <- function(id) {
           ),
           column(
             width = 6,
-            uiOutput(ns("data_upload_ui"))#,
-            # uiOutput("data_upload_ui_2")
+            uiOutput(ns("data_upload_ui")),
+            uiOutput(ns("data_upload_ui_2"))
           )
         ),
         hr(class = "custom-hr")
@@ -55,9 +54,11 @@ mod_02_load_data_ui <- function(id) {
 
 
 
-mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_data,
-                                  run_env, run_env_start, submit_button, convert_to_factor,
-                                  max_proportion_factor, max_levels_factor) {
+mod_02_load_data_serv <- function(id, chunk_selection, current_data,
+                                  current_data_2, original_data, original_data_2,
+                                  run_env, run_env_start, submit_button,
+                                  convert_to_factor, max_proportion_factor,
+                                  max_levels_factor) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -69,12 +70,13 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
     #   options(shiny.maxRequestSize = 10000 * 1024^2) # 10 GB
     # }
 
-
+    # First Dataset Upload ----------------------
     output$data_upload_ui <- renderUI({
 
       # Hide this input box after the first run.
       req(submit_button() == 0 || !is.null(input$user_selected_dataset)) # RHS is for when accidental hit submit
-      # req(is.null(input$user_file))
+      req(is.null(input$user_file)) # Hide after user inputs data
+
       fileInput(
         inputId = ns("user_file"),
         label = "Upload",
@@ -92,6 +94,7 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
       )
     })
 
+    # Uploaded data
     user_data <- reactive({
       req(input$user_file)
       in_file <- input$user_file
@@ -108,7 +111,7 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
           )
           df <- as.data.frame(df)
         } else {
-          #CSV --------------------
+          # CSV --------------------
           try(
             df <- read.csv(in_file)
           )
@@ -172,7 +175,7 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
 
       #  else if(input$select_data == rna_seq){
       #   df <- rna_seq_data()
-      # } 
+      # }
 
       if (convert_to_factor()) {
         df <- numeric_to_factor(
@@ -183,7 +186,7 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
       }
 
       # if the first column looks like id? Tbh rudamentary logic.
-      if (!is.null(df) ){
+      if (!is.null(df)) {
         if (
           length(unique(df[, 1])) == nrow(df) &&  # all unique
             is.character(df[, 1])  # first column is character
@@ -199,7 +202,6 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
       } else if (nrow(df) == 0) {
         current_data(NULL)
       } else { # there are data in the dataframe
-
         current_data(df)
         original_data(df)
       }
@@ -210,6 +212,126 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
         run_env_start(as.list(run_env()))
       })
 
+    })
+
+
+    # Second Dataset Upload ---------------------
+    output$data_upload_ui_2 <- renderUI({
+      req(!is.null(input$user_file))
+
+      # Hide after the first run or when submit is clicked on accident
+      req(submit_button() == 0 || !is.null(input$user_selected_dataset))
+      req(is.null(input$user_file_2)) # Hide after user inputs data
+
+      fileInput(
+        inputId = ns("user_file_2"),
+        label = "Upload 2nd file",
+        accept = c(
+          "text/csv",
+          "text/comma-separated-values",
+          "text/tab-separated-values",
+          "text/plain",
+          ".csv",
+          ".tsv",
+          ".txt",
+          ".xls",
+          ".xlsx"
+        )
+      )
+    })
+
+    # Uploaded data
+    user_data_2 <- reactive({
+
+      req(input$user_file_2)
+      in_file <- input$user_file_2
+      in_file <- in_file$datapath
+      req(!is.null(in_file))
+
+      isolate({
+        df <- data.frame()
+        file_type <- "read_excel"
+        # Excel file ---------------
+        if (grepl("xls$|xlsx$", in_file, ignore.case = TRUE)) {
+          try(
+            df <- readxl::read_excel(in_file)
+          )
+          df <- as.data.frame(df)
+        } else {
+          #CSV --------------------
+          try(
+            df <- read.csv(in_file)
+          )
+          file_type <- "read.csv"
+
+          # Tab-delimented file ----------
+          if (ncol(df) <= 1) { # unable to parse with comma
+            try(
+              df <- read.table(
+                in_file,
+                sep = "\t",
+                header = TRUE
+              )
+            )
+            file_type <- "read.table"
+          }
+        }
+
+        if (ncol(df) == 0) { # no data read in. Empty
+          return(NULL)
+        } else {
+
+          # clean column names
+          df <- df %>% janitor::clean_names()
+          return(
+            list(
+              df = df,
+              file_type = file_type
+            )
+          )
+        }
+      })
+    })
+
+
+    observeEvent(input$user_file_2, {
+
+      if (input$user_selected_dataset == user_upload) {
+        eval(parse(text = paste0("df <- user_data_2()$df")))
+      }
+      if (convert_to_factor()) {
+        df <- numeric_to_factor(
+          df,
+          max_levels_factor(),
+          max_proportion_factor()
+        )
+      }
+
+      # if the first column looks like id?
+      if (
+        length(unique(df[, 1])) == nrow(df) &&  # all unique
+          is.character(df[, 1])  # first column is character
+      ) {
+        row.names(df) <- df[, 1]
+        df <- df[, -1]
+      }
+
+      # sometimes no row is left after processing.
+      if (is.null(df)) { # no_data
+        current_data_2(NULL)
+      } else if(nrow(df) == 0) {
+        current_data_2(NULL)
+      } else { # there are data in the dataframe
+        current_data_2(df)
+        original_data_2(df)
+      }
+
+      isolate({
+        existing_vars <- as.list(run_env())
+        existing_vars$df2 <- current_data_2()
+        run_env(list2env(existing_vars))
+        run_env_start(as.list(run_env()))
+      })
     })
 
 
@@ -263,7 +385,10 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data, original_da
     return(
       list(
         selected_dataset_name = reactive(input$user_selected_dataset),
-        user_file = reactive(input$user_file)
+        user_file = reactive(input$user_file),
+        user_file_2 = reactive(input$user_file_2),
+        user_data = user_data,
+        user_data_2 = user_data_2
       )
     )
 
