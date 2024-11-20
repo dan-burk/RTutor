@@ -17,37 +17,9 @@ mod_10_eda_ui <- function(id) {
           title = "Basic",
           div(style = "margin-left: 20px;",
             # First dataset
-            hr(class = "custom-hr-thick"),
-            h4(strong("Data Structure: df")),
-            fluidRow(
-              column(width = 6,
-                verbatimTextOutput(ns("data_structure")),
-                h4(strong("Data Summary: df")),
-                verbatimTextOutput(ns("data_summary"))
-              ),
-              column(width = 6,
-                plotly::plotlyOutput(ns("missing_values"),
-                width = "100%")
-              )
-            ),
-
+            uiOutput(ns("first_dataset_section")),
             # Second dataset
-            conditionalPanel(
-              condition = "output.data_structure_2 != null",
-              br(), 
-              hr(class = "custom-hr-thick"),
-              h4(strong("Data Structure: df2")),
-              fluidRow(
-                column(width = 6,
-                  verbatimTextOutput(ns("data_structure_2")),
-                  h4(strong("Data Summary: df2")),
-                  verbatimTextOutput(ns("data_summary_2"))
-                ),
-                column(width = 6,
-                  plotly::plotlyOutput(ns("missing_values_2"), width = "100%")
-                )
-              )
-            )
+            uiOutput(ns("second_dataset_section"))
           )
         ),
 
@@ -224,6 +196,27 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python,
 
     ## Basic Panel ##
     # First Dataset
+    # UI Elements
+    output$first_dataset_section <- renderUI({
+      req(!is.null(current_data()))
+
+      tagList(
+        hr(class = "custom-hr-thick"),
+        h4(strong("Data Structure: df")),
+        fluidRow(
+          column(width = 6,
+            verbatimTextOutput(ns("data_structure")),
+            h4(strong("Data Summary: df")),
+            verbatimTextOutput(ns("data_summary"))
+          ),
+          column(width = 6,
+            plotly::plotlyOutput(ns("missing_values"),
+            width = "100%")
+          )
+        )
+      )
+    })
+
     output$data_structure <- renderPrint({
       req(selected_dataset_name() != no_data)
       req(!is.null(current_data()))
@@ -281,6 +274,27 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python,
     })
 
     # Second Dataset
+    # UI Elements
+    output$second_dataset_section <- renderUI({
+      req(!is.null(current_data_2()))
+
+      tagList(
+        br(),
+        hr(class = "custom-hr-thick"),
+        h4(strong("Data Structure: df2")),
+        fluidRow(
+          column(width = 6,
+            verbatimTextOutput(ns("data_structure_2")),
+            h4(strong("Data Summary: df2")),
+            verbatimTextOutput(ns("data_summary_2"))
+          ),
+          column(width = 6,
+            plotly::plotlyOutput(ns("missing_values_2"), width = "100%")
+          )
+        )
+      )
+    })
+
     output$data_structure_2 <- renderPrint({
       req(!is.null(current_data_2()))
       str(current_data_2())

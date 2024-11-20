@@ -302,6 +302,7 @@ app_server <- function(input, output, session) {
     current_data = current_data,
     current_data_2 = current_data_2,
     original_data = original_data,
+    original_data_2 = original_data_2,
     logs = logs,
     user_file = user_file,
     user_file_2 = user_file_2
