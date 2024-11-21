@@ -59,7 +59,7 @@ available_datasets <- sort(gsub(" .*", "", available_datasets)) # clean and sort
 # Filter to include only data frames & matrices
 available_datasets <- Filter(function(x)
   is.data.frame(get(x, envir = .GlobalEnv)) ||
-  is.matrix(get(x, envir = .GlobalEnv)), 
+  is.matrix(get(x, envir = .GlobalEnv)),
   available_datasets
 )
 
@@ -70,12 +70,12 @@ move_front <- function(v, elements) {
   return(v)
 }
 
-# Add diamonds df to list
-available_datasets <- c(available_datasets, "diamonds")
+# Add diamonds and mpg df to list
+available_datasets <- c(available_datasets, "diamonds", "mpg", rna_seq)
 
 # Move important datasets to the front in order & add custom entries
-available_datasets <- move_front(available_datasets, c("iris", "mtcars",
- "diamonds", "airquality", "CO2", "ToothGrowth", "pressure", "ChickWeight")
+available_datasets <- move_front(available_datasets, c("iris", "mpg",
+ "diamonds", "airquality", "CO2", "ToothGrowth", "pressure", "ChickWeight", rna_seq)
 )
 
 # Append dummy values for user-uploaded data & no data
@@ -87,13 +87,14 @@ available_datasets <- c("Select a dataset:", no_data, available_datasets,
 rename_map <- c(
   "no_data" = "No Data",
   "iris" = "Iris (examples)",
-  "mtcars" = "MTCars (examples)",
+  "mpg" = "MPG (examples)",
   "diamonds" = "Diamonds (examples)",
   "airquality" = "Air Quality (examples)",
   "CO2" = "CO2 (examples)",
   "ToothGrowth" = "Tooth Growth (examples)",
   "pressure" = "Pressure (examples)",
   "ChickWeight" = "Chick Weights (examples)",
+  "rna_seq" = "RNA Seq (examples)",
   "User Upload" = "User Upload"
 )
 

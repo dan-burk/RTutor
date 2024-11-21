@@ -52,7 +52,7 @@ mod_09_report_ui <- function(id) {
         ),
         tippy::tippy_this(
           ns("Rmd_source"),
-          "Download a R Markdown source file.",
+          "Download an R Markdown source file for this session.",
           theme = "light-border"
         )
       )
@@ -127,7 +127,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
       # If user uploaded data, insert the file reading script based on file type
       if (selected_dataset_name() == user_upload) {
         req(user_file())
-        
+
         # Function to generate read command
         generate_read_cmd <- function(file_name, file_type, df_name = "df") {
           read_commands <- list(
@@ -145,25 +145,25 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
           )
           return(read_commands[[file_type]])
         }
-        
+
         # First file read command
         file_name <- user_file()$name
         file_type <- user_data()$file_type
         file_cmds <- generate_read_cmd(file_name, file_type)
-        
+
         # Start Rmd script with the first file
         Rmd_script <- paste0(
           Rmd_script, "\n### 0. Read File\n```{R, eval = FALSE}\n", file_cmds
         )
-        
+
         # If user uploaded a second file
-        if (!is.null(user_data_2())) {
+        if (!is.null(user_file_2())) {
           file_name_2 <- user_file_2()$name
           file_type_2 <- user_data_2()$file_type
           file_cmds_2 <- generate_read_cmd(file_name_2, file_type_2, df_name = "df2")
           Rmd_script <- paste0(Rmd_script, "\n", file_cmds_2)
         }
-        
+
         # Close the code chunk
         Rmd_script <- paste0(Rmd_script, "\n```\n")
       }
@@ -263,7 +263,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
         ),
         tippy::tippy_this(
           ns("report"),
-          "Render a HTML report for this session.",
+          "Download an HTML report for this session.",
           theme = "light-border"
         )
       )

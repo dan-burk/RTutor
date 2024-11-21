@@ -63,13 +63,11 @@ mod_03_send_request_ui <- function(id) {
 }
 
 
-
 mod_03_send_request_serv <- function(id, chunk_selection, user_file,
                                      selected_dataset_name) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-
 
     # Load previous prompts based on selected chunk
     observeEvent(chunk_selection$selected_chunk, {
@@ -100,13 +98,14 @@ mod_03_send_request_serv <- function(id, chunk_selection, user_file,
       choices <- switch(selected_dataset_name(),
         "no_data" = demo$requests[demo$data == "No Data"],
         "iris" = demo$requests[demo$data == "Iris (examples)"],
-        "mtcars" = demo$requests[demo$data == "MTCars (examples)"],
+        "mpg" = demo$requests[demo$data == "MPG (examples)"],
         "airquality" = demo$requests[demo$data == "Air Quality (examples)"],
         "diamonds" = demo$requests[demo$data == "Diamonds (examples)"],
         "CO2" = demo$requests[demo$data == "CO2 (examples)"],
         "ToothGrowth" = demo$requests[demo$data == "Tooth Growth (examples)"],
         "pressure" = demo$requests[demo$data == "Pressure (examples)"],
         "ChickWeight" = demo$requests[demo$data == "Chick Weights (examples)"],
+        "rna_seq" = demo$requests[demo$data == "RNA Seq (examples)"],
         demo$requests[demo$data == "Select a dataset:"]
       )
 
