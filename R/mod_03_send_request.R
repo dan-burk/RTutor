@@ -105,6 +105,7 @@ mod_03_send_request_serv <- function(id, chunk_selection, user_file,
         "ToothGrowth" = demo$requests[demo$data == "Tooth Growth (examples)"],
         "pressure" = demo$requests[demo$data == "Pressure (examples)"],
         "ChickWeight" = demo$requests[demo$data == "Chick Weights (examples)"],
+        "rna_seq" = demo$requests[demo$data == "RNA Seq (examples)"],
         demo$requests[demo$data == "Select a dataset:"]
       )
 

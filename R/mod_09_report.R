@@ -52,7 +52,7 @@ mod_09_report_ui <- function(id) {
         ),
         tippy::tippy_this(
           ns("Rmd_source"),
-          "Download a R Markdown source file.",
+          "Download an R Markdown source file for this session.",
           theme = "light-border"
         )
       )
@@ -157,7 +157,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
         )
 
         # If user uploaded a second file
-        if (!is.null(user_data_2())) {
+        if (!is.null(user_file_2())) {
           file_name_2 <- user_file_2()$name
           file_type_2 <- user_data_2()$file_type
           file_cmds_2 <- generate_read_cmd(file_name_2, file_type_2, df_name = "df2")
@@ -263,7 +263,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
         ),
         tippy::tippy_this(
           ns("report"),
-          "Render a HTML report for this session.",
+          "Download an HTML report for this session.",
           theme = "light-border"
         )
       )

@@ -59,7 +59,7 @@ available_datasets <- sort(gsub(" .*", "", available_datasets)) # clean and sort
 # Filter to include only data frames & matrices
 available_datasets <- Filter(function(x)
   is.data.frame(get(x, envir = .GlobalEnv)) ||
-  is.matrix(get(x, envir = .GlobalEnv)), 
+  is.matrix(get(x, envir = .GlobalEnv)),
   available_datasets
 )
 
@@ -71,11 +71,11 @@ move_front <- function(v, elements) {
 }
 
 # Add diamonds and mpg df to list
-available_datasets <- c(available_datasets, "diamonds", "mpg")
+available_datasets <- c(available_datasets, "diamonds", "mpg", rna_seq)
 
 # Move important datasets to the front in order & add custom entries
 available_datasets <- move_front(available_datasets, c("iris", "mpg",
- "diamonds", "airquality", "CO2", "ToothGrowth", "pressure", "ChickWeight")
+ "diamonds", "airquality", "CO2", "ToothGrowth", "pressure", "ChickWeight", rna_seq)
 )
 
 # Append dummy values for user-uploaded data & no data
@@ -94,6 +94,7 @@ rename_map <- c(
   "ToothGrowth" = "Tooth Growth (examples)",
   "pressure" = "Pressure (examples)",
   "ChickWeight" = "Chick Weights (examples)",
+  "rna_seq" = "RNA Seq (examples)",
   "User Upload" = "User Upload"
 )
 
