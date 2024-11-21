@@ -63,7 +63,7 @@ available_datasets <- sort(gsub(" .*", "", available_datasets)) # clean and sort
 # Filter to include only data frames & matrices
 available_datasets <- Filter(function(x)
   is.data.frame(get(x, envir = .GlobalEnv)) ||
-  is.matrix(get(x, envir = .GlobalEnv)), 
+  is.matrix(get(x, envir = .GlobalEnv)),
   available_datasets
 )
 
@@ -74,12 +74,12 @@ move_front <- function(v, elements) {
   return(v)
 }
 
-# Add diamonds df to list
-available_datasets <- c(available_datasets, "diamonds")
+# Add diamonds and mpg df to list
+available_datasets <- c(available_datasets, "diamonds", "mpg", rna_seq)
 
 # Move important datasets to the front in order & add custom entries
-available_datasets <- move_front(available_datasets, c("iris", "mtcars",
- "diamonds", "airquality", "CO2", "ToothGrowth", "pressure", "ChickWeight")
+available_datasets <- move_front(available_datasets, c("iris", "mpg",
+ "diamonds", "airquality", "CO2", "ToothGrowth", "pressure", "ChickWeight", rna_seq)
 )
 
 # Append dummy values for user-uploaded data & no data
@@ -91,13 +91,14 @@ available_datasets <- c("Select a dataset:", no_data, available_datasets,
 rename_map <- c(
   "no_data" = "No Data",
   "iris" = "Iris (examples)",
-  "mtcars" = "MTCars (examples)",
+  "mpg" = "MPG (examples)",
   "diamonds" = "Diamonds (examples)",
   "airquality" = "Air Quality (examples)",
   "CO2" = "CO2 (examples)",
   "ToothGrowth" = "Tooth Growth (examples)",
   "pressure" = "Pressure (examples)",
   "ChickWeight" = "Chick Weights (examples)",
+  "rna_seq" = "RNA Seq (examples)",
   "User Upload" = "User Upload"
 )
 
@@ -245,48 +246,51 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, send_head, 
 #' @param df a data frame
 #' @param list_levels whether to list levels for factors
 #' @param relevant_var  a list of variables mentioned by the user
+#' @param send_head logical; whether to include a preview of the data frame
 #' @return Returns a cleaned up version, so that it can be executed as an R command
 describe_df <- function(df, list_levels = FALSE, relevant_var = NULL, send_head = TRUE) {
-  # Get column types
+  # Identify column types
   is_numeric <- sapply(df, is.numeric)
-  numeric_var <- names(is_numeric)[is_numeric]
-  cat_var <- names(is_numeric)[!is_numeric]
+  is_factor <- sapply(df, is.factor)
 
-  # Filter categorical variables based on unique values
-  cat_var <- cat_var[vapply(df[cat_var], function(x) length(unique(x)) < nrow(df) * 0.8, logical(1))]
+  numeric_var <- names(df)[is_numeric]
+  categorical_var <- names(df)[is_factor]
 
-
-  # Build data info string
+  # Initialize description
   data_info <- c()
 
-  # Add numeric variables info
+  # Numeric variables
   if (length(numeric_var) > 0) {
     data_info <- c(data_info, sprintf(
-      "The df data frame %s %s. ",
-      if (length(numeric_var) == 1) "has a column that contains a numeric variable" else "contains these numeric variables:",
+      "The df data frame %s %s.",
+      if (length(numeric_var) == 1) 
+        "has a column that contains a numeric variable"
+      else "contains these numeric variables:",
       paste(numeric_var, collapse = ", ")
     ))
   }
 
-  # Add categorical variables info
-  if (length(cat_var) > 0) {
+  # Categorical variables
+  if (length(categorical_var) > 0) {
     data_info <- c(data_info, sprintf(
-      "The df data frame %s %s. ",
-      if (length(cat_var) == 1) "has a column that contains a categorical variable" else "contains these categorical variables:",
-      paste(cat_var, collapse = ", ")
+      "The df data frame %s %s.",
+      if (length(categorical_var) == 1)
+        "has a column that contains a categorical variable"
+      else "contains these categorical variables:",
+      paste(categorical_var, collapse = ", ")
     ))
   }
 
-  # Add levels info if requested
+  # List levels for categorical variables if requested
   if (list_levels && length(relevant_var) > 0) {
-    relevant_cat_var <- intersect(relevant_var, cat_var)
+    relevant_cat_var <- intersect(relevant_var, categorical_var)
     for (var in relevant_cat_var) {
       levels_freq <- sort(table(df[[var]]), decreasing = TRUE)
       max_levels <- min(length(levels_freq), 4)
       levels_str <- paste(names(levels_freq)[1:max_levels], collapse = "', '")
 
       data_info <- c(data_info, sprintf(
-        "The categorical variable %s has these levels: '%s'%s. ",
+        "The categorical variable %s has these levels: '%s'%s.",
         var,
         levels_str,
         if (length(levels_freq) > 4) ", etc" else ""
@@ -297,12 +301,12 @@ describe_df <- function(df, list_levels = FALSE, relevant_var = NULL, send_head 
   # Add sample rows if requested
   if (send_head) {
     n_samples <- 5
-    sample_rows <- capture.output(as.data.frame(df[sample(nrow(df), n_samples), ]))
+    sample_rows <- capture.output(as.data.frame(df[sample(nrow(df), n_samples), , drop = FALSE]))
 
     # Reduce samples if output is too long
     if (sum(nchar(sample_rows)) > 1000) {
       n_samples <- 2
-      sample_rows <- capture.output(as.data.frame(df[sample(nrow(df), n_samples), ]))
+      sample_rows <- capture.output(as.data.frame(df[sample(nrow(df), n_samples), , drop = FALSE]))
     }
 
     # Only add if not too long
@@ -313,7 +317,7 @@ describe_df <- function(df, list_levels = FALSE, relevant_var = NULL, send_head 
     }
   }
 
-  paste(data_info, collapse = "")
+  paste(data_info, collapse = " ")
 }
 
 

@@ -8,14 +8,6 @@ mod_02_load_data_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
-    # # CSS Styles
-    # tags$head(tags$style(HTML(paste0("
-    #   #", ns("user_selected_dataset"), " {background-color: #F6FFF5;border-color: #90BD8C;color: #000;} 
-    #   .control-label[for='", ns("user_selected_dataset"), "'] { font-size: 18px; font-weight: bold; }
-
-    #   .control-label[for='", ns("user_file"), "'] { font-size: 18px; font-weight: bold; }
-    #   .control-label[for='", ns("user_file_2"), "'] { font-size: 18px; font-weight: bold; }
-    # ")))),
 
     # Display selected dataset
     conditionalPanel(
@@ -31,23 +23,23 @@ mod_02_load_data_ui <- function(id) {
     conditionalPanel(
       condition = paste0("output['", ns("show_option1"), "'] === 'show'"),
       fluidRow(
-          column(
-            width = 6,
-            selectInput(
-              inputId = ns("user_selected_dataset"),
-              label = HTML("<span style='font-size: 18px; font-weight: bold;'>1. Select Dataset</span>"),
-              choices = available_datasets,
-              selected = "Select a dataset:",
-              multiple = FALSE
-            )
-          ),
-          column(
-            width = 6,
-            uiOutput(ns("data_upload_ui")),
-            uiOutput(ns("data_upload_ui_2"))
+        column(
+          width = 6,
+          selectInput(
+            inputId = ns("user_selected_dataset"),
+            label = HTML("<span style='font-size: 18px; font-weight: bold;'>1. Select Dataset</span>"),
+            choices = available_datasets,
+            selected = "Select a dataset:",
+            multiple = FALSE
           )
         ),
-        hr(class = "custom-hr")
+        column(
+          width = 6,
+          uiOutput(ns("data_upload_ui")),
+          uiOutput(ns("data_upload_ui_2"))
+        )
+      ),
+      hr(class = "custom-hr")
     )
   )
 }
@@ -160,6 +152,12 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data,
     # })
     # outputOptions(output, 'file_uploaded', suspendWhenHidden = FALSE)
 
+    rna_seq_data <- reactive({
+      req(input$user_selected_dataset == rna_seq)
+
+      df <- read.csv(app_sys("app", "www", "GSE37704.csv"))
+      return(df)
+    })
 
     observeEvent(input$user_selected_dataset, {
 
@@ -168,14 +166,12 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data,
         # orig_data = df
       } else if (input$user_selected_dataset %in% c(no_data, "Select a dataset:")) {
         df <- NULL #as.data.frame("No data selected or uploaded.")
+      } else if (input$user_selected_dataset == rna_seq) {
+        df <- rna_seq_data()
       } else {
         # otherwise built-in data is unavailable when running from R package.
         df <- get(input$user_selected_dataset)
       }
-
-      #  else if(input$select_data == rna_seq){
-      #   df <- rna_seq_data()
-      # }
 
       if (convert_to_factor()) {
         df <- numeric_to_factor(
@@ -219,8 +215,6 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data,
     output$data_upload_ui_2 <- renderUI({
       req(!is.null(input$user_file))
 
-      # Hide after the first run or when submit is clicked on accident
-      req(submit_button() == 0 || !is.null(input$user_selected_dataset))
       req(is.null(input$user_file_2)) # Hide after user inputs data
 
       fileInput(

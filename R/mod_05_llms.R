@@ -158,7 +158,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
     relevancy_agent <- function() {
 
       # If user selects preloaded data
-      if (selected_dataset_name() == no_data){
+      if (selected_dataset_name() == no_data) {
         return(TRUE)  # Skip relevancy agent if user selects 'no data'
       } else if (selected_dataset_name() == user_upload) {
         return(TRUE)

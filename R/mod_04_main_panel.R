@@ -9,16 +9,11 @@ mod_04_main_panel_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
-    tags$head(tags$style(HTML("
-      .first-user{font-size: 16px;color: #000;background-color: #90BD8C;
-      transition: background-color 0.3s, box-shadow 0.3s;}
-      .first-user:hover {background-color: #66AFFF;box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    "))),
 
     # 'First Time User' tab redirect
     tags$script(HTML("
+    /* Update the active tab to 'First Time User' within the 'More' navbarMenu */
       $(document).on('click', '#first_user', function() {
-        // Update the active tab to 'First Time User' within the 'More' navbarMenu
         $('#tabs a[data-value=\"first-time-user\"]').tab('show');
       });
     ")),
@@ -48,17 +43,17 @@ mod_04_main_panel_ui <- function(id) {
           width = 5,
           # Chunk select dropdown
           div(
-            style = "display: inline-block; vertical-align: top; margin-right: 10px;",  # Adjust margin as needed
+            style = "display: inline-block; vertical-align: top; margin-right: 10px;",
             selectInput(
               inputId = ns("selected_chunk"),
-              label = "AI generated code:",
+              label = div("AI Generated Code:", style = "font-size: 18px;"),
               selected = NULL,
               choices = NULL
             )
           ),
-          div(
+          div(      # Align button next to dropdown
             style = "display: inline-block;vertical-align: top;
-              padding-top: 10px;padding-bottom: 15px;",  # Align button next to dropdown
+              padding-top: 10px;padding-bottom: 15px;",
             actionButton(
               ns("delete_chunk"),
               "Delete Chunk"
@@ -86,8 +81,11 @@ mod_04_main_panel_ui <- function(id) {
           # Checkbox to show code behind output
           checkboxInput(
             inputId = ns("show_code"),
-            label = "Show code",
-            value = FALSE
+            label = div(
+              "Show Code",
+              style = "font-size: 16px;padding-right: 25px;"
+            ),
+            value = TRUE
           ),
           align = "right"
         )
@@ -506,7 +504,7 @@ mod_04_main_panel_serv <- function(id, llm_response, logs, code_error,
 
       req(input$selected_chunk)
       shinyalert::shinyalert(
-        title = paste0("Delete Code Chunk ", input$selected_chunk,"?"),
+        title = paste0("Delete Code Chunk ", input$selected_chunk, "?"),
         text = NULL,
         type = "warning",
         showCancelButton = TRUE,
@@ -514,22 +512,21 @@ mod_04_main_panel_serv <- function(id, llm_response, logs, code_error,
         cancelButtonText = "No",
         callbackR = function(isConfirmed) {
           if (isConfirmed) {
-            #What current chunk is selected??
+            # What current chunk is selected??
             id_pre <- as.integer(input$selected_chunk)
-            logs$code_history[[id_pre]] <- NULL #R Automatically shifts list down
+            logs$code_history[[id_pre]] <- NULL # R Automatically shifts list down
 
             max_id <- length(logs$code_history)
 
-            if(max_id > 0){ #Order Operation MATTERS!!!!
-              #Oder Operation 1 (Reorder Code History ID's & rmd chunk numbering)
+            if (max_id > 0){ # Order Operation MATTERS!!!!
+              # Order Operation 1 (Reorder Code History ID's & rmd chunk numbering)
               logs$code_history <- lapply(1:max_id, function(i) {
                 logs$code_history[[i]]$id = i
                 substr(logs$code_history[[i]]$rmd,6,6) = as.character(i)
                 logs$code_history[[i]]
               })
 
-
-              #Oder Operation 2 (Update current code info)
+              # Order Operation 2 (Update current code info)
               logs$id <- logs$code_history[[max_id]]$id
               logs$code <- logs$code_history[[max_id]]$code
               logs$raw <- logs$code_history[[max_id]]$raw
@@ -541,27 +538,16 @@ mod_04_main_panel_serv <- function(id, llm_response, logs, code_error,
               names(choices) <- paste0("Chunk #", choices)
               chunk_selection$chunk_choices <- choices
 
-              # update chunk choices
+              # Update chunk choices
               updateSelectInput(
                 session = session,
                 inputId = "selected_chunk",
-                label = "AI generated code:",
+                label = div("AI Generated Code:", style = "font-size: 18px;"),
                 choices = choices,
                 selected = logs$id
               )
 
             } else {
-              # Defining & initializing the reactiveValues object
-              # logs <- reactiveValues(
-              #   id = 0, # 1, 2, 3, id for code chunk
-              #   code = "", # cumulative code
-              #   raw = "",  # cumulative orginal code for print out
-              #   last_code = "", # last code for Rmarkdown
-              #   language = "", # Python or R
-              #   code_history = list(), # keep all code chunks
-
-              # )
-
               logs$id <- 0
               logs$code = ""
               logs$raw = ""
@@ -569,24 +555,19 @@ mod_04_main_panel_serv <- function(id, llm_response, logs, code_error,
               logs$language = ""
               logs$code_history <- list()
 
-              # choices <- 0
-              # names(choices) <- paste0("Chunk #", choices)
               # update chunk choices
               updateSelectInput(
                 session = session,
                 inputId = "selected_chunk",
-                label = "AI generated code:",
+                label = div("AI Generated Code:", style = "font-size: 18px;"),
                 choices = "",
                 selected = NULL
               )
-
             }
-
           }
         }
       )
     })
-
 
   })
 }

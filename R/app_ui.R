@@ -143,7 +143,7 @@ golem_add_external_resources <- function() {
     ),
     bundle_resources(
       path = app_sys("app/www"),
-      app_title = "RTutor 0.98"
+      app_title = "RTutor 2.00"
     )
     # Add here other external resources
     # for example, you can add shinyalert::useShinyalert()

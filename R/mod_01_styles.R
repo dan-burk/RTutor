@@ -105,14 +105,42 @@ mod_01_styles <- function(ns) {
     }
 
 
-    /* Specific Styling  -- (make sure to put an '*' after each 'for') */
-    /*                      (this ensures it's applied across all modules) */
+    /* Specific Styling  -- (put an '*' after each 'for'/'id'/'class') */
+    /*                      (this ensures it is applied across all modules) */
+
     /* Module 2 */
-    #user_selected_dataset", " {background-color: #F6FFF5;border-color: #90BD8C;color: #000;} 
-    .control-label[for*='user_selected_dataset'] { font-size: 18px; font-weight: bold; }
+    #user_selected_dataset
+      {background-color: #F6FFF5;border-color: #90BD8C;color: #000;}
 
     .control-label[for*='user_file'] { font-size: 18px; font-weight: bold; }
     .control-label[for*='user_file_2'] { font-size: 18px; font-weight: bold; }
+
+    /* Module 3 */
+    [id*=submit_button] {font-size: 18px;color: blue !important;
+      background-color: #F6FFF5;border-color: #90BD8C;}
+
+    [id*=reset_button] {font-size: 18px;color: red;
+      background-color: #F6FFF5;border-color: #90BD8C;}
+
+    [id*=input_text] {width: 100%;background-color: #F6FFF5;
+      border-color: #90BD8C;font-size: 16px;resize: vertical;}
+    
+    /* Module 4 */
+    [class*=first-user]{font-size: 16px;color: #000;background-color: #90BD8C;
+    transition: background-color 0.3s, box-shadow 0.3s;}
+    [class*=first-user]:hover {background-color: #66AFFF;box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+
+    /* Module 12 */
+    [class*=site-updates-wrapper] table
+      {background-color: #f3faf3;border-top: 2px solid #90BD8C;}
+    [class*=site-updates-wrapper] table thead th,
+      [class*=site-updates-wrapper] table td
+        {border: 2px solid #90BD8C;}
+    [class*=site-updates-wrapper] table tbody tr:nth-child(odd)
+      {background-color: #f3faf3;}
+    [class*=site-updates-wrapper] table tbody tr:nth-child(even)
+      {background-color: #ffffff;}
+
   ")))
 
 }
