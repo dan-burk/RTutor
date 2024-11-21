@@ -9,7 +9,8 @@
   mod_06_error_hist_serv <- function(id, submit_button, llm_response, logs, counter,
                                      reverted, use_python, run_result, python_to_html,
                                      code_error, input_text, llm_prompt, run_env,
-                                     run_env_start, chunk_selection, Rmd_chunk
+                                     run_env_start, chunk_selection, Rmd_chunk,
+                                     current_data, current_data_2
                                      ) {
 
   moduleServer(id, function(input, output, session) {
@@ -137,8 +138,10 @@
       if (id < length(logs$code_history)) {
         # convert list to environment;
         # update the run_env reactive value.
-        # restore the environment to the before  running the ith chunk
+        # restore the environment to the before running the ith chunk
         run_env(list2env(logs$code_history[[id]]$env))
+        current_data(run_env()$df)
+        current_data_2(run_env()$df2)
 
         # enable re-calculation of the code
         reverted(reverted() + 1)

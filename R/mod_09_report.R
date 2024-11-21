@@ -69,39 +69,19 @@ mod_09_report_ui <- function(id) {
 }
 
 mod_09_report_serv <- function(id, submit_button, logs, selected_model,
-                               llm_response, input_text, use_python,
-                               counter, sample_temp, code_error, python_to_html,
-                               current_data) {
+                               llm_response, input_text, use_python, counter,
+                               sample_temp, code_error, python_to_html,
+                               current_data, current_data_2, selected_dataset_name,
+                               user_data, user_data_2, user_file, user_file_2) {
 
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
     # Dropdown to pick what chunks to include in report
-    # observeEvent(submit_button(), {
-    #   req(logs$code != "")
-
-    #   choices <- seq_along(logs$code_history)
-    #   names(choices) <- paste0("Chunk #", choices)
-
-    #   updateSelectInput(
-    #     session = session,
-    #     inputId = "selected_chunk_report",
-    #     label = "Chunks to include (Use backspace to delete):",
-    #     selected = "All chunks without errors",
-    #     choices = c(
-    #       "All chunks",
-    #       "All chunks without errors",
-    #       choices
-    #     )
-    #   )
-    # })
-
     observe({
-      # req(logs$code != "")
-
       choices <- seq_along(logs$code_history)
 
-      if(length(choices) == 0){
+      if (length(choices) == 0) {
         updateSelectInput(
           session = session,
           inputId = "selected_chunk_report",
@@ -113,7 +93,7 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
           )
         )
 
-      }else{
+      } else {
         names(choices) <- paste0("Chunk #", choices)
 
         updateSelectInput(
@@ -128,10 +108,9 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
           )
         )
       }
-
     })
 
-    # collect all RMarkdown chunks
+    # Collect all RMarkdown chunks
     Rmd_total <- reactive({
 
       # Initialize script with model and credits
@@ -145,20 +124,49 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
         "Source code: [GitHub.](https://github.com/gexijin/RTutor)\n\n"
       )
 
-      # If user uploaded data, insert the file reading script
-      # based on the file type
-      # if (input$select_data == uploaded_data) {
-      #   file_name <- input$user_file$name
-      #   file_type <- user_data()$file_type
-      #   read_commands <- list(
-      #     "read_excel" = paste0("# install.packages(readxl)\nlibrary(readxl)\ndf <- read_excel(\"", file_name, "\")"),
-      #     "read.csv" = paste0("df <- read.csv(\"", file_name, "\")"),
-      #     "read.table" = paste0("df <- read.table(\"", file_name, "\", sep = \"\t\", header = TRUE)")
-      #   )
-      #   Rmd_script <- paste0(
-      #     Rmd_script, "\n### 0. Read File\n```{R, eval = FALSE}\n", read_commands[[file_type]], "\n```\n"
-      #   )
-      # }
+      # If user uploaded data, insert the file reading script based on file type
+      if (selected_dataset_name() == user_upload) {
+        req(user_file())
+        
+        # Function to generate read command
+        generate_read_cmd <- function(file_name, file_type, df_name = "df") {
+          read_commands <- list(
+            "read_excel" = paste0(
+              "# install.packages(readxl)\n",
+              "library(readxl)\n",
+              df_name, " <- read_excel(\"", file_name, "\")"
+            ),
+            "read.csv" = paste0(
+              df_name, " <- read.csv(\"", file_name, "\")"
+            ),
+            "read.table" = paste0(
+              df_name, " <- read.table(\"", file_name, "\", sep = \"\t\", header = TRUE)"
+            )
+          )
+          return(read_commands[[file_type]])
+        }
+        
+        # First file read command
+        file_name <- user_file()$name
+        file_type <- user_data()$file_type
+        file_cmds <- generate_read_cmd(file_name, file_type)
+        
+        # Start Rmd script with the first file
+        Rmd_script <- paste0(
+          Rmd_script, "\n### 0. Read File\n```{R, eval = FALSE}\n", file_cmds
+        )
+        
+        # If user uploaded a second file
+        if (!is.null(user_data_2())) {
+          file_name_2 <- user_file_2()$name
+          file_type_2 <- user_data_2()$file_type
+          file_cmds_2 <- generate_read_cmd(file_name_2, file_type_2, df_name = "df2")
+          Rmd_script <- paste0(Rmd_script, "\n", file_cmds_2)
+        }
+        
+        # Close the code chunk
+        Rmd_script <- paste0(Rmd_script, "\n```\n")
+      }
 
       # Add initial data chunk
       Rmd_script <- paste0(
@@ -325,9 +333,9 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
         # Prepare parameters for rendering the RMarkdown
         params <- list(df = iris) # dummy
         df2 <- NULL
-        # if (!is.null(current_data_2())) {
-        #   df2 <- current_data_2()
-        # }
+        if (!is.null(current_data_2())) {
+          df2 <- current_data_2()
+        }
         # if uploaded, use that data
         if (!is.null(current_data())) {
           params <- list(
@@ -411,9 +419,9 @@ mod_09_report_serv <- function(id, submit_button, logs, selected_model,
           # Prepare parameters for rendering the RMarkdown
           params <- list(df = iris) # dummy
           df2 <- NULL
-          # if (!is.null(current_data_2())) {
-          #   df2 <- current_data_2()
-          # }
+          if (!is.null(current_data_2())) {
+            df2 <- current_data_2()
+          }
           # if uploaded, use that data
           if (!is.null(current_data())) {
             params <- list(

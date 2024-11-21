@@ -20,7 +20,7 @@ app_ui <- function(request) {
     shinyjs::useShinyjs(),
 
     ### Style Module ###
-    mod_01_style_ui("mod_01_style_ui.R"),
+    mod_01_styles(NS("")),
 
     tags$footer(
       style = "position: fixed;bottom: 0;width: 100%;background-color: #F6FFF5;

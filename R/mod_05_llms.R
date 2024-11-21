@@ -4,20 +4,20 @@
 mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_name,
                              api_key, sample_temp, selected_model, logs,
                              counter, api_error_modal, code_error, current_data,
-                             run_env, run_env_start, run_result, use_python,
-                             send_head) {
+                             current_data_2, run_env, run_env_start, run_result,
+                             use_python, send_head) {
 
   moduleServer(id, function(input, output, session) {
 
-    # Store dataset name (Jenna, Why duplicated?? -- Daniel)
-    dataset_name <- reactive({ selected_dataset_name()}) #available_datasets[[selected_dataset_name()]]
 
     # LLM prompt
     llm_prompt <- reactive({
-      req(submit_button(), dataset_name(), input_text())
+      req(submit_button(), selected_dataset_name(), input_text())
 
       isolate({  # so it does not run twice with each submit
-        prep_input(input_text(), selected_dataset_name(), current_data(), use_python(), logs$id, send_head())
+        prep_input(input_text(), selected_dataset_name(), current_data(),
+          use_python(), logs$id, send_head(), current_data_2()
+        )
       })
     })
 
@@ -28,7 +28,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
 
       isolate({
         # will not respond to text input until submitted
-        req(input_text(), llm_prompt(), dataset_name())
+        req(input_text(), llm_prompt(), selected_dataset_name())
 
         # Store prompt
         prepared_request <- llm_prompt()
@@ -121,9 +121,20 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
     # Update environment
     update_environment <- function() {
 
-      # Update environment
-      run_env(rlang::env(run_env(), df = current_data(), df_name = selected_dataset_name()))
-      run_env_start(as.list(run_env()))
+      # Isolate environment updates
+      isolate({
+        # Extract existing variables
+        existing_vars <- as.list(run_env())
+        
+        # Add new variables to the list
+        existing_vars$df <- current_data()
+        existing_vars$df_name <- selected_dataset_name()
+        existing_vars$df2 <- current_data_2()
+
+        # Update the environment
+        run_env(list2env(existing_vars))
+        run_env_start(as.list(run_env()))
+      })
 
       # Display selected data
       if (length(logs$code_history) == 0) {
@@ -146,17 +157,10 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
     # Relevancy agent
     relevancy_agent <- function() {
 
-      # If user selects preloaded data,    '&& != user_upload'
-      # if (dataset_name() != no_data) {
-      #   dataset_details <- paste("the built-in R dataset", selected_dataset_name())
-      # } #else if (dataset_name() == user_upload) {
-      # #  dataset_details <- metadata you create
-      # #}
-
       # If user selects preloaded data
-      if (dataset_name() == no_data){ # Skip relevancy agent if user selects 'no data'
-        return(TRUE)
-      } else if (dataset_name() == user_upload){
+      if (selected_dataset_name() == no_data){
+        return(TRUE)  # Skip relevancy agent if user selects 'no data'
+      } else if (selected_dataset_name() == user_upload) {
         return(TRUE)
       } else {
 
@@ -171,11 +175,15 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
 
         if (length(logs$code_history) == 0) {
           relevancy_prompt <- list(
-            list(role = "system", content = paste("Act as an experienced data analyst.",
+            list(
+              role = "system",
+              content = paste("Act as an experienced data analyst.",
               "Determine if the following prompts are relevant to the current dataset:",
               dataset_details)
             ),
-            list(role = "user", content = paste("Determine if the current prompt is relevant to the selected dataset.",
+            list(
+              role = "user",
+              content = paste("Determine if the current prompt is relevant to the selected dataset.",
               "If it is relevant, respond with 'True'. Otherwise, respond with 'False'.",
               base_prompt)
             )
@@ -207,17 +215,9 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
     # Request agent
     send_request <- function(prompt_total, prepared_request, is_relevant) {
 
-
-      # if (dataset_name() != no_data) {  #  && != user_upload
-      #   dataset_details <- paste("Available dataset: the built-in R dataset",
-      #                            selected_dataset_name())
-      # } #else if (dataset_name() == user_upload) {
-      # #  dataset_details <- metadata you create
-      # #}
-
       # If prompt is relevant, send request
       prompt_total <- if (is_relevant) {
-        append(prompt_total, list(list(role = "user", content = prepared_request))) #paste0(prepared_request, dataset_details)
+        append(prompt_total, list(list(role = "user", content = prepared_request)))
       } else {   # if prompt is not relevant, send message
         list(list(role = "user", content = paste(
           "Return this exact statement: print('Please ask a question related to dataset",
@@ -225,7 +225,6 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
           "and try again. (Reset to select a different dataset)')"
         )))
       }
-
 
       # Send request
       response <- openAI_agent(prompt_total)
