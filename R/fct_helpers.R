@@ -70,11 +70,11 @@ move_front <- function(v, elements) {
   return(v)
 }
 
-# Add diamonds df to list
-available_datasets <- c(available_datasets, "diamonds")
+# Add diamonds and mpg df to list
+available_datasets <- c(available_datasets, "diamonds", "mpg")
 
 # Move important datasets to the front in order & add custom entries
-available_datasets <- move_front(available_datasets, c("iris", "mtcars",
+available_datasets <- move_front(available_datasets, c("iris", "mpg",
  "diamonds", "airquality", "CO2", "ToothGrowth", "pressure", "ChickWeight")
 )
 
@@ -87,7 +87,7 @@ available_datasets <- c("Select a dataset:", no_data, available_datasets,
 rename_map <- c(
   "no_data" = "No Data",
   "iris" = "Iris (examples)",
-  "mtcars" = "MTCars (examples)",
+  "mpg" = "MPG (examples)",
   "diamonds" = "Diamonds (examples)",
   "airquality" = "Air Quality (examples)",
   "CO2" = "CO2 (examples)",
