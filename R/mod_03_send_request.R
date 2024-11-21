@@ -8,18 +8,6 @@ mod_03_send_request_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
-    # CSS Styles
-    tags$head(tags$style(HTML(paste0("
-      /* Custom UI Elements */
-      #", ns("submit_button"), " {font-size: 18px;color: blue !important;
-        background-color: #F6FFF5;border-color: #90BD8C;}
-
-      #", ns("reset_button"), " {font-size: 18px;color: red;
-        background-color: #F6FFF5;border-color: #90BD8C;}
-
-      #", ns("input_text"), " {width: 100%;background-color: #F6FFF5;
-        border-color: #90BD8C;font-size: 16px;resize: vertical;}      
-    ")))),
 
     hr(class = "custom-hr"),
     tags$label("3. Send Request",

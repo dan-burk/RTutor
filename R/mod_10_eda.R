@@ -323,7 +323,7 @@ mod_10_eda_serv <- function(id, selected_dataset_name, use_python,
           plotly::add_text(
             x = 0.5,
             y = 0.5,
-            text = "No Missing Values Detected 👍",
+            text = "No Missing Values Detected",
             textfont = list(size = 20, color = "green")
           ) %>%
           plotly::layout(

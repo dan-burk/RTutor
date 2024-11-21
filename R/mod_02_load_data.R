@@ -8,14 +8,6 @@ mod_02_load_data_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
-    # # CSS Styles
-    # tags$head(tags$style(HTML(paste0("
-    #   #", ns("user_selected_dataset"), " {background-color: #F6FFF5;border-color: #90BD8C;color: #000;} 
-    #   .control-label[for='", ns("user_selected_dataset"), "'] { font-size: 18px; font-weight: bold; }
-
-    #   .control-label[for='", ns("user_file"), "'] { font-size: 18px; font-weight: bold; }
-    #   .control-label[for='", ns("user_file_2"), "'] { font-size: 18px; font-weight: bold; }
-    # ")))),
 
     # Display selected dataset
     conditionalPanel(

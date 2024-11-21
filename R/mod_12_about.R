@@ -120,13 +120,11 @@ mod_12_about_ui <- function(id) {
             style = "padding-left: 40px;"
             )
         ),
-        # Site Update Log component
+        # Site Update & Session Info Checkbox
         column(
             width = 6,
             checkboxInput(
             ns("site_update_log"),
-            # h4(strong(HTML("<span style='white-space: nowrap;'>See Site
-            #   Updates Log & R Session Info</span>"))),
             div(
                 style = "display: inline-flex; align-items: center; vertical-align: middle;",
                 tags$h4(style = "margin: 0;", tags$strong(HTML("<span style='white-space: nowrap;'>See Site
@@ -138,32 +136,26 @@ mod_12_about_ui <- function(id) {
 
         hr(class = "custom-hr"),
 
-        # Session Info Section
         fluidRow(
         conditionalPanel(
-            condition = paste0("input['", ns("site_update_log"), "'] == 1"), #"input.site_update_log == 1"
+            condition = paste0("input['", ns("site_update_log"), "'] == 1"),
+            # Site Update Log Table
             column(
             width = 6,
             br(),
             h4(strong("Site Updates Log")),
             div(
                 tagList(
-                tags$head(
-                    tags$style(HTML(".site-updates-wrapper table {background-color: #f3faf3;border-top: 2px solid #90BD8C;}
-                    .site-updates-wrapper table thead th, .site-updates-wrapper table td {border: 2px solid #90BD8C;}
-                    .site-updates-wrapper table tbody tr:nth-child(odd) {background-color: #f3faf3;}
-                    .site-updates-wrapper table tbody tr:nth-child(even) {background-color: #ffffff;}
-                    "))
-                ),
-                div(
+                  div(
                     class = "site-updates-wrapper",
                     tableOutput(ns("site_updates_table")),
                     style = "padding-left: 45px;"
-                )
+                  )
                 )
             ),
             align = "center",
             ),
+            # Session Info Text
             column(
             width = 6,
             div(

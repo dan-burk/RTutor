@@ -181,7 +181,7 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, send_head, 
         relevant_var = relevant_var,
         send_head = send_head
       )
-      browser()
+
       txt <- paste(txt, after_text)  # Always add 'use the df data frame.'
 
       # in a session, sometimes the first chunk has the id of 0. sometimes 1???
@@ -207,7 +207,7 @@ prep_input <- function(txt, selected_data, df, use_python, chunk_id, send_head, 
             send_head = send_head
           )
           data_info_2 <- gsub("df data frame", paste0(df2_name, " data frame"), data_info_2)
-          browser()
+
           n_words <- tokens(data_info_2)
           if (more_info && !(chunk_id > 1 && n_words > 600)) {
             txt <- paste(txt, data_info_2)

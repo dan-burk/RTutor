@@ -2,22 +2,22 @@
 % Please edit documentation in R/fct_helpers.R
 \name{describe_df}
 \alias{describe_df}
-\title{Describe a data frame}
+\title{Describe data frame}
 \usage{
 describe_df(df, list_levels = FALSE, relevant_var = NULL, send_head = TRUE)
 }
 \arguments{
-\item{df}{A data frame}
+\item{df}{a data frame}
 
-\item{list_levels}{Logical; whether to list levels for categorical variables}
+\item{list_levels}{whether to list levels for factors}
 
-\item{relevant_var}{A character vector of variable names to focus on (optional)}
+\item{relevant_var}{a list of variables mentioned by the user}
 
-\item{send_head}{Logical; whether to include a preview of the data frame}
+\item{send_head}{logical; whether to include a preview of the data frame}
 }
 \value{
-A character string summarizing the data frame
+Returns a cleaned up version, so that it can be executed as an R command
 }
 \description{
-Provides a description of a data frame, including numeric, character, and categorical variables.
+Returns information on data frame describing columns
 }
