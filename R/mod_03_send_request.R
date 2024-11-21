@@ -71,6 +71,7 @@ mod_03_send_request_ui <- function(id) {
         hr(class = "custom-hr")
       )
     )
+
   )
 }
 

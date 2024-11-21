@@ -21,10 +21,12 @@ language_models <- c("gpt-4o-2024-08-06",  "gpt-4o-mini", "gpt-3.5-turbo")
 names(language_models) <- c("GPT-4o", "GPT-4o mini", "GPT-3.5 Turbo")
 default_model <- "GPT-4o"  # "GPT-4 Turbo"   # "ChatGPT"   # "GPT-4 (03/23)"
 max_content_length <- 3000 # max tokens:  Change according to model !!!!
+max_content_length_ask <- 3000 # max tokens:  Change according to model !!!!
 default_temperature <- 0.2
 pre_text <- "Write correct, efficient R code to analyze data."
 pre_text_python <- "Write correct, efficient Python code."
 after_text <- "Use the df data frame."
+max_char_question <- 1000 # max n. of characters in the Q&A
 max_data_points <- 10000  # max number of data points for interactive plot
 max_levels_factor_conversion <- 5 # Numeric columns will be converted to factor if less than or equal to this many levels
 # if a column is numeric but only have a few unique values, treat as categorical
@@ -40,6 +42,8 @@ sqltable <- "usage"
 system_role <- "Act as a experienced data scientist and statistician. You will write code following instructions. Do not provide explanation. 
 If the goal can be achieved by showing quantitative results, do not produce a plot. When a plot is required, ggplot2 is preferred. 
 If multiple plots are generated, try to combine them into one."
+system_role_tutor <- "Act as a professor of statistics, computer science and mathematics. You will respond like answering questions by students.
+If the question is in languages other than English, respond in that language. If the question is not remotely related to your expertise, respond with 'No comment'."
 
 # If this file exists, running on the server. Otherwise local. This is used to change app behavior.
 on_server <- "on_server.txt"

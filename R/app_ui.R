@@ -46,7 +46,8 @@ app_ui <- function(request) {
           sidebarPanel(
             mod_02_load_data_ui("load_data"),
             mod_15_data_types_ui("data_edit_modal"),
-            mod_03_send_request_ui("send_request")
+            mod_03_send_request_ui("send_request"),
+            mod_16_qa_ui("qa")
           ),
 
           ### Main Panel ###

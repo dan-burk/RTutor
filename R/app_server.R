@@ -302,6 +302,21 @@ app_server <- function(input, output, session) {
   show_pop_up <- mod_15$show_pop_up
 
 
+  mod_16 <- mod_16_qa_serv(
+    id = "qa",
+    submit_button = submit_button,
+    logs = logs,
+    code_error = code_error,
+    run_result = run_result,
+    api_error_modal = api_error_modal,
+    counter = counter,
+    selected_model = selected_model,
+    api_key = api_key,
+    sample_temp = sample_temp,
+    selected_dataset_name = selected_dataset_name
+  )
+
+
 
 
   #                    Miscellaneous Functions
