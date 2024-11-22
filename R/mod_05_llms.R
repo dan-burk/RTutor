@@ -24,6 +24,7 @@ mod_05_llms_serv <- function(id, submit_button, input_text, selected_dataset_nam
 
     # LLM response
     llm_response <- reactive({
+      req(selected_dataset_name() != "Select a dataset:")
       req(submit_button())
 
       isolate({

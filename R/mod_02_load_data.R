@@ -8,23 +8,12 @@ mod_02_load_data_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
-
-    # Display selected dataset
-    conditionalPanel(
-      condition = paste0("output['", ns("show_selected_dataset"), "'] === 'show'"),
-      fluidRow(
-        column(
-          width = 12,
-          uiOutput(ns("selected_dataset"))
-        )
-      ),
-      hr(class = "custom-hr")
-    ),
-    conditionalPanel(
-      condition = paste0("output['", ns("show_option1"), "'] === 'show'"),
-      fluidRow(
-        column(
-          width = 6,
+    fluidRow(
+      column(
+        width = 6,
+        # Display dataset dropdown
+        conditionalPanel(
+          condition = paste0("output['", ns("show_option1"), "'] === 'show'"),
           selectInput(
             inputId = ns("user_selected_dataset"),
             label = HTML("<span style='font-size: 18px; font-weight: bold;'>1. Select Dataset</span>"),
@@ -33,14 +22,20 @@ mod_02_load_data_ui <- function(id) {
             multiple = FALSE
           )
         ),
-        column(
-          width = 6,
-          uiOutput(ns("data_upload_ui")),
-          uiOutput(ns("data_upload_ui_2"))
+        # Display selected dataset
+        conditionalPanel(
+          condition = paste0("output['", ns("show_option1"), "'] === 'hide'"),
+          uiOutput(ns("selected_dataset"))
         )
       ),
-      hr(class = "custom-hr")
-    )
+      column(
+        width = 6,
+        # File uploads 1 & 2
+        uiOutput(ns("data_upload_ui")),
+        uiOutput(ns("data_upload_ui_2"))
+      )
+    ),
+    hr(class = "custom-hr")
   )
 }
 
@@ -65,8 +60,8 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data,
     # First Dataset Upload ----------------------
     output$data_upload_ui <- renderUI({
 
-      # Hide this input box after the first run.
-      req(submit_button() == 0 || !is.null(input$user_selected_dataset)) # RHS is for when accidental hit submit
+      # LHS: Hide after first run; RHS: For when submitted accidentally
+      req(submit_button() == 0 || !is.null(input$user_selected_dataset))
       req(is.null(input$user_file)) # Hide after user inputs data
 
       fileInput(
@@ -139,19 +134,14 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data,
     observeEvent(input$user_file, {
       updateSelectInput(
         session,
-        inputId = "user_selected_dataset", #Used to be select_data, do NOT NOT NOT put ns() around this ID. It screws up everything!
-        choices = available_datasets,
+        inputId = "user_selected_dataset", # DO NOT NOT NOT put ns() around this ID!
+        choices = available_datasets,      # It screws up everything!
         selected = user_upload
       )
     }, ignoreInit = TRUE, once = TRUE)
 
 
-
-    # output$file_uploaded <- reactive({
-    #   return(!is.null(input$user_file))
-    # })
-    # outputOptions(output, 'file_uploaded', suspendWhenHidden = FALSE)
-
+    # Read in rna_seq data
     rna_seq_data <- reactive({
       req(input$user_selected_dataset == rna_seq)
 
@@ -159,13 +149,13 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data,
       return(df)
     })
 
+    # Read in built-in data, load data
     observeEvent(input$user_selected_dataset, {
 
       if (input$user_selected_dataset == user_upload) {
         eval(parse(text = paste0("df <- user_data()$df")))
-        # orig_data = df
       } else if (input$user_selected_dataset %in% c(no_data, "Select a dataset:")) {
-        df <- NULL #as.data.frame("No data selected or uploaded.")
+        df <- NULL
       } else if (input$user_selected_dataset == rna_seq) {
         df <- rna_seq_data()
       } else {
@@ -207,7 +197,6 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data,
         run_env(list2env(existing_vars))
         run_env_start(as.list(run_env()))
       })
-
     })
 
 
@@ -341,7 +330,6 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data,
           txt <- "Dataset: User Upload"
         }
       } else if (input$user_selected_dataset == "Select a dataset:") {
-        # txt <- "Data Set Not Selected! Please Reset and Select a Dataset."
         txt <- NULL
       } else {
         txt <- paste0("Selected Dataset: ", input$user_selected_dataset)
@@ -351,24 +339,14 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data,
                         white-space: nowrap;'>", txt, "</span>")))
     })
 
-    # Condition based on input from mod_03 for UI conditional panel
-    output$show_selected_dataset <- renderText({
-      if (submit_button() >= 1) {
-        return("show")
-      } else {
-        return("hide")
-      }
-    })
-    # Ensures this runs in background even when not called in UI
-    outputOptions(output, "show_selected_dataset", suspendWhenHidden = FALSE)
 
     # Condition based on input from mod_03 for UI conditional panel
     output$show_option1 <- renderText({
       # Check both conditions: submit_button() from mod_03 and user_selected_dataset from this module
       if (submit_button() == 0 || input$user_selected_dataset == "Select a dataset:") {
-        return("show")
+        return("show")  # Show dataset dropdown
       } else {
-        return("hide")
+        return("hide")  # Show selected dataset
       }
     })
     # Ensures this runs in background even when not called in UI
