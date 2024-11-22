@@ -180,6 +180,7 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data,
           row.names(df) <- df[, 1]
           df <- df[, -1]
         }
+        # "col 1 has been removed bc theyre unique identifiers"
       }
 
       # sometimes no row is left after processing.
@@ -335,8 +336,13 @@ mod_02_load_data_serv <- function(id, chunk_selection, current_data,
         txt <- paste0("Selected Dataset: ", input$user_selected_dataset)
       }
 
-      return(HTML(paste0("<span style='font-size: 18px;font-weight: bold;
-                        white-space: nowrap;'>", txt, "</span>")))
+      # Create a line break if dataset name is too long
+      if (!is.null(txt) && nchar(txt) > 25) {
+        txt <- paste0(substr(txt, 1, 25), "<br>", substr(txt, 26, nchar(txt)))
+      }
+
+      return(HTML(paste0("<span style='font-size: 18px; font-weight: bold; white-space: normal; word-wrap: break-word;'>"
+      , txt, "</span>")))
     })
 
 

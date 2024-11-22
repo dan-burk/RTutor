@@ -299,7 +299,7 @@ describe_df <- function(df, list_levels = FALSE, relevant_var = NULL, send_head 
   }
 
   # Add sample rows if requested
-  if (send_head) {
+  if (send_head && (nrow(df) >= 5)) {
     n_samples <- 5
     sample_rows <- capture.output(as.data.frame(df[sample(nrow(df), n_samples), , drop = FALSE]))
 
