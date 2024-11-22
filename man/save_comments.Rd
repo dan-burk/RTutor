@@ -2,7 +2,7 @@
 % Please edit documentation in R/fct_helpers.R
 \name{save_comments}
 \alias{save_comments}
-\title{Save user feedback}
+\title{Saves user queries, code, and error status}
 \usage{
 save_comments(date, time, comments, helpfulness, experience)
 }
@@ -16,10 +16,29 @@ save_comments(date, time, comments, helpfulness, experience)
 \item{helpfulness}{rating}
 
 \item{experience}{R experience}
+
+\item{request, }{user request}
+
+\item{code}{AI generated code}
+
+\item{error}{status, TRUE, error}
+
+\item{chunk, }{id, from 1, 2, ...}
+
+\item{api_time}{time in seconds for API response}
+
+\item{tokens}{total completion tokens}
+
+\item{filename}{name of the uploaded file}
+
+\item{filesize}{size}
 }
 \value{
 nothing
+Save user feedback
+
+nothing
 }
 \description{
-Save user feedback
+Saves user queries, code, and error status
 }
