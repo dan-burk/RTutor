@@ -11,9 +11,11 @@ params:
   df: NULL
   target: NULL
   predictors: NULL
-  size: NULL
+  size: 5
+  decay: 0.1
   positive_class_variable: NULL
   negative_class_variable: NULL
+  cv_folds: 5
   date:
     label: "Date: "
     value: !r Sys.Date()
@@ -24,22 +26,64 @@ params:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
-library(nnet)
-library(caret)
-library(pROC)
-library(ggplot2)
-df <- params$df
-target <- params$target
+knitr::opts_chunk$set(echo = params$printcode, message = FALSE, warning = FALSE)
+
+suppressPackageStartupMessages({
+  library(ggplot2)
+  library(dplyr)
+  library(tidyr)
+  library(nnet)
+  # caret/pROC are optional; we check availability later
+})
+
+# Pull params
+df         <- params$df
+target     <- params$target
 predictors <- params$predictors
-size <- params$size
-positive_class_label <- params$positive_class_variable
-negative_class_label <- params$negative_class_variable
+size       <- as.numeric(params$size)
+decay      <- as.numeric(params$decay)
+pos_lab    <- params$positive_class_variable
+neg_lab    <- params$negative_class_variable
+cv_folds   <- as.integer(params$cv_folds)
+
+stopifnot(!is.null(df), !is.null(target), !is.null(predictors))
+predictors <- setdiff(predictors, target)
+
+set.seed(123)
 ```
 
+# Parameter Glossary (and values used)
+
+Below are the parameters the report accepts and what they are.
+
+- **`df`** *(data.frame)*: Your input dataset (required).  
+- **`target`** *(string)*: Name of the outcome/response column in `df` (required).  
+- **`predictors`** *(character vector)*: Names of input features (required).  
+- **`size`** *(integer; default = `r params$size`)*: Number of hidden units in the single hidden layer. Larger values increase flexibility but can overfit.  
+- **`decay`** *(numeric; default = `r params$decay`)*: L2 weight penalty that shrinks weights and helps prevent overfitting.  
+- **`positive_class_variable`** *(string; optional)*: For **binary classification**, which class label should be treated as “positive” for ROC/AUC and thresholding.  
+- **`negative_class_variable`** *(string; optional)*: The other class in binary classification. Only used when explicit labeling is needed.  
+- **`cv_folds`** *(integer; default = `r params$cv_folds`)*: Number of cross-validation folds (if `caret` is installed). Reduces variance of metric estimates.
+
+```{r show-params, echo=FALSE}
+param_tbl <- tibble::tibble(
+  parameter = c("df", "target", "predictors", "size", "decay", "positive_class_variable", "negative_class_variable", "cv_folds"),
+  value = c(
+    paste0("data.frame with ", nrow(df), " rows × ", ncol(df), " cols"),
+    as.character(target),
+    paste(predictors, collapse = ", "),
+    as.character(size),
+    as.character(decay),
+    ifelse(is.null(pos_lab), "NULL", as.character(pos_lab)),
+    ifelse(is.null(neg_lab), "NULL", as.character(neg_lab)),
+    as.character(cv_folds)
+  )
+)
+knitr::kable(param_tbl, caption = "Parameters in effect for this run")
+```
 
 # Data Summary
-This report presents the results of a neural network analysis using the nnet package. We will evaluate models for
+We will complete a neural network analysis using the nnet package. We will evaluate models for
 both classification and regression tasks, depending on the nature of the target variable.
 
 ```{r data-summary}
@@ -52,187 +96,338 @@ summary(df) # Summary statistics
 
 # Data Pre-process
 
+We apply a few generic rules for pre-processing:
+
+1. **Remove likely ID columns**: character/factor columns where unique values > 80% of rows.  
+2. **Coerce low-cardinality numerics to factor**: numeric with <5% unique and <13 unique values.  
+3. **Center/scale numerics prior to fitting** (required for `nnet` stability).
+
 ```{r data-prep}
-# Extract the predictor variables
-predictors <- setdiff(predictors, target)
+# Record dataset shape before preprocessing
+rows_before <- nrow(df)
+cols_before <- ncol(df)
 
-# Ensure data types are correct
-size <- as.numeric(size)
+Xy <- df[, unique(c(target, predictors)), drop = FALSE]
 
-# Display the selected variables
-cat("Target Variable:", target, "\n")
-cat("Predictor Variables:", paste(predictors, collapse = ", "), "\n")
-```
+# Track changes
+changes <- list()
 
-If a numeric variable has just a few unique values, it might make more sense to convert it into categorical variable.
-If the total number of unique values is less than 5% of the total rows, convert.
-```{r convert-factor}
-# Iterate over each column of the data frame
-for (i in seq_along(df)) {
-  # Check if the column is numeric and has less than 5 unique values
-  if (is.numeric(df[[i]]) && length(unique(df[[i]])) / nrow(df) < 0.05 && length(unique(df[[i]])) < 13) {
-    # Convert the column to a factor
-    df[[i]] <- as.factor(df[[i]])
-    cat("\nColumn ", colnames(df)[i], "was converted to a factor.")
-  }
+# 1) Drop likely IDs (very high cardinality categorical)
+is_high_card <- function(x) is.character(x) || is.factor(x)
+drop_cols <- names(Xy)[sapply(Xy, function(x) is_high_card(x) && (length(unique(x)) > 0.8*nrow(Xy)))]
+if (length(drop_cols)) {
+  changes <- c(changes, paste0("Dropped high-cardinality non-numeric columns: ", paste(drop_cols, collapse = ", ")))
+  Xy <- dplyr::select(Xy, -all_of(drop_cols))
+  predictors <- setdiff(predictors, drop_cols)
 }
-```
 
-If a non-numeric variable has too many unique values, it might be names or IDs that is not useful in analysis. 
-```{r convert-id}
-cutoff <- 0.8
-# Initialize a vector to store the names of columns to be removed
-cols_to_remove <- c()
-
-# Loop through each column
-for (col_name in names(df)) {
-  # Check if column is non-numeric and has unique values > 80% of total rows
-  if (!is.numeric(df[[col_name]]) && length(unique(df[[col_name]])) > cutoff * nrow(df)) {
-    cols_to_remove <- c(cols_to_remove, col_name)
-    cat("\nColumn", cols_to_remove, " was excluded from analysis.")
+# 2) Coerce low-unique numeric codes to factor
+for (nm in names(Xy)) {
+  x <- Xy[[nm]]
+  if (is.numeric(x)) {
+    uniq_ratio <- length(unique(x))/nrow(Xy)
+    if (uniq_ratio < 0.05 && length(unique(x)) < 13) {
+      Xy[[nm]] <- factor(x)
+      changes <- c(changes, paste0("Converted numeric to factor: ", nm))
+    }
   }
 }
 
-# Remove the identified columns
-df <- df %>% select(-one_of(cols_to_remove))
+# 3) Target type detection
+y <- Xy[[target]]
+target_is_classification <- is.factor(y) || is.character(y)
+if (is.character(y)) {
+  Xy[[target]] <- factor(y)
+  y <- Xy[[target]]
+  changes <- c(changes, paste0("Converted target variable '", target, "' from character to factor."))
+}
+
+# 4) Scaling check (numeric predictors)
+num_preds <- predictors[sapply(Xy[, predictors, drop = FALSE], is.numeric)]
+if (length(num_preds)) {
+  changes <- c(changes, paste0("Numeric predictors will be centered and scaled: ", paste(num_preds, collapse = ", ")))
+}
+
+# Print summary of preprocessing changes
+cat("Data dimensions before preprocessing: ", rows_before, " rows × ", cols_before, " columns\n")
+cat("Data dimensions after preprocessing:  ", nrow(Xy), " rows × ", ncol(Xy), " columns\n\n")
+
+if (length(changes) == 0) {
+  cat("No preprocessing changes were applied.\n")
+} else {
+  cat("Preprocessing changes applied:\n")
+  for (c in changes) cat(" -", c, "\n")
+}
 ```
 
+# Train / Test Split (70/30) for Clear Holdout Evaluation
 
-# Neural Network for Classification
-If the target variable is categorical (a factor) then we will perform analysis for classification.
+```{r split}
+if (target_is_classification) {
+  # Require caret for stratified partition; otherwise do simple split
+  if (requireNamespace("caret", quietly = TRUE)) {
+    split <- caret::createDataPartition(Xy[[target]], p = 0.7, list = FALSE)
+  } else {
+    split <- sample.int(nrow(Xy), size = floor(0.7*nrow(Xy)))
+  }
+} else {
+  split <- sample.int(nrow(Xy), size = floor(0.7*nrow(Xy)))
+}
+
+train_df <- Xy[split, , drop = FALSE]
+test_df  <- Xy[-split, , drop = FALSE]
+
+# Center/scale numeric predictors
+scale_cols <- setdiff(names(train_df), target)
+num_cols <- scale_cols[sapply(train_df[, scale_cols, drop = FALSE], is.numeric)]
+pp <- NULL
+if (length(num_cols)) {
+  mu <- sapply(train_df[, num_cols, drop = FALSE], mean, na.rm = TRUE)
+  sdv <- sapply(train_df[, num_cols, drop = FALSE], sd, na.rm = TRUE)
+  sdv[sdv == 0] <- 1
+  train_df[, num_cols] <- sweep(train_df[, num_cols, drop = FALSE], 2, mu, "-")
+  train_df[, num_cols] <- sweep(train_df[, num_cols, drop = FALSE], 2, sdv, "/")
+  test_df[, num_cols]  <- sweep(test_df[, num_cols, drop = FALSE], 2, mu, "-")
+  test_df[, num_cols]  <- sweep(test_df[, num_cols, drop = FALSE], 2, sdv, "/")
+  pp <- list(mu = mu, sd = sdv)
+}
+```
+
+# Model Formula
+
+```{r formula}
+# Rebuild predictors in case any were dropped
+predictors <- intersect(predictors, names(train_df))
+form <- as.formula(paste(target, "~", paste(predictors, collapse = " + ")))
+form
+```
+
+# Neural Network for **Classification** *(if target is categorical)*
 
 ```{r nnet-classification}
-# Check if target variable is a factor
-if (is.factor(df[[target]]) | is.character(df[[target]])) {
-  # Create a classification neural network using the nnet package
-  # Set a seed for reproducibility
-  set.seed(123)
-  df[[target]] <- as.factor(df[[target]])
+if (target_is_classification) {
+  train_df[[target]] <- factor(train_df[[target]])
+  test_df[[target]]  <- factor(test_df[[target]], levels = levels(train_df[[target]]))
 
-  # Split the data into training and testing sets
-  split <- createDataPartition(df[[target]], p = 0.7, list = FALSE)
-  train_data <- df[split, ]
-  test_data <- df[-split, ]
-
-  # Define the formula for the model
-  formula <- as.formula(paste(target, "~", paste(predictors, collapse = "+")))
-
-  # Fit the model using nnet
-  cat("Neural Network Summary:\n\n")
-  nn_model <- nnet(formula, data = train_data, size = size, linout = FALSE)
-
-
-  if (nlevels(df[[target]]) == 2) { # Binary Classification
-
-    # Ensure positive class is the second level
-    if(levels(test_data[[target]])[2] != positive_class_label) {
-        test_data[[target]] <- relevel(test_data[[target]],
-                                       ref = setdiff(levels(test_data[[target]]), positive_class_label)
-                                       )
-    }
-
-    # Predict probabilities for the positive class based on the model
-    raw_pred <- predict(nn_model, newdata = test_data, type = "raw")  # raw predictions
-    pred_prob <- 1 / (1 + exp(-raw_pred))  # transform to probabilities
-
-    # AUC-ROC for testing data
-    roc_curve <- roc(test_data[[target]], pred_prob)
-    auc_value <- auc(roc_curve)
-    plot(roc_curve, main = paste("ROC Curve ( AUC =", round(auc_value, 3), ")"))
-    
-    # Calculate optimal threshold using Youden's J statistic
-    optimal_threshold <- coords(roc_curve, "best", ret = "threshold")
-
-    # Convert probabilities to predicted class using the optimal threshold
-    predict_class <- ifelse(pred_prob >= optimal_threshold$threshold[1], positive_class_label, negative_class_label)
-    predicted_class <- factor(predict_class, levels = levels(test_data[[target]]))
-
-    # Calculate confusion matrix
-    conf_matrix <- confusionMatrix(predicted_class, test_data[[target]], positive = positive_class_label)
-    
-    # Extract precision, recall, and F1 score
-    precision <- conf_matrix$byClass["Pos Pred Value"]
-    recall <- conf_matrix$byClass["Sensitivity"]
-    f1_score <- conf_matrix$byClass["F1"]
-    
-    # Print results
-    cat("Model Performance Metrics for Positive Class:", positive_class_label, "\n\n")
-    cat("Precision:", round(precision, 3), "\nWhen the model predicts the positive class, it's correct", 
-        format(round(precision * 100, 1), nsmall=1),"% of the time.\n\n")
-    cat("Recall:", round(recall, 3), "\nThe model correctly identifies", 
-        format(round(recall * 100, 1), nsmall=1),"% of all actual positive instances.\n\n")
-    cat("F1 Score:", round(f1_score, 3), "\nThe harmonic mean of precision and recall.\n\n")
-    cat("AUC:", round(auc_value, 3), "\n")
-
-  } else if (nlevels(df[[target]]) > 2) {   # Multi-class Classification
-
-    # Plot the neural network model
-    library(devtools)
-    source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
-    plot.nnet(nn_model)
-
-    # Predict classes based on the model
-    pred_class <- as.factor(predict(nn_model, newdata = test_data, type = "class"))
-    pred_class <- factor(pred_class, levels = levels(df[[target]])) # Ensure their levels match
-
-    # Analyze the model
-    conf_matrix <- confusionMatrix(pred_class, test_data[[target]])
-
-    # Print results
-    cat("Multi-class Classification Model Analysis:\n\n")
-    print(conf_matrix$overall["Accuracy"])
-    print(conf_matrix$byClass[, c("Precision", "Recall", "F1")])
-
-  } else {
-    cat("The target variable does not have sufficient levels.\n")
+  # For binary classification, set explicit positive/negative if provided
+  if (nlevels(train_df[[target]]) == 2 && !is.null(pos_lab) && (pos_lab %in% levels(train_df[[target]]))) {
+    train_df[[target]] <- stats::relevel(train_df[[target]], ref = pos_lab)
+    test_df[[target]]  <- factor(test_df[[target]], levels = levels(train_df[[target]]))
   }
 
+  cat("Fitting nnet classification model...\n")
+  nn_model <- nnet::nnet(formula = form, data = train_df, size = size, decay = decay, linout = FALSE, trace = FALSE, MaxNWts = 10000)
+
+  # ===== RAW DUMPS (kept) =====
+  cat("\n--- RAW MODEL DUMP ---\n")
+  print(nn_model)
+  cat("\n--- SUMMARY(nn_model) ---\n")
+  print(summary(nn_model))
+  cat("\n--- WEIGHTS (nn_model$wts) ---\n")
+  print(utils::head(nn_model$wts, 50))  # show first 50 for readability
+  if (length(nn_model$wts) > 50) cat("... (truncated) ...\n")
+
+  # Predictions
+  if (nlevels(train_df[[target]]) == 2) {
+    # Binary: nnet type='raw' returns probability of first class level
+    probs <- predict(nn_model, newdata = test_df, type = "raw")
+    probs <- as.numeric(probs)
+    pos_level <- levels(train_df[[target]])[1]
+    pred_class <- ifelse(probs >= 0.5, pos_level, setdiff(levels(train_df[[target]]), pos_level))
+    pred_class <- factor(pred_class, levels = levels(train_df[[target]]))
+
+    # Confusion Matrix + metrics
+    if (requireNamespace("caret", quietly = TRUE)) {
+      cm <- caret::confusionMatrix(pred_class, test_df[[target]], positive = pos_level)
+      cat("\nHoldout Accuracy:", round(cm$overall["Accuracy"], 4),
+          " | Kappa:", round(cm$overall["Kappa"], 4), "\n")
+      cat("Precision:", round(cm$byClass["Pos Pred Value"], 4),
+          " | Recall (Sensitivity):", round(cm$byClass["Sensitivity"], 4),
+          " | F1:", round(cm$byClass["F1"], 4), "\n")
+      cm_tbl <- cm$table
+    } else {
+      cm_tbl <- table(Prediction = pred_class, Reference = test_df[[target]])
+      acc <- sum(diag(cm_tbl)) / sum(cm_tbl)
+      cat("\nHoldout Accuracy:", round(acc, 4), "(caret not installed; basic accuracy only)\n")
+    }
+
+    # ROC/AUC
+    if (requireNamespace("pROC", quietly = TRUE)) {
+      roc_obj <- pROC::roc(response = test_df[[target]], predictor = probs, quiet = TRUE)
+      cat("AUC:", round(as.numeric(pROC::auc(roc_obj)), 4), "\n")
+      plot(roc_obj, main = paste0("ROC Curve (AUC = ", round(as.numeric(pROC::auc(roc_obj)), 3), ")"))
+    }
+
+    # Confusion matrix heatmap
+    cm_df <- as.data.frame(cm_tbl)
+    ggplot(cm_df, aes(x = Prediction, y = Reference, fill = Freq)) +
+      geom_tile() + geom_text(aes(label = Freq)) +
+      labs(title = "Confusion Matrix (Holdout)", x = "Predicted", y = "Actual") +
+      scale_fill_continuous(type = "viridis") +
+      theme_minimal()
+
+  } else {
+    # Multiclass
+    prob_mat <- predict(nn_model, newdata = test_df, type = "raw")
+    if (is.null(dim(prob_mat))) prob_mat <- cbind(prob_mat)
+    pred_class <- factor(colnames(prob_mat)[max.col(prob_mat, ties.method = "first")],
+                         levels = levels(train_df[[target]]))
+
+    if (requireNamespace("caret", quietly = TRUE)) {
+      cm <- caret::confusionMatrix(pred_class, test_df[[target]])
+      cat("\nHoldout Accuracy:", round(cm$overall["Accuracy"], 4),
+          " | Kappa:", round(cm$overall["Kappa"], 4), "\n")
+      cm_tbl <- cm$table
+    } else {
+      cm_tbl <- table(Prediction = pred_class, Reference = test_df[[target]])
+      acc <- sum(diag(cm_tbl)) / sum(cm_tbl)
+      cat("\nHoldout Accuracy:", round(acc, 4), "(caret not installed; basic accuracy only)\n")
+    }
+
+    # Multiclass AUC (Hand–Till) if available
+    if (requireNamespace("pROC", quietly = TRUE)) {
+      all_lvls <- levels(train_df[[target]])
+      prob_df <- as.data.frame(prob_mat)
+      if (!all(all_lvls %in% colnames(prob_df))) {
+        missing <- setdiff(all_lvls, colnames(prob_df))
+        for (m in missing) prob_df[[m]] <- 0
+      }
+      prob_df <- prob_df[, all_lvls, drop = FALSE]
+      auc_mc <- try(pROC::multiclass.roc(response = test_df[[target]], predictor = as.matrix(prob_df)), silent = TRUE)
+      if (!inherits(auc_mc, "try-error")) {
+        cat("Multiclass AUC (Hand–Till):", round(as.numeric(auc_mc$auc), 4), "\n")
+      }
+    }
+
+    # Confusion matrix heatmap
+    cm_df <- as.data.frame(cm_tbl)
+    ggplot(cm_df, aes(x = Prediction, y = Reference, fill = Freq)) +
+      geom_tile() + geom_text(aes(label = Freq)) +
+      labs(title = "Confusion Matrix (Holdout)", x = "Predicted", y = "Actual") +
+      scale_fill_continuous(type = "viridis") +
+      theme_minimal()
+  }
 } else {
-  print("Target variable is not categorical.")
+  cat("Target is not categorical; skipping classification branch.\n")
 }
 ```
 
-
-# Neural Network for Regression
-If the target variable is numeric then we will perform analysis for regression.
+# Neural Network for **Regression** *(if target is numeric)*
 
 ```{r nnet-regression}
-# Check if target variable is numeric
-# Neural Network for Regression
-if (is.numeric(df[[target]]) | is.integer(df[[target]]) | is.double(df[[target]])) {
-  # Set a seed for reproducibility
-  set.seed(123)
-  df[[target]] <- as.numeric(df[[target]])
+if (!target_is_classification) {
+  train_df[[target]] <- as.numeric(train_df[[target]])
+  test_df[[target]]  <- as.numeric(test_df[[target]])
 
-  # Split the data into training and testing sets
-  split <- createDataPartition(df[[target]], p = 0.7, list = FALSE)
-  train_data <- df[split, ]
-  test_data <- df[-split, ]
+  cat("Fitting nnet regression model...\n")
+  nn_model_reg <- nnet::nnet(formula = form, data = train_df, size = size, decay = decay,
+                             linout = TRUE, maxit = 1000, trace = FALSE, MaxNWts = 10000)
 
-  # Define the formula for the model
-  formula <- as.formula(paste(target, "~", paste(predictors, collapse = "+")))
+  # ===== RAW DUMPS (kept) =====
+  cat("\n--- RAW MODEL DUMP (REGRESSION) ---\n")
+  print(nn_model_reg)
+  cat("\n--- SUMMARY(nn_model_reg) ---\n")
+  print(summary(nn_model_reg))
+  cat("\n--- WEIGHTS (nn_model_reg$wts) ---\n")
+  print(utils::head(nn_model_reg$wts, 50))
+  if (length(nn_model_reg$wts) > 50) cat("... (truncated) ...\n")
 
-  # Train the neural network for regression
-  cat("Neural Network Summary:\n")
-  nn_model_regression <- nnet(formula, data = train_data, size = size, maxit = 1000, linout = TRUE)
+  # Predictions & holdout metrics
+  preds <- as.numeric(predict(nn_model_reg, newdata = test_df))
+  actual <- test_df[[target]]
+  rmse <- sqrt(mean((preds - actual)^2, na.rm = TRUE))
+  mae  <- mean(abs(preds - actual), na.rm = TRUE)
+  r2   <- cor(preds, actual, use = "complete.obs")^2
 
-  # Predict on the test set
-  predictions <- predict(nn_model_regression, newdata = test_data)
+  cat("\nHoldout metrics:\n")
+  cat("RMSE:", round(rmse, 4), " | MAE:", round(mae, 4), " | R^2:", round(r2, 4), "\n")
 
-  # Calculate the Root Mean Squared Error (RMSE)
-  rmse <- RMSE(predictions, test_data[[target]])
-  cat("\nRoot Mean Squared Error (RMSE):", rmse, "\n")
-
-  # Create a dataframe for plotting
-  plot_df <- data.frame(Actual = test_data[[target]], Predicted = predictions)
-
-  # Plot predicted vs. actual
+  # Predicted vs Actual plot
+  plot_df <- data.frame(Actual = actual, Predicted = preds)
   ggplot(plot_df, aes(x = Actual, y = Predicted)) +
-    geom_point() +
-    geom_abline(slope = 1, intercept = 0, color = "blue", linetype = "dashed") +
-    labs(title = "Predicted vs Actual for Regression", x = "Actual", y = "Predicted") +
+    geom_point(alpha = 0.7) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+    labs(title = "Predicted vs Actual (Holdout)", x = "Actual", y = "Predicted") +
     theme_minimal()
 } else {
-  print("Target variable is not numeric.")
+  cat("Target is not numeric; skipping regression branch.\n")
 }
 ```
+
+# Cross-Validated Summary Metrics (Optional)
+
+If the **`caret`** package is available, we’ll also report **k-fold cross-validated** performance (classification: Accuracy/Kappa and ROC/AUC for binary; regression: RMSE/MAE/R²). If `caret` is not installed, this section will be skipped without failing the report.
+
+```{r cv-metrics}
+if (!requireNamespace("caret", quietly = TRUE)) {
+  cat("Package 'caret' not installed; skipping cross-validated metrics.\n")
+} else {
+  try({
+    # Drop rows with any missing predictor/target values for CV
+    Xy_cv <- Xy[, unique(c(target, predictors)), drop = FALSE]
+    Xy_cv <- Xy_cv[stats::complete.cases(Xy_cv), , drop = FALSE]
+
+    # Ensure we still have predictors
+    preds_cv <- intersect(predictors, names(Xy_cv))
+    if (length(preds_cv) == 0L) stop("No valid predictors available for CV after preprocessing.")
+
+    # Outcome typing
+    y_cv <- Xy_cv[[target]]
+    is_class <- is.factor(y_cv) || is.character(y_cv)
+    if (is.character(y_cv)) Xy_cv[[target]] <- factor(y_cv)
+    if (is_class) {
+      Xy_cv[[target]] <- droplevels(factor(Xy_cv[[target]]))
+      if (nlevels(Xy_cv[[target]]) < 2) stop("Target has fewer than 2 levels for classification CV.")
+      if (nlevels(Xy_cv[[target]]) == 2) {
+        if (!is.null(pos_lab) && pos_lab %in% levels(Xy_cv[[target]])) {
+          Xy_cv[[target]] <- stats::relevel(Xy_cv[[target]], ref = pos_lab)
+        } else {
+          message("Binary classification: setting positive class to first level: ",
+                  levels(Xy_cv[[target]])[1])
+        }
+      }
+    }
+
+    # Folds guard
+    k <- max(2L, min(cv_folds, nrow(Xy_cv) - 1L))
+
+    ctrl <- caret::trainControl(
+      method = "cv",
+      number = k,
+      classProbs = is_class,
+      summaryFunction = if (is_class && nlevels(Xy_cv[[target]]) == 2)
+        caret::twoClassSummary else caret::defaultSummary,
+      savePredictions = "final",
+      allowParallel = FALSE
+    )
+
+    form_cv <- stats::as.formula(paste(target, "~", paste(preds_cv, collapse = " + ")))
+    metric <- if (is_class && nlevels(Xy_cv[[target]]) == 2) "ROC" else if (is_class) "Accuracy" else "RMSE"
+
+    fit_cv <- caret::train(
+      form_cv, data = Xy_cv,
+      method = "nnet",
+      trControl = ctrl,
+      tuneGrid = data.frame(size = size, decay = decay),
+      preProcess = c("center", "scale"),
+      linout = !is_class,
+      trace = FALSE,
+      MaxNWts = 10000
+    )
+
+    cat("\nCross-validated results (caret):\n")
+    print(fit_cv$results)
+
+    if (metric == "ROC" && "ROC" %in% names(fit_cv$results)) {
+      cat("Mean ROC (CV):", round(max(fit_cv$results$ROC), 4), "\n")
+    }
+  }, silent = FALSE)
+}
+```
+
+# Notes & Next Steps
+
+- **Tuning**: Increase `size` or adjust `decay` to trade off bias/variance. For automated tuning, expand to a grid (multiple `size`/`decay` combos) and pick the best by CV.  
+- **Class imbalance**: For skewed classification problems, consider stratified sampling and threshold tuning beyond 0.5 (Youden’s J, cost-sensitive metrics).  
+- **Stability**: For more stable metrics, increase `cv_folds`.  
+- **Reproducibility**: Keep the `set.seed()` and document your parameters (see **Parameter Glossary** above).
